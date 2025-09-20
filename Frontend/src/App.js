@@ -1,306 +1,658 @@
-// App.jsx
-// Single-file React app: Excel Uploader (interactive)
-// Paste this into src/App.js (or src/App.jsx) in a Create React App project.
-// Usage: the first screen asks how many Excel files (1-4). Click "Upload file" to go
-// to the upload view. You can drag & drop or click to pick files (.xls/.xlsx).
-// The app validates the count and file extensions and simulates an upload with progress bars.
+import React, { useState } from 'react';
+import { Upload, FileText, CheckCircle, ArrowLeft, User, History, Settings, LogOut } from 'lucide-react';
+import './App.css';
 
-import React, { useState, useRef, useEffect } from "react";
+const FileUploadApp = () => {
+  const [currentPage, setCurrentPage] = useState('first'); // 'first' or 'upload'
+  const [numberOfFiles, setNumberOfFiles] = useState(2);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
-export default function App() {
-  const MAX_FILES = 4;
-  const [step, setStep] = useState(1); // 1 = choose count, 2 = upload
-  const [expectedCount, setExpectedCount] = useState(1);
-  const [files, setFiles] = useState([]);
-  const [errors, setErrors] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const [progressMap, setProgressMap] = useState({});
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    handleFiles(files);
+  };
 
-  useEffect(() => {
-    // reset errors whenever expectedCount changes
-    setErrors("");
-  }, [expectedCount]);
+  // Handle drag and drop
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
 
-  function humanFileSize(size) {
-    if (size === 0) return "0 B";
-    const i = Math.floor(Math.log(size) / Math.log(1024));
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    return (size / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
-  }
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const files = Array.from(e.dataTransfer.files);
+      handleFiles(files);
+    }
+  };
 
-  function goToUpload() {
-    const n = Number(expectedCount);
-    if (!n || n < 1 || n > MAX_FILES) {
-      setErrors(`Enter a number between 1 and ${MAX_FILES}.`);
+  // Process uploaded files
+  const handleFiles = (files) => {
+    const excelFiles = files.filter(file => 
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel' ||
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls')
+    );
+
+    if (excelFiles.length === 0) {
+      alert('Please upload only Excel files (.xlsx or .xls)');
       return;
     }
-    setErrors("");
-    setFiles([]);
-    setProgressMap({});
-    setUploading(false);
-    setStep(2);
-  }
 
-  function resetAll() {
-    setStep(1);
-    setExpectedCount(1);
-    setFiles([]);
-    setProgressMap({});
-    setErrors("");
-    setUploading(false);
-  }
+    const newFiles = excelFiles.map(file => ({
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+      file: file,
+      uploaded: true
+    }));
 
-  function handleFileSelection(fileList) {
-    const arr = Array.from(fileList || []);
-    // accept only .xls/.xlsx by extension
-    const accepted = arr.filter((f) => {
-      const ext = f.name.split('.').pop().toLowerCase();
-      return ext === 'xls' || ext === 'xlsx';
+    setUploadedFiles(prev => {
+      const combined = [...prev, ...newFiles];
+      return combined.slice(0, numberOfFiles); // Limit to specified number
     });
+  };
 
-    if (accepted.length !== arr.length) {
-      setErrors("Only .xls and .xlsx files are allowed — invalid files were ignored.");
-    } else setErrors("");
+  // Remove uploaded file
+  const removeFile = (id) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== id));
+  };
 
-    if (accepted.length > expectedCount) {
-      setErrors((prev) => prev + ` You selected more than ${expectedCount}. We'll keep the first ${expectedCount}.`);
-      setFiles(accepted.slice(0, expectedCount));
-    } else {
-      setFiles(accepted);
-    }
-  }
-
-  function onDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    handleFileSelection(e.dataTransfer.files);
-  }
-
-  function onDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }
-
-  function onDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }
-
-  function onFileInputChange(e) {
-    handleFileSelection(e.target.files);
-    // clear input to allow selecting same file again
-    e.target.value = null;
-  }
-
-  function startUploadSimulation() {
-    if (files.length !== Number(expectedCount)) {
-      setErrors(`Please select exactly ${expectedCount} files before uploading.`);
+  // Navigate to upload page
+  const goToUpload = () => {
+    if (numberOfFiles < 2 || numberOfFiles > 4) {
+      alert('Please enter a number between 1 and 4');
       return;
     }
-    setErrors("");
-    setUploading(true);
+    setCurrentPage('upload');
+  };
 
-    // initialize progress map
-    const initial = {};
-    files.forEach((f) => (initial[f.name] = 0));
-    setProgressMap(initial);
+  // Go back to first page
+  const goBack = () => {
+    setCurrentPage('first');
+    setUploadedFiles([]);
+  };
 
-    // simulate upload per file with intervals
-    const timers = [];
-    files.forEach((f) => {
-      const timer = setInterval(() => {
-        setProgressMap((prev) => {
-          const current = prev[f.name] ?? 0;
-          const increment = Math.floor(Math.random() * 15) + 10; // 10-24
-          const next = Math.min(100, current + increment);
-          const updated = { ...prev, [f.name]: next };
-          // if reached 100, clear timer for that file
-          if (next === 100) {
-            const t = timers.find((x) => x.name === f.name);
-            if (t && t.id) clearInterval(t.id);
-          }
-          return updated;
-        });
-      }, 350);
-      timers.push({ name: f.name, id: timer });
-    });
+  // Header component
+  const Header = () => (
+    <header style={styles.header}>
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+            <img src="image.png" style={{ height: "50px", width: "auto" }} />
 
-    // safety: clear any leftover timers when all done
-    const watch = setInterval(() => {
-      const allDone = Object.values(progressMap).length === files.length && Object.values(progressMap).every(v => v === 100);
-      // Note: progressMap in closure might lag slightly; rely on current state instead
-      // We'll compute from document state using a short promise
-      const done = files.every(f => (progressMap[f.name] === 100));
-      if (done) {
-        timers.forEach(t => t.id && clearInterval(t.id));
-        clearInterval(watch);
-        setUploading(false);
-      }
-    }, 500);
-
-    // ensure watch clears after 30s (safety)
-    setTimeout(() => {
-      timers.forEach(t => t.id && clearInterval(t.id));
-    }, 30000);
-  }
-
-  // small helper UI parts
-  function UploadPage() {
-    return (
-      <div className="card">
-        <h2>Upload files ({expectedCount} expected)</h2>
-        <div
-          className={`dropzone ${isDragging ? 'dragging' : ''}`}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onClick={() => fileInputRef.current && fileInputRef.current.click()}
-          role="button"
-          tabIndex={0}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={onFileInputChange}
-            style={{ display: 'none' }}
-          />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 30 }}>📁</div>
-            <div className="muted">Drag & drop Excel files here or click to pick</div>
-            <div className="muted small">Only .xls / .xlsx allowed • Max {MAX_FILES}</div>
-          </div>
         </div>
-
-        <div className="files">
-          {files.length === 0 && <div className="muted">No files selected yet.</div>}
-          {files.map((f) => (
-            <div key={f.name} className="fileRow">
-              <div className="fileMeta">
-                <strong>{f.name}</strong>
-                <div className="muted">{humanFileSize(f.size)}</div>
+        
+      </div>
+      <nav style={styles.nav}>
+        <span style={styles.navLink}>Chatbot</span>
+        <span style={styles.navLink}>Blog page</span>
+        <div 
+          style={styles.userMenu}
+          onMouseEnter={() => setShowDropdown(true)}
+          onMouseLeave={() => setShowDropdown(false)}
+        >
+          <User size={24} style={styles.userIcon} />
+          {showDropdown && (
+            <div style={styles.dropdown}>
+              <div style={styles.dropdownItem}>
+                <User size={16} />
+                <span>Profile</span>
               </div>
-              <div className="progressWrap">
-                <div className="progressBar">
-                  <div className="progressFill" style={{ width: `${progressMap[f.name] || 0}%` }} />
-                </div>
-                <div className="muted small">{progressMap[f.name] ?? 0}%</div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <LogOut size={16} />
+                <span>Sign out</span>
               </div>
             </div>
-          ))}
+          )}
         </div>
+      </nav>
+    </header>
+  );
 
-        {errors && <div className="error">{errors}</div>}
-
-        <div className="actions">
-          <button className="btn ghost" onClick={resetAll}>Back</button>
-          <button className="btn" onClick={() => fileInputRef.current && fileInputRef.current.click()}>Pick files</button>
-          <button className="btn primary" onClick={startUploadSimulation} disabled={uploading || files.length === 0}>
-            {uploading ? 'Uploading...' : 'Start Upload'}
-          </button>
+  // First page - Number input
+  if (currentPage === 'first') {
+    return (
+      <div style={styles.container}>
+        <Header />
+        
+        <div style={styles.mainContent}>
+          <div style={styles.card}>
+            <div style={styles.cardContent}>
+              <div style={styles.iconContainer}>
+                <FileText size={32} color="white" />
+              </div>
+              
+              <h1 style={styles.title}>
+                Excel File Upload
+              </h1>
+              
+              <p style={styles.description}>
+                Please enter the number of Excel sheets you want to upload to generate a simplified financial report.
+              </p>
+              
+              <div style={styles.formSection}>
+                <div>
+                  <label style={styles.label}>
+                    Number of files (2-4):
+                  </label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="4"
+                    value={numberOfFiles}
+                    onChange={(e) => setNumberOfFiles(parseInt(e.target.value) || 2)}
+                    style={styles.input}
+                    placeholder="Enter number (2-4)"
+                  />
+                </div>
+                
+                <button
+                  onClick={goToUpload}
+                  style={styles.uploadButton}
+                >
+                  <Upload size={20} />
+                  <span>Upload Files</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {Object.values(progressMap).length === files.length && files.length > 0 && Object.values(progressMap).every(v => v === 100) && (
-          <div className="success">All files uploaded ✅</div>
-        )}
       </div>
     );
   }
 
+  // Upload page
   return (
-    <div className="wrap">
-      <style>{`
-        :root{--bg:#f1f5fb;--card:#ffffff;--muted:#6b7280;--primary:#334155;--accent:#2b6cb0;}
-        *{box-sizing:border-box}
-        body{margin:0;font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif;background:var(--bg);}
-        .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
-        .container{width:880px}
-        .card{background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,249,255,0.98));padding:36px;border-radius:14px;box-shadow: 0 12px 30px rgba(15,23,42,0.08);}
-        h1{margin:0 0 8px 0;font-size:20px;color:var(--primary)}
-        h2{margin:0 0 16px 0;font-size:18px;color:var(--primary)}
-        .muted{color:var(--muted)}
-        .small{font-size:12px}
-
-        /* Step 1 */
-        .homeBox{display:flex;align-items:center;justify-content:center;padding:48px;border-radius:10px}
-        .field{display:flex;flex-direction:column;align-items:center;gap:8px}
-        .numberInput{width:140px;padding:8px 12px;border-radius:8px;border:1px solid #d1d5db;font-size:16px;text-align:center}
-        .btn{padding:10px 16px;border-radius:10px;border:none;background:#e6eefc;cursor:pointer}
-        .btn.primary{background:var(--accent);color:white}
-        .btn.ghost{background:transparent;border:1px solid #cbd5e1}
-
-        /* Upload */
-        .dropzone{border:2px dashed #cbd5e1;border-radius:10px;padding:28px;cursor:pointer}
-        .dropzone.dragging{background:rgba(43,108,176,0.06)}
-        .files{margin-top:18px}
-        .fileRow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed #eef2f6}
-        .fileMeta{flex:1}
-        .progressWrap{width:260px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-        .progressBar{width:100%;height:10px;background:#e6eefc;border-radius:6px;overflow:hidden}
-        .progressFill{height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6)}
-        .error{margin-top:12px;color:#b91c1c}
-        .success{margin-top:12px;color:#065f46}
-        .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-
-        /* responsive */
-        @media (max-width:720px){
-          .container{padding:16px}
-          .progressWrap{width:160px}
-        }
-      `}</style>
-
-      <div className="container">
-        <div className="card">
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 8, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>FG</div>
-              <div>
-                <h1>File upload</h1>
-                <div className="muted small">Upload finalised Excel sheets to generate a simplified financial report</div>
+    <div style={styles.container}>
+      <Header />
+      
+      <div style={styles.mainContent}>
+        <div style={{...styles.card, maxWidth: '800px'}}>
+          <div style={styles.cardContent}>
+            <div style={styles.uploadHeader}>
+              <button
+                onClick={goBack}
+                style={styles.backButton}
+              >
+                <ArrowLeft size={20} />
+                <span>Back</span>
+              </button>
+              
+              <div style={styles.fileCounter}>
+                Upload {numberOfFiles} file{numberOfFiles > 2 ? 's' : ''}
               </div>
             </div>
-          </header>
+            
+            <div style={styles.uploadTitle}>
+              <h1 style={styles.title}>
+                Upload Your Excel Files
+              </h1>
+              <p style={styles.description}>
+                Drag & drop your Excel files here or click to browse
+              </p>
+            </div>
 
-          {step === 1 && (
-            <div className="homeBox">
-              <div style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-                  <div style={{ maxWidth: 560, textAlign: 'center' }}>
-                    <p className="muted">Please upload the finalized Excel sheet here to generate a simplified financial report.</p>
+            {/* Upload Area */}
+            <div
+              style={{
+                ...styles.uploadArea,
+                ...(dragActive ? styles.uploadAreaActive : {}),
+                ...(uploadedFiles.length >= numberOfFiles ? styles.uploadAreaDisabled : {})
+              }}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                multiple
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                style={styles.fileInput}
+                disabled={uploadedFiles.length >= numberOfFiles}
+              />
+              
+              <div style={styles.uploadContent}>
+                <div style={styles.uploadIcon}>
+                  <Upload size={32} color="#64748b" />
+                </div>
+                
+                <div>
+                  <p style={styles.uploadText}>
+                    Drag & drop files
+                  </p>
+                  <p style={styles.uploadSubtext}>
+                    Only .xlsx files supported
+                  </p>
+                </div>
+                
+                <button
+                  type="button"
+                  style={{
+                    ...styles.chooseButton,
+                    ...(uploadedFiles.length >= numberOfFiles ? styles.chooseButtonDisabled : {})
+                  }}
+                  disabled={uploadedFiles.length >= numberOfFiles}
+                >
+                  Choose Files
+                </button>
+              </div>
+            </div>
+
+            {/* Progress indicator */}
+            <div style={styles.progressIndicator}>
+              <div style={styles.progressText}>
+                {uploadedFiles.length} of {numberOfFiles} files uploaded
+              </div>
+            </div>
+
+            {/* Uploaded Files List */}
+            {uploadedFiles.length > 0 && (
+              <div style={styles.filesSection}>
+                <h3 style={styles.filesTitle}>Uploaded Files:</h3>
+                {uploadedFiles.map((file) => (
+                  <div key={file.id} style={styles.fileItem}>
+                    <div style={styles.fileInfo}>
+                      <CheckCircle size={20} color="#10b981" />
+                      <div>
+                        <p style={styles.fileName}>{file.name}</p>
+                        <p style={styles.fileSize}>{file.size}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFile(file.id)}
+                      style={styles.removeButton}
+                    >
+                      Remove
+                    </button>
                   </div>
-                </div>
-
-                <div className="field" style={{ marginTop: 10 }}>
-                  <label className="muted">How many Excel files will you upload? (max {MAX_FILES})</label>
-                  <input
-                    className="numberInput"
-                    type="number"
-                    min={1}
-                    max={MAX_FILES}
-                    value={expectedCount}
-                    onChange={(e) => setExpectedCount(e.target.value)}
-                  />
-                </div>
-
-                {errors && <div className="error" style={{ textAlign: 'center', marginTop: 12 }}>{errors}</div>}
-
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
-                  <button className="btn primary" onClick={goToUpload}>Upload file</button>
-                </div>
+                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {step === 2 && <UploadPage />}
-
+            {/* Generate Report Button */}
+            {uploadedFiles.length === numberOfFiles && (
+              <div style={styles.generateSection}>
+                <button style={styles.generateButton}>
+                  Generate Financial Report
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+// CSS Styles
+const styles = {
+  container: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #9DAAC6 0%, #9DAAC6 50%, #9DAAC6 100%)',
+    fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
+  },
+  
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1rem',
+    backgroundColor: '#9DAAC6',
+    color: 'white'
+  },
+  
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  
+  logo: {
+    width: '32px',
+    height: '32px',
+    backgroundColor: 'white',
+    borderRadius: '4px',
+    color: '#334155',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold'
+  },
+  
+  brandName: {
+    fontWeight: '600'
+  },
+  
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1.5rem'
+  },
+  
+  navLink: {
+    cursor: 'pointer',
+    transition: 'color 0.2s'
+  },
+  
+  userMenu: {
+    position: 'relative',
+    cursor: 'pointer'
+  },
+  
+  userIcon: {
+    transition: 'color 0.2s'
+  },
+  
+  dropdown: {
+    position: 'absolute',
+    right: '0',
+    top: '32px',
+    backgroundColor: '#1e293b',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+    padding: '0.5rem',
+    minWidth: '120px',
+    zIndex: 1000
+  },
+  
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '14px'
+  },
+  
+  mainContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'calc(100vh - 80px)',
+    padding: '1rem'
+  },
+  
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '16px',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.1)',
+    padding: '2rem',
+    width: '100%',
+    maxWidth: '400px'
+  },
+  
+  cardContent: {
+    textAlign: 'center'
+  },
+  
+  iconContainer: {
+    width: '64px',
+    height: '64px',
+    backgroundColor: '#3C507D',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 1.5rem'
+  },
+  
+  title: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#1e293b',
+    margin: '0 0 1rem 0'
+  },
+  
+  description: {
+    color: '#64748b',
+    lineHeight: '1.6',
+    margin: '0 0 1.5rem 0'
+  },
+  
+  formSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem'
+  },
+  
+  label: {
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: '0.5rem'
+  },
+  
+  input: {
+    width: '60%',
+    height: '30px',
+    padding: '0.75rem',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    fontSize: '16px',
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    boxSizing: 'border-box'
+  },
+  
+  uploadButton: {
+    width: '100%',
+    backgroundColor: '#3C507D',
+    color: 'white',
+    fontWeight: '600',
+    padding: '0.75rem 1.5rem',
+    border: 'none',
+    borderRadius: '30px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem'
+  },
+  
+  uploadHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1.5rem'
+  },
+  
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    color: '#64748b',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'color 0.2s'
+  },
+  
+  fileCounter: {
+    fontSize: '14px',
+    color: '#64748b'
+  },
+  
+  uploadTitle: {
+    marginBottom: '1.5rem'
+  },
+  
+  uploadArea: {
+    position: 'relative',
+    border: '2px dashed #d1d5db',
+    borderRadius: '12px',
+    padding: '2rem',
+    textAlign: 'center',
+    transition: 'all 0.2s',
+    cursor: 'pointer',
+    marginBottom: '1rem'
+  },
+  
+  uploadAreaActive: {
+    borderColor: '#64748b',
+    backgroundColor: '#f8fafc'
+  },
+  
+  uploadAreaDisabled: {
+    opacity: '0.5',
+    pointerEvents: 'none'
+  },
+  
+  fileInput: {
+    position: 'absolute',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    opacity: '0',
+    cursor: 'pointer'
+  },
+  
+  uploadContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  
+  uploadIcon: {
+    width: '64px',
+    height: '64px',
+    backgroundColor: '#f1f5f9',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  
+  uploadText: {
+    fontSize: '1.125rem',
+    fontWeight: '500',
+    color: '#374151',
+    margin: '0'
+  },
+  
+  uploadSubtext: {
+    fontSize: '14px',
+    color: '#6b7280',
+    margin: '0.25rem 0 0 0'
+  },
+  
+  chooseButton: {
+    backgroundColor: '#64748b',
+    color: 'white',
+    padding: '0.5rem 1.5rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s'
+  },
+  
+  chooseButtonDisabled: {
+    backgroundColor: '#9ca3af',
+    cursor: 'not-allowed'
+  },
+  
+  progressIndicator: {
+    textAlign: 'center',
+    marginBottom: '1.5rem'
+  },
+  
+  progressText: {
+    fontSize: '14px',
+    color: '#64748b'
+  },
+  
+  filesSection: {
+    marginBottom: '1.5rem'
+  },
+  
+  filesTitle: {
+    fontWeight: '600',
+    color: '#1e293b',
+    margin: '0 0 0.75rem 0',
+    textAlign: 'left'
+  },
+  
+  fileItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem',
+    backgroundColor: '#9DAAC6',
+    border: '1px solid #404a5eff',
+    borderRadius: '8px',
+    marginBottom: '0.75rem'
+  },
+  
+  fileInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem'
+  },
+  
+  fileName: {
+    fontWeight: '500',
+    color: '#000000',
+    margin: '0'
+  },
+  
+  fileSize: {
+    fontSize: '14px',
+    color: '#3C507D',
+    margin: '0'
+  },
+  
+  removeButton: {
+    color: '#3C507D',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '4px',
+    transition: 'color 0.2s'
+  },
+  
+  generateSection: {
+    paddingTop: '1rem'
+  },
+  
+  generateButton: {
+    width: '100%',
+    backgroundColor: '#3C507D',
+    color: 'white',
+    fontWeight: '600',
+    padding: '0.75rem 1.5rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s'
+  }
+};
+
+export default FileUploadApp;
