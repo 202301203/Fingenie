@@ -9,6 +9,10 @@ const FileUploadApp = () => {
   const [dragActive, setDragActive] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // File size constraint (10MB limit)
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+  
   // Handle file input change
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
