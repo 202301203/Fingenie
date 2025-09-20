@@ -12,7 +12,7 @@ const FileUploadApp = () => {
   // File size constraint (10MB limit)
   const MAX_FILE_SIZE_MB = 10;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-  
+
   // Handle file input change
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -41,32 +41,51 @@ const FileUploadApp = () => {
     }
   };
 
-  // Process uploaded files
+  // Process uploaded files with size validation
   const handleFiles = (files) => {
-    const excelFiles = files.filter(file => 
-      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      file.type === 'application/vnd.ms-excel' ||
-      file.name.endsWith('.xlsx') ||
-      file.name.endsWith('.xls')
-    );
+    const validFiles = [];
+    const errors = [];
 
-    if (excelFiles.length === 0) {
-      alert('Please upload only Excel files (.xlsx or .xls)');
-      return;
+    files.forEach(file => {
+      // Check file type
+      const isExcelFile = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel' ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls');
+
+      // Check file size
+      const isValidSize = file.size <= MAX_FILE_SIZE_BYTES;
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+
+      if (!isExcelFile) {
+        errors.push(`${file.name}: Only Excel files (.xlsx or .xls) are allowed`);
+      } else if (!isValidSize) {
+        errors.push(`${file.name}: File size (${fileSizeMB}MB) exceeds the maximum limit of ${MAX_FILE_SIZE_MB}MB`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Show errors if any
+    if (errors.length > 0) {
+      alert('Upload errors:\n\n' + errors.join('\n\n'));
     }
 
-    const newFiles = excelFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-      file: file,
-      uploaded: true
-    }));
+    // Process valid files
+    if (validFiles.length > 0) {
+      const newFiles = validFiles.map(file => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+        file: file,
+        uploaded: true
+      }));
 
-    setUploadedFiles(prev => {
-      const combined = [...prev, ...newFiles];
-      return combined.slice(0, numberOfFiles); // Limit to specified number
-    });
+      setUploadedFiles(prev => {
+        const combined = [...prev, ...newFiles];
+        return combined.slice(0, numberOfFiles); // Limit to specified number
+      });
+    }
   };
 
   // Remove uploaded file
@@ -77,7 +96,7 @@ const FileUploadApp = () => {
   // Navigate to upload page
   const goToUpload = () => {
     if (numberOfFiles < 2 || numberOfFiles > 4) {
-      alert('Please enter a number between 1 and 4');
+      alert('Please enter a number between 2 and 4');
       return;
     }
     setCurrentPage('upload');
@@ -94,7 +113,7 @@ const FileUploadApp = () => {
     <header style={styles.header}>
       <div style={styles.headerLeft}>
         <div style={styles.logo}>
-            <img src="image.png" style={{ height: "50px", width: "auto" }} />
+            <img src="image.png" style={{ height: "80px", width: "auto" }} />
 
         </div>
         
@@ -147,17 +166,14 @@ const FileUploadApp = () => {
               </div>
               
               <h1 style={styles.title}>
-                Excel File Upload
+                Please upload the financial Excel sheet here to generate a simplified financial report.
               </h1>
               
-              <p style={styles.description}>
-                Please enter the number of Excel sheets you want to upload to generate a simplified financial report.
-              </p>
               
               <div style={styles.formSection}>
                 <div>
                   <label style={styles.label}>
-                    Number of files (2-4):
+                    Enter the number of Excel sheets (2–4) to upload.
                   </label>
                   <input
                     type="number"
@@ -174,7 +190,7 @@ const FileUploadApp = () => {
                   onClick={goToUpload}
                   style={styles.uploadButton}
                 >
-                  <Upload size={20} />
+                  
                   <span>Upload Files</span>
                 </button>
               </div>
@@ -190,9 +206,9 @@ const FileUploadApp = () => {
     <div style={styles.container}>
       <Header />
       
-      <div style={styles.mainContent}>
-        <div style={{...styles.card, maxWidth: '800px'}}>
-          <div style={styles.cardContent}>
+      <div style={styles.mainContent1}>
+        <div style={{...styles.card1, maxWidth: '800px'}}>
+          <div style={styles.cardContent1}>
             <div style={styles.uploadHeader}>
               <button
                 onClick={goBack}
@@ -211,9 +227,7 @@ const FileUploadApp = () => {
               <h1 style={styles.title}>
                 Upload Your Excel Files
               </h1>
-              <p style={styles.description}>
-                Drag & drop your Excel files here or click to browse
-              </p>
+              
             </div>
 
             {/* Upload Area */}
@@ -239,15 +253,23 @@ const FileUploadApp = () => {
               
               <div style={styles.uploadContent}>
                 <div style={styles.uploadIcon}>
-                  <Upload size={32} color="#64748b" />
-                </div>
+                <img
+                  src="uploadimage.png" 
+                  alt="Upload Icon"
+                  style={{
+                    width: '80px', 
+                    height: '70px',
+                    color: '#ffffffff' 
+                  }}
+                />
+              </div>
                 
                 <div>
                   <p style={styles.uploadText}>
                     Drag & drop files
                   </p>
                   <p style={styles.uploadSubtext}>
-                    Only .xlsx files supported
+                    Only .xlsx/.xls files supported (Max {MAX_FILE_SIZE_MB}MB per file)
                   </p>
                 </div>
                 
@@ -310,7 +332,7 @@ const FileUploadApp = () => {
   );
 };
 
-// CSS Styles
+// CSS Styles 
 const styles = {
   container: {
     minHeight: '100vh',
@@ -334,16 +356,17 @@ const styles = {
   },
   
   logo: {
-    width: '32px',
-    height: '32px',
-    backgroundColor: 'white',
-    borderRadius: '4px',
-    color: '#334155',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 'bold'
-  },
+  width: '48px', 
+  height: '48px', 
+  backgroundColor: 'white',
+  borderRadius: '4px',
+  color: '#334155',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontWeight: 'bold',
+  margin: '1rem 1rem 0 2rem'
+},
   
   brandName: {
     fontWeight: '600'
@@ -357,6 +380,7 @@ const styles = {
   
   navLink: {
     cursor: 'pointer',
+    fontWeight: '500',
     transition: 'color 0.2s'
   },
   
@@ -397,17 +421,17 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 'calc(100vh - 80px)',
-    padding: '1rem'
+    marginTop: '-70px'
   },
   
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: '#9DAAC6',
     backdropFilter: 'blur(10px)',
-    borderRadius: '16px',
-    boxShadow: '0 25px 50px rgba(0,0,0,0.1)',
+    borderRadius: '30px',
+    boxShadow: '0 -4px 10px rgba(0, 0, 0, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
     padding: '2rem',
     width: '100%',
-    maxWidth: '400px'
+    maxWidth: '1300px'
   },
   
   cardContent: {
@@ -426,22 +450,19 @@ const styles = {
   },
   
   title: {
-    fontSize: '1.5rem',
+    fontSize: '1.7rem',
     fontWeight: 'bold',
     color: '#1e293b',
-    margin: '0 0 1rem 0'
+    margin: '0 0 3rem 0'
   },
   
-  description: {
-    color: '#64748b',
-    lineHeight: '1.6',
-    margin: '0 0 1.5rem 0'
-  },
   
   formSection: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem'
+    gap: '1rem',
+    maxWidth: '350px', 
+    margin: '0 auto'
   },
   
   label: {
@@ -456,7 +477,7 @@ const styles = {
     width: '60%',
     height: '30px',
     padding: '0.75rem',
-    border: '1px solid #d1d5db',
+    border: '1px solid #a7a7a7ff',
     borderRadius: '8px',
     fontSize: '16px',
     outline: 'none',
@@ -469,15 +490,18 @@ const styles = {
     backgroundColor: '#3C507D',
     color: 'white',
     fontWeight: '600',
-    padding: '0.75rem 1.5rem',
+    padding: '1rem 1.5rem',
+    marginTop: '0.5rem',
     border: 'none',
     borderRadius: '30px',
+    boxShadow: '2px 2px 5px rgba(0, 0, 0, 0.1), 2px 2px 5px rgba(0, 0, 0, 0.08)',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '0.5rem'
+    gap: '0.5rem',
+    fontSize: '1.2rem'
   },
   
   uploadHeader: {
@@ -486,6 +510,29 @@ const styles = {
     alignItems: 'center',
     marginBottom: '1.5rem'
   },
+  //for 2nd page 
+
+  mainContent1: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'calc(100vh - 80px)'
+    },
+  
+  card1: {
+    backgroundColor: '#eaeaeaff',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '30px',
+    boxShadow: '0 -4px 100px rgba(0, 0, 0, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
+    padding: '2rem',
+    width: '100%',
+    maxWidth: '1300px'
+  },
+  
+  cardContent1: {
+    textAlign: 'center'
+  },
+  
   
   backButton: {
     display: 'flex',
@@ -509,7 +556,8 @@ const styles = {
   
   uploadArea: {
     position: 'relative',
-    border: '2px dashed #d1d5db',
+    border: '2px dashed #25344F',
+    backgroundColor: '#CCCED5',
     borderRadius: '12px',
     padding: '2rem',
     textAlign: 'center',
@@ -547,7 +595,7 @@ const styles = {
   uploadIcon: {
     width: '64px',
     height: '64px',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#374151',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
