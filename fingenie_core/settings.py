@@ -40,7 +40,8 @@ INSTALLED_APPS = [
 ]
 
 EXTERNAL_APPS = [
-    'accounts',
+    'apps.accounts',
+    'apps.dataprocessor',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
