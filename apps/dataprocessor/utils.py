@@ -1,7 +1,4 @@
-# Install system packages and Python libraries
-!apt-get install -y poppler-utils tesseract-ocr
-!pip install pdf2image pytesseract pandas rapidfuzz opencv-python
-
+# utils.py
 import pytesseract
 import cv2
 import unicodedata
@@ -9,26 +6,21 @@ import re
 import json
 import numpy as np
 import pandas as pd
-from pdf2image import convert_from_path
-from google.colab import files
+from pdf2image import convert_from_bytes
 from concurrent.futures import ThreadPoolExecutor
 from rapidfuzz import process, fuzz
+from apps.dataprocessor.services import perform_comparative_analysis
 
-# Upload PDF file
-uploaded = files.upload()
-pdf_path = list(uploaded.keys())[0]
+# ===========================
+# CONFIG
+# ===========================
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# Convert all pages in the PDF to images (higher DPI gives better OCR results)
-pages = convert_from_path(pdf_path, dpi=200)
-print(f"PDF loaded with {len(pages)} pages")
-
-# Keywords for detecting financial statement types
 BALANCE_KEYWORDS = ["balance sheet", "equity", "assets", "liabilities", "reserves"]
 PL_KEYWORDS = ["profit and loss", "statement of profit", "revenue", "expenses", "income", "eps", "earning"]
 OTHER_KEYWORDS = ["cash flow", "fund flow"]
 KEEP_KEYWORDS = BALANCE_KEYWORDS + PL_KEYWORDS + OTHER_KEYWORDS
 
-# Standard financial terms for fuzzy matching
 CANONICAL_TERMS = [
     "Share capital", "Reserves and surplus", "Money received against share warrants",
     "Share application money pending allotment", "Long-term borrowings",
@@ -46,7 +38,6 @@ CANONICAL_TERMS = [
     "Profit for the period", "Earnings per equity share - Basic", "Earnings per equity share - Diluted"
 ]
 
-# Common OCR misreads and their corrections
 REPLACEMENTS = {
     "fights": "fixed", "onziais": "intangibles", "atnbutable": "attributable",
     "owneinr": "owner", "franca": "financial", "nor-": "non-",
@@ -56,7 +47,18 @@ REPLACEMENTS = {
     "itaogble": "intangible", "fnaneal": "financial", "noe": "non"
 }
 
-# Determine which section (balance, P&L, etc.) a page belongs to
+STOPWORDS = [
+    "cin", "registered office", "committee", "approved", "statement of",
+    "audited", "unaudited", "balance sheet as of", "profit and loss",
+    "cash flow", "quarter ended", "march", "january", "may", "date"
+]
+
+UNIT = "crore"
+SCALE_MAP = {"crore": 1e7, "lakh": 1e5, "million": 1e6, "unit": 1.0}
+
+# ===========================
+# UTILS FUNCTIONS
+# ===========================
 def detect_section(text):
     t = text.lower()
     if any(k in t for k in BALANCE_KEYWORDS):
@@ -67,7 +69,6 @@ def detect_section(text):
         return "other"
     return None
 
-# Clean up text extracted via OCR
 def clean_text(text):
     text = unicodedata.normalize("NFKD", text)
     for k, v in REPLACEMENTS.items():
@@ -76,14 +77,12 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-# Convert image to text using OCR with some basic preprocessing
 def ocr_image(page):
     cv_img = np.array(page)
     gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
     return pytesseract.image_to_string(thresh, lang="eng")
 
-# Normalize the name of a financial line item using fuzzy matching
 def clean_particular(text):
     text = text.lower()
     for wrong, right in REPLACEMENTS.items():
@@ -96,7 +95,6 @@ def clean_particular(text):
             return match
     return text.title()
 
-# Extract the line item name and associated values from a line
 def parse_line(line):
     line = clean_text(line)
     numbers = re.findall(r"\(?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?\)?", line)
@@ -112,47 +110,23 @@ def parse_line(line):
     label = re.split(r"\(?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?\)?", line, 1)[0].strip()
     return {"Particular": clean_particular(label), "Values": cleaned_nums}
 
-# OCR and parsing logic for one page
 def process_page(args):
     page_num, page = args
-    print(f"OCR processing page {page_num}...")
-
     text = ocr_image(page)
     num_count = len(re.findall(r"[-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?", text))
-
     if num_count < 10:
-        print(f"Skipping page {page_num}: insufficient numeric data")
         return None, []
-
     section = detect_section(text)
     if not section:
-        print(f"Skipping page {page_num}: no relevant section detected")
         return None, []
-
     rows = []
     for line in text.split("\n"):
         if line.strip():
             parsed = parse_line(line)
             if parsed["Values"]:
                 rows.append(parsed)
-
-    print(f"Page {page_num} classified as '{section.upper()}' with {len(rows)} valid rows")
     return section, rows
 
-# Run OCR processing in parallel across pages
-balance_rows, pl_rows, other_rows = [], [], []
-with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(process_page, enumerate(pages, start=1)))
-
-for section, rows in results:
-    if section == "balance":
-        balance_rows.extend(rows)
-    elif section == "pl":
-        pl_rows.extend(rows)
-    elif section == "other":
-        other_rows.extend(rows)
-
-# Convert extracted rows into structured JSON
 def rows_to_json(rows):
     items = []
     for r in rows:
@@ -166,59 +140,18 @@ def rows_to_json(rows):
         })
     return {"financial_items": items}
 
-output = {
-    "balance_sheet": rows_to_json(balance_rows),
-    "profit_loss": rows_to_json(pl_rows)
-}
-
-# Save output to file and download
-with open("financials_clean.json", "w") as f:
-    json.dump(output, f, indent=4)
-
-files.download("financials_clean.json")
-print("Extraction completed. JSON file is ready for download.")
-
----------------------------------------------------------------------------------------------------------
-import json
-import re
-from pathlib import Path
-
-#Loading previously extracted financial JSON data
-with open("financials_clean.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
-
-#Words/phrases that likely indicate irrelevant or header rows
-STOPWORDS = [
-    "cin", "registered office", "committee", "approved", "statement of",
-    "audited", "unaudited", "balance sheet as of", "profit and loss",
-    "cash flow", "quarter ended", "march", "january", "may", "date"
-]
-
-#Default unit for numeric values in statements
-UNIT = "crore"  
-
-SCALE_MAP = {
-    "crore": 1e7,
-    "lakh": 1e5,
-    "million": 1e6,
-    "unit": 1.0  # for raw INR
-}
-
-#Checingk if a line item is too short or matches stopwords
 def is_junk(particular):
     if not particular or len(particular.strip()) < 4:
         return True
     low = particular.lower()
     return any(sw in low for sw in STOPWORDS)
 
-#Normalize text: remove extra spaces and convert to title case
 def normalize_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text.title()
 
-#Convert raw value to scaled INR format 
 def format_currency(value, scale=SCALE_MAP[UNIT]):
-    if value is None or (isinstance(value, float) and (value != value)):  # NaN check
+    if value is None or (isinstance(value, float) and (value != value)):
         return None, None
     try:
         raw_val = float(value)
@@ -227,25 +160,19 @@ def format_currency(value, scale=SCALE_MAP[UNIT]):
     except:
         return None, None
 
-#Cleaning each section of the JSON (e.g., balance sheet, profit/loss)
 def clean_section(section):
     seen = set()
     cleaned = []
-
     for item in section.get("financial_items", []):
         p = item.get("particulars", "").strip()
         if is_junk(p):
             continue
-
         p_norm = normalize_text(p)
         if p_norm.lower() in seen:
             continue
-
         seen.add(p_norm.lower())
-
         cy_raw, cy_fmt = format_currency(item.get("current_year"))
         py_raw, py_fmt = format_currency(item.get("previous_year"))
-
         cleaned.append({
             "particulars": p_norm,
             "current_year_raw": cy_raw,
@@ -253,16 +180,43 @@ def clean_section(section):
             "previous_year_raw": py_raw,
             "previous_year": py_fmt
         })
-
     return {"financial_items": cleaned}
 
-#Cleaning all sections in the input data
-final_data = {}
-for key in data.keys():
-    final_data[key] = clean_section(data[key])
+# ===========================
+# MAIN FUNCTION
+# ===========================
+def process_financial_file(file):
+    """
+    Accepts a file (PDF), processes OCR, parses financial data,
+    returns cleaned JSON ready for frontend
+    """
+    # Convert PDF to images in memory
+    pages = convert_from_bytes(file.read(), dpi=200)
+    
+    balance_rows, pl_rows, other_rows = [], [], []
 
-#Saving cleaned results to a new JSON file
-with open("financials_final.json", "w", encoding="utf-8") as f:
-    json.dump(final_data, f, indent=4, ensure_ascii=False)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(process_page, enumerate(pages, start=1)))
 
-print(f"Cleaned financial data saved to 'financials_final.json' (unit: {UNIT})")
+    for section, rows in results:
+        if section == "balance":
+            balance_rows.extend(rows)
+        elif section == "pl":
+            pl_rows.extend(rows)
+        elif section == "other":
+            other_rows.extend(rows)
+
+    output = {
+        "balance_sheet": rows_to_json(balance_rows),
+        "profit_loss": rows_to_json(pl_rows)
+    }
+
+    final_data = {}
+    for key in output.keys():
+        final_data[key] = clean_section(output[key])
+
+    # Optional: comparative analysis
+    items_list = final_data["balance_sheet"]["financial_items"]
+    result = perform_comparative_analysis(items_list)
+
+    return {"comparative_analysis": result}
