@@ -4,13 +4,13 @@ def generate_common_size_pls(items_list):
     if not sales_item:
         return {"error": "Sales revenue not found in the provided data."}
 
-    sales_previous = sales_item["previous_year"]
-    sales_current = sales_item["current_year"]
+    sales_previous = sales_item["previous_year_raw"]
+    sales_current = sales_item["current_year_raw"]
 
     output_rows = []
     for item in items_list:
-        prev_amt = item["previous_year"]
-        curr_amt = item["current_year"]
+        prev_amt = item["previous_year_raw"]
+        curr_amt = item["current_year_raw"]
 
         # Calculate percentage of sales, handle division by zero
         prev_pct = round((prev_amt / sales_previous) * 100, 2) if sales_previous else 0
@@ -28,17 +28,33 @@ def generate_common_size_pls(items_list):
 
 # Common_BS_analysis/services.py
 def generate_common_size_statement(items_list):
-    # 1. Calculate totals for previous & current year
-    total_previous = sum(item["previous_year"] for item in items_list)
-    total_current = sum(item["current_year"] for item in items_list)
+    # Helper to safely convert to float
+    import re
+    def to_number(val):
+        if val is None:
+            return 0.0
+        if isinstance(val, (int, float)):
+            return float(val)
+        if isinstance(val, str):
+            # Remove commas, currency symbols, and extra text
+            cleaned = re.sub(r"[^0-9.\-]", "", val)
+            try:
+                return float(cleaned)
+            except ValueError:
+                return 0.0
+        return 0.0
+
+
+    # 1. Calculate totals
+    total_previous = sum(to_number(item["previous_year_raw"]) for item in items_list)
+    total_current = sum(to_number(item["current_year_raw"]) for item in items_list)
 
     # 2. Build common size data
     output = []
     for item in items_list:
-        prev_amt = item["previous_year"]
-        curr_amt = item["current_year"]
+        prev_amt = to_number(item["previous_year_raw"])
+        curr_amt = to_number(item["current_year_raw"])
 
-        # avoid division by zero
         prev_pct = round((prev_amt / total_previous) * 100, 2) if total_previous else 0
         curr_pct = round((curr_amt / total_current) * 100, 2) if total_current else 0
 
@@ -54,7 +70,6 @@ def generate_common_size_statement(items_list):
             }
         })
 
-    # 3. Return structured JSON
     return {
         "totals": {
             "previous_year": total_previous,
@@ -62,6 +77,7 @@ def generate_common_size_statement(items_list):
         },
         "rows": output
     }
+
 
 def _calculate_change(prev_amt, curr_amt):
     """A helper function to calculate absolute and percentage change."""
@@ -90,8 +106,8 @@ def generate_comparative_pls(items_list):
 
     for item in items_list:
         particulars = item["particulars"]
-        prev_amt = item.get("previous_year", 0)
-        curr_amt = item.get("current_year", 0)
+        prev_amt = item.get("previous_year_raw", 0)
+        curr_amt = item.get("current_year_raw", 0)
 
         # Calculate change for the current item
         abs_change, pct_change = _calculate_change(prev_amt, curr_amt)
@@ -160,7 +176,7 @@ def generate_comparative_pls(items_list):
     
     return { "rows": output_rows }
 
-// added comparative analysis of balance sheet
+# // added comparative analysis of balance sheet
 def perform_comparative_analysis(items_list: list) -> list:
     """
     Takes a list of financial items and calculates the comparative analysis.
@@ -170,8 +186,8 @@ def perform_comparative_analysis(items_list: list) -> list:
     for item in items_list:
         particulars = item.get('particulars')
         try:
-            current_year = float(item.get('current_year', 0))
-            previous_year = float(item.get('previous_year', 0))
+            current_year = float(item.get('current_year_raw', 0))
+            previous_year = float(item.get('previous_year_raw', 0))
         except (ValueError, TypeError):
             current_year, previous_year = 0, 0
 
