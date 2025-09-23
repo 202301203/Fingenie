@@ -78,7 +78,7 @@ def generate_common_size_statement(items_list):
         "rows": output
     }
 
-
+#comparative PLS statements
 def _calculate_change(prev_amt, curr_amt):
     """A helper function to calculate absolute and percentage change."""
     absolute_change = curr_amt - prev_amt
@@ -91,82 +91,94 @@ def _calculate_change(prev_amt, curr_amt):
 
 def generate_comparative_pls(items_list):
     """
-    Generates a full comparative P&L statement, including calculated totals.
+    Generates a full comparative P&L statement, including calculated totals,
+    with a corrected structure.
     """
-    #Step 1: Initialize variables for totals
     total_revenue_prev, total_revenue_curr = 0, 0
     total_expenses_prev, total_expenses_curr = 0, 0
     income_tax_prev, income_tax_curr = 0, 0
     
-    output_rows = []
-    
-    #Step 2: Process initial items and aggregate totals
+    revenue_rows = []
+    expense_rows = []
+    tax_row = {}
+
     revenue_particulars = ["sales revenue", "other income"]
     tax_particulars = ["income tax"]
 
     for item in items_list:
         particulars = item["particulars"]
-        prev_amt = item.get("previous_year_raw", 0)
-        curr_amt = item.get("current_year_raw", 0)
+        try:
+            curr_amt = float(item.get('current_year_raw', 0))
+            prev_amt = float(item.get('previous_year_raw', 0))
+        except (ValueError, TypeError):
+            curr_amt, prev_amt = 0, 0
 
-        # Calculate change for the current item
         abs_change, pct_change = _calculate_change(prev_amt, curr_amt)
         
-        # Add the processed item to our output list
-        output_rows.append({
+        processed_row = {
             "particulars": particulars.title(),
             "previous_year_amount": prev_amt,
             "current_year_amount": curr_amt,
             "increase_decrease_amount": abs_change,
             "increase_decrease_percentage": pct_change
-        })
+        }
         
         if particulars.lower() in revenue_particulars:
             total_revenue_prev += prev_amt
             total_revenue_curr += curr_amt
+            revenue_rows.append(processed_row)
         elif particulars.lower() in tax_particulars:
             income_tax_prev += prev_amt
             income_tax_curr += curr_amt
-        else: # Assume all other items are expenses
+            processed_row["particulars"] = f"Less: {processed_row['particulars']}"
+            tax_row = processed_row
+        else:  # Assume all other items are expenses
             total_expenses_prev += prev_amt
             total_expenses_curr += curr_amt
+            expense_rows.append(processed_row)
     
-    #Step 3: Calculate summary rows
     pbt_prev = total_revenue_prev - total_expenses_prev
     pbt_curr = total_revenue_curr - total_expenses_curr
     pat_prev = pbt_prev - income_tax_prev
     pat_curr = pbt_curr - income_tax_curr
 
-    #Step 4: Calculate changes for summary rows
     total_revenue_abs, total_revenue_pct = _calculate_change(total_revenue_prev, total_revenue_curr)
     total_expenses_abs, total_expenses_pct = _calculate_change(total_expenses_prev, total_expenses_curr)
     pbt_abs, pbt_pct = _calculate_change(pbt_prev, pbt_curr)
     pat_abs, pat_pct = _calculate_change(pat_prev, pat_curr)
 
-    #Step 5: Create and insert summary rows into the output
-    # Note: Inserting at specific points to match the P&L statement structure.
-    output_rows.insert(2, {
+    final_output_rows = []
+    
+    final_output_rows.extend(revenue_rows)
+    final_output_rows.append({
         "particulars": "Total Revenue",
         "previous_year_amount": total_revenue_prev,
         "current_year_amount": total_revenue_curr,
         "increase_decrease_amount": total_revenue_abs,
         "increase_decrease_percentage": total_revenue_pct
     })
-    output_rows.append({
+    
+    final_output_rows.extend(expense_rows)
+    final_output_rows.append({
         "particulars": "Total Expenses",
         "previous_year_amount": total_expenses_prev,
         "current_year_amount": total_expenses_curr,
         "increase_decrease_amount": total_expenses_abs,
         "increase_decrease_percentage": total_expenses_pct
     })
-    output_rows.append({
+    
+    final_output_rows.append({
         "particulars": "Profit Before Tax",
         "previous_year_amount": pbt_prev,
         "current_year_amount": pbt_curr,
         "increase_decrease_amount": pbt_abs,
         "increase_decrease_percentage": pbt_pct
     })
-    output_rows.append({
+
+    if tax_row:
+        final_output_rows.append(tax_row)
+
+    final_output_rows.append({
         "particulars": "Profit After Tax",
         "previous_year_amount": pat_prev,
         "current_year_amount": pat_curr,
@@ -174,7 +186,7 @@ def generate_comparative_pls(items_list):
         "increase_decrease_percentage": pat_pct
     })
     
-    return { "rows": output_rows }
+    return {"rows": final_output_rows}
 
 # // added comparative analysis of balance sheet
 def perform_comparative_analysis(items_list: list) -> list:
@@ -202,3 +214,4 @@ def perform_comparative_analysis(items_list: list) -> list:
             'increase_decrease_percentage': round(increase_decrease_pct, 2)
         })
     return comparative_results
+
