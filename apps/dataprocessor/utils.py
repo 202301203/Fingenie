@@ -1,222 +1,433 @@
-# utils.py
-import pytesseract
-import cv2
-import unicodedata
-import re
+# ===============================
+# GOOGLE COLAB SETUP - RUN THIS FIRST
+# ===============================
+
+# Install required packages
+!pip install -q langchain-google-genai langchain-community pdfplumber pytesseract pydantic
+pip install pypdf
+# Install system dependencies for OCR (if needed)
+!apt-get install -qq tesseract-ocr
+
+# Import required libraries
+import os
 import json
-import numpy as np
-import pandas as pd
-from pdf2image import convert_from_bytes
-from concurrent.futures import ThreadPoolExecutor
-from rapidfuzz import process, fuzz
-from apps.dataprocessor.services import perform_comparative_analysis
+from pydantic import BaseModel, Field
+from typing import List, Optional
+import time
 
-# ===========================
-# CONFIG
-# ===========================
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Check if we're in Colab
+try:
+    from google.colab import files, drive
+    IN_COLAB = True
+    print("✅ Running in Google Colab")
+except ImportError:
+    IN_COLAB = False
+    print("⚠ Not running in Google Colab")
 
-BALANCE_KEYWORDS = ["balance sheet", "equity", "assets", "liabilities", "reserves"]
-PL_KEYWORDS = ["profit and loss", "statement of profit", "revenue", "expenses", "income", "eps", "earning"]
-OTHER_KEYWORDS = ["cash flow", "fund flow"]
-KEEP_KEYWORDS = BALANCE_KEYWORDS + PL_KEYWORDS + OTHER_KEYWORDS
+# LangChain Imports
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.schema.document import Document
 
-CANONICAL_TERMS = [
-    "Share capital", "Reserves and surplus", "Money received against share warrants",
-    "Share application money pending allotment", "Long-term borrowings",
-    "Deferred tax liabilities (net)", "Other long-term liabilities", "Long-term provisions",
-    "Short-term borrowings", "Trade payables", "Other current liabilities", "Short-term provisions",
-    "Total equity and liabilities", "Total liabilities", "Total assets", "Fixed assets",
-    "Property, plant and equipment", "Tangible assets", "Intangible assets",
-    "Capital work in progress", "Non-current investments", "Deferred tax assets (net)",
-    "Long-term loans and advances", "Other non-current assets", "Inventories",
-    "Trade receivables", "Cash and cash equivalents", "Bank balances",
-    "Current investments", "Other current assets", "Revenue from operations",
-    "Other income", "Total revenue", "Cost of materials consumed",
-    "Employee benefit expense", "Finance costs", "Depreciation and amortisation expense",
-    "Other expenses", "Total expenses", "Profit before tax", "Tax expense",
-    "Profit for the period", "Earnings per equity share - Basic", "Earnings per equity share - Diluted"
-]
+# OCR libraries
+import pdfplumber
+import pytesseract
 
-REPLACEMENTS = {
-    "fights": "fixed", "onziais": "intangibles", "atnbutable": "attributable",
-    "owneinr": "owner", "franca": "financial", "nor-": "non-",
-    "curert": "current", "curent": "current", "come tac": "deferred tax",
-    "tac": "tax", "dhi": "dividend", "dividenddend": "dividend",
-    "purchose": "purchase", "eens ad nengie": "assets and intangible",
-    "itaogble": "intangible", "fnaneal": "financial", "noe": "non"
-}
+# ===============================
+# 1. Define Pydantic Schema for Structured Output
+# ===============================
 
-STOPWORDS = [
-    "cin", "registered office", "committee", "approved", "statement of",
-    "audited", "unaudited", "balance sheet as of", "profit and loss",
-    "cash flow", "quarter ended", "march", "january", "may", "date"
-]
+class FinancialItem(BaseModel):
+    """A single financial item with current and previous year values."""
+    particulars: str = Field(description="The name of the financial item (e.g., 'Total Revenue', 'Equity Share Capital').")
+    current_year: Optional[float] = Field(description="The value for the current year (can be null if not found).")
+    previous_year: Optional[float] = Field(description="The value for the previous year (can be null if not found).")
+    currency_unit: Optional[str] = Field(description="The unit of currency (e.g., 'Crores of Rupees', 'Lakhs of Rupees', 'Thousands of Rupees', 'Rupees').", default=None)
 
-UNIT = "crore"
-SCALE_MAP = {"crore": 1e7, "lakh": 1e5, "million": 1e6, "unit": 1.0}
+class BalanceSheet(BaseModel):
+    """Extracted Balance Sheet items."""
+    financial_items: List[FinancialItem]
+    currency_unit: Optional[str] = Field(description="Overall currency unit for the balance sheet (e.g., 'Crores of Rupees').", default=None)
 
-# ===========================
-# UTILS FUNCTIONS
-# ===========================
-def detect_section(text):
-    t = text.lower()
-    if any(k in t for k in BALANCE_KEYWORDS):
-        return "balance"
-    if any(k in t for k in PL_KEYWORDS):
-        return "pl"
-    if any(k in t for k in OTHER_KEYWORDS):
-        return "other"
-    return None
+class ProfitLoss(BaseModel):
+    """Extracted Profit & Loss items."""
+    financial_items: List[FinancialItem]
+    currency_unit: Optional[str] = Field(description="Overall currency unit for the profit & loss statement (e.g., 'Crores of Rupees').", default=None)
 
-def clean_text(text):
-    text = unicodedata.normalize("NFKD", text)
-    for k, v in REPLACEMENTS.items():
-        text = text.replace(k, v)
-    text = re.sub(r"[^A-Za-z0-9.,()%\-\/ ]+", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+class FinancialDataExtraction(BaseModel):
+    """The root object containing both Balance Sheet and Profit & Loss data."""
+    balance_sheet: BalanceSheet
+    profit_loss: ProfitLoss
 
-def ocr_image(page):
-    cv_img = np.array(page)
-    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-    return pytesseract.image_to_string(thresh, lang="eng")
+# ===============================
+# 2. PDF Upload and Setup
+# ===============================
 
-def clean_particular(text):
-    text = text.lower()
-    for wrong, right in REPLACEMENTS.items():
-        if wrong in text:
-            text = text.replace(wrong, right)
-    result = process.extractOne(text, CANONICAL_TERMS, scorer=fuzz.token_sort_ratio)
-    if result:
-        match, score, _ = result
-        if score > 80:
-            return match
-    return text.title()
-
-def parse_line(line):
-    line = clean_text(line)
-    numbers = re.findall(r"\(?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?\)?", line)
-    cleaned_nums = []
-    for num in numbers:
-        num = num.replace(",", "")
-        if num.startswith("(") and num.endswith(")"):
-            num = "-" + num[1:-1]
-        try:
-            cleaned_nums.append(float(num))
-        except:
-            continue
-    label = re.split(r"\(?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?\)?", line, 1)[0].strip()
-    return {"Particular": clean_particular(label), "Values": cleaned_nums}
-
-def process_page(args):
-    page_num, page = args
-    text = ocr_image(page)
-    num_count = len(re.findall(r"[-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?", text))
-    if num_count < 10:
-        return None, []
-    section = detect_section(text)
-    if not section:
-        return None, []
-    rows = []
-    for line in text.split("\n"):
-        if line.strip():
-            parsed = parse_line(line)
-            if parsed["Values"]:
-                rows.append(parsed)
-    return section, rows
-
-def rows_to_json(rows):
-    items = []
-    for r in rows:
-        values = r["Values"]
-        current = values[0] if len(values) > 0 else None
-        previous = values[1] if len(values) > 1 else None
-        items.append({
-            "particulars": r["Particular"],
-            "current_year": current,
-            "previous_year": previous
-        })
-    return {"financial_items": items}
-
-def is_junk(particular):
-    if not particular or len(particular.strip()) < 4:
-        return True
-    low = particular.lower()
-    return any(sw in low for sw in STOPWORDS)
-
-def normalize_text(text):
-    text = re.sub(r"\s+", " ", text).strip()
-    return text.title()
-
-def format_currency(value, scale=SCALE_MAP[UNIT]):
-    if value is None or (isinstance(value, float) and (value != value)):
-        return None, None
-    try:
-        raw_val = float(value)
-        scaled_val = raw_val * scale
-        return raw_val, f"INR {scaled_val:,.0f}"
-    except:
-        return None, None
-
-def clean_section(section):
-    seen = set()
-    cleaned = []
-    for item in section.get("financial_items", []):
-        p = item.get("particulars", "").strip()
-        if is_junk(p):
-            continue
-        p_norm = normalize_text(p)
-        if p_norm.lower() in seen:
-            continue
-        seen.add(p_norm.lower())
-        cy_raw, cy_fmt = format_currency(item.get("current_year"))
-        py_raw, py_fmt = format_currency(item.get("previous_year"))
-        cleaned.append({
-            "particulars": p_norm,
-            "current_year_raw": cy_raw,
-            "current_year": cy_fmt,
-            "previous_year_raw": py_raw,
-            "previous_year": py_fmt
-        })
-    return {"financial_items": cleaned}
-
-# ===========================
-# MAIN FUNCTION
-# ===========================
-def process_financial_file(file):
-    """
-    Accepts a file (PDF), processes OCR, parses financial data,
-    returns cleaned JSON ready for frontend
-    """
-    # Convert PDF to images in memory
-    pages = convert_from_bytes(file.read(), dpi=200)
+def setup_pdf_file():
+    """Handle PDF file upload in Colab or local path."""
+    pdf_path = None
     
-    balance_rows, pl_rows, other_rows = [], [], []
+    if IN_COLAB:
+        print("📁 Please upload your PDF file:")
+        uploaded = files.upload()
+        
+        if uploaded:
+            # Get the first uploaded file
+            filename = list(uploaded.keys())[0]
+            pdf_path = f"/content/{filename}"
+            print(f"✅ Uploaded: {filename}")
+        else:
+            print("❌ No file uploaded")
+            return None
+    else:
+        # For local development
+        pdf_path = input("Enter the path to your PDF file: ").strip()
+    
+    return pdf_path
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        results = list(executor.map(process_page, enumerate(pages, start=1)))
+def setup_api_key():
+    """Setup Google Gemini API key."""
+    if IN_COLAB:
+        # In Colab, you can use Colab's built-in secrets or input
+        try:
+            from google.colab import userdata
+            api_key = userdata.get('GOOGLE_API_KEY')  # Set this in Colab secrets
+            print("✅ API key loaded from Colab secrets")
+        except:
+            api_key = input("🔑 Enter your Google Gemini API key: ").strip()
+    else:
+        api_key = input("🔑 Enter your Google Gemini API key: ").strip()
+    
+    os.environ["GOOGLE_API_KEY"] = api_key
+    return api_key
 
-    for section, rows in results:
-        if section == "balance":
-            balance_rows.extend(rows)
-        elif section == "pl":
-            pl_rows.extend(rows)
-        elif section == "other":
-            other_rows.extend(rows)
+# Setup files and API
+pdf_path = setup_pdf_file()
+if not pdf_path:
+    raise ValueError("No PDF file provided!")
 
-    output = {
-        "balance_sheet": rows_to_json(balance_rows),
-        "profit_loss": rows_to_json(pl_rows)
+api_key = setup_api_key()
+if not api_key:
+    raise ValueError("No API key provided!")
+
+print(f"Using PDF: {pdf_path}")
+
+# ===============================
+# 3. Enhanced PDF Loading Function
+# ===============================
+
+def load_pdf_with_fallback(pdf_path):
+    """Load PDF with OCR fallback if needed."""
+    docs = []
+    
+    print("📖 Loading PDF...")
+    
+    # First attempt: Standard PDF text extraction
+    try:
+        loader = PyPDFLoader(pdf_path)
+        docs = loader.load()
+        print(f"✅ Loaded {len(docs)} pages using standard extraction")
+    except Exception as e:
+        print(f"⚠ Standard PDF loader failed: {e}")
+
+    # Check if we got meaningful content
+    total_text = sum(len(d.page_content.strip()) for d in docs)
+    print(f"📄 Total text extracted: {total_text} characters")
+    
+    if total_text < 100:  # If very little text extracted
+        print("🔍 PDF appears scanned. Attempting OCR...")
+        docs = []  # Reset docs for OCR
+        
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                for i, page in enumerate(pdf.pages, 1):
+                    print(f"Processing page {i}/{len(pdf.pages)}", end="...")
+                    
+                    # Try text extraction first
+                    text = page.extract_text() or ""
+                    
+                    # If extracted text is too short, try OCR
+                    if len(text.strip()) < 50:
+                        try:
+                            im = page.to_image(resolution=150).original
+                            ocr_text = pytesseract.image_to_string(im)
+                            if len(ocr_text.strip()) > len(text.strip()):
+                                text = ocr_text
+                            print(" OCR applied")
+                        except Exception as ocr_e:
+                            print(f" OCR failed: {ocr_e}")
+                    else:
+                        print(" text extracted")
+                    
+                    if text.strip():
+                        docs.append(Document(page_content=text, metadata={"page": i}))
+                        
+            print(f"✅ OCR processed {len(docs)} pages")
+            
+        except Exception as e:
+            print(f"❌ OCR fallback failed: {e}")
+
+    if not docs or sum(len(d.page_content.strip()) for d in docs) == 0:
+        raise ValueError("❌ No readable text found in PDF!")
+    
+    return docs
+
+# ===============================
+# 4. Load and Process PDF
+# ===============================
+
+docs = load_pdf_with_fallback(pdf_path)
+print(f"✅ Successfully loaded {len(docs)} pages")
+
+# Show a sample of the content
+sample_text = docs[0].page_content[:500] if docs else ""
+print(f"\n📋 Sample content preview:\n{sample_text}...\n")
+
+# ===============================
+# 5. Process Text for Financial Extraction
+# ===============================
+
+def prepare_context(docs):
+    """Prepare context text from documents."""
+    all_text = "\n\n".join([doc.page_content for doc in docs if doc.page_content.strip()])
+    
+    # Financial keywords to identify relevant content
+    financial_keywords = [
+        'balance sheet', 'profit', 'loss', 'revenue', 'sales', 'income',
+        'assets', 'liabilities', 'equity', 'expenses', 'cash flow',
+        'financial statement', 'consolidated', 'standalone', 'current year',
+        'previous year', 'total', 'net profit', 'gross profit', 'crores',
+        'lakhs', 'thousands', 'rupees', 'rs.', '₹', 'inr'
+    ]
+    
+    # If text is too long, split and find relevant chunks
+    if len(all_text) > 40000:
+        print("📊 Text is long, finding financial content...")
+        splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=400)
+        chunks = splitter.split_text(all_text)
+        
+        # Score chunks based on financial keywords
+        chunk_scores = []
+        for i, chunk in enumerate(chunks):
+            score = sum(1 for keyword in financial_keywords if keyword.lower() in chunk.lower())
+            chunk_scores.append((score, i, chunk))
+        
+        # Sort by score and take top chunks
+        chunk_scores.sort(reverse=True, key=lambda x: x[0])
+        top_chunks = [chunk for score, i, chunk in chunk_scores[:6] if score > 0]
+        
+        if top_chunks:
+            context_text = "\n\n".join(top_chunks)
+            print(f"✅ Selected {len(top_chunks)} relevant chunks")
+        else:
+            # Fallback to first few chunks
+            context_text = "\n\n".join(chunks[:4])
+            print("⚠ No highly relevant chunks found, using first 4 chunks")
+    else:
+        context_text = all_text
+        print("✅ Using full document text")
+    
+    print(f"📝 Final context length: {len(context_text)} characters")
+    return context_text
+
+context_text = prepare_context(docs)
+
+# ===============================
+# 6. Setup LLM with Structured Output
+# ===============================
+
+print("🤖 Setting up AI model...")
+
+llm_base = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-exp",
+    temperature=0,
+    max_retries=2,
+    request_timeout=120  # Longer timeout for Colab
+)
+
+# Apply structured output
+llm = llm_base.with_structured_output(FinancialDataExtraction)
+
+print("✅ AI model ready")
+
+# ===============================
+# 7. Enhanced Prompt Template
+# ===============================
+
+prompt_template = """
+You are an expert financial analyst specializing in Indian financial statements. Extract financial data from the provided document context.
+
+EXTRACTION RULES:
+1. Look for Balance Sheet items: Assets, Liabilities, Equity, Share Capital, Reserves, Current Assets, Non-current Assets, etc.
+2. Look for Profit & Loss items: Revenue, Sales, Income, Expenses, Profit, Loss, EBITDA, Operating Profit, etc.
+3. Extract numerical values with their proper labels
+4. Look for current year and previous year columns (often labeled as different financial years like 2023-24, 2022-23)
+5. Only extract explicitly mentioned items - do not calculate or infer values
+6. If a value is not clearly stated, set it as null
+
+CURRENCY UNIT DETECTION:
+- Pay special attention to currency units mentioned in the document
+- Common Indian units: "Crores of Rupees", "Lakhs of Rupees", "Thousands of Rupees", "Rupees"
+- Look for phrases like "All figures in Crores except per share data", "₹ in Crores", "Rs. in Lakhs", etc.
+- If currency unit is mentioned at statement level, apply it to the overall statement
+- If different items have different units, specify at item level
+
+NUMBER FORMATTING:
+- Remove currency symbols (₹, Rs., INR) and commas from numbers
+- Keep only numerical values (including decimals)
+- Preserve negative values with minus sign
+
+DOCUMENT CONTEXT:
+{context}
+
+Extract all financial data following the provided schema structure. Pay special attention to currency units and ensure they are captured accurately.
+"""
+
+# ===============================
+# 8. Main Extraction Function
+# ===============================
+
+def extract_financial_data(context_text):
+    """Extract financial data with error handling and currency unit detection."""
+    print("🔍 Starting financial data extraction...")
+    
+    # First, let's detect currency units in the context
+    currency_patterns = [
+        r'(?i)all figures.?in\s(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)',
+        r'(?i)₹\s*in\s*(crores?|lakhs?|thousands?)',
+        r'(?i)rs\.?\s*in\s*(crores?|lakhs?|thousands?)',
+        r'(?i)\(\s*in\s*(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)?\s*\)',
+        r'(?i)figures?\s*(?:are\s*)?in\s*(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)?'
+    ]
+    
+    detected_currency = None
+    for pattern in currency_patterns:
+        import re
+        match = re.search(pattern, context_text)
+        if match:
+            unit = match.group(1).lower()
+            if 'crore' in unit:
+                detected_currency = "Crores of Rupees"
+            elif 'lakh' in unit:
+                detected_currency = "Lakhs of Rupees"  
+            elif 'thousand' in unit:
+                detected_currency = "Thousands of Rupees"
+            break
+    
+    if detected_currency:
+        print(f"💰 Detected currency unit: {detected_currency}")
+    else:
+        print("💰 No specific currency unit detected, will extract from context")
+    
+    try:
+        # Add delay to avoid rate limiting
+        time.sleep(2)
+        
+        formatted_prompt = prompt_template.format(context=context_text)
+        print("📤 Sending request to AI model...")
+        
+        response = llm.invoke(formatted_prompt)
+        print("✅ AI extraction complete")
+        
+        return response
+        
+    except Exception as e:
+        print(f"❌ Initial extraction failed: {e}")
+        
+        # Try with shorter context
+        if len(context_text) > 15000:
+            print("🔄 Retrying with shorter context...")
+            shorter_context = context_text[:12000] + "\n\n[Content truncated for processing]"
+            formatted_prompt = prompt_template.format(context=shorter_context)
+            
+            time.sleep(3)  # Longer delay for retry
+            response = llm.invoke(formatted_prompt)
+            print("✅ Retry successful")
+            return response
+        else:
+            raise
+
+# ===============================
+# 9. Run Extraction and Save Results
+# ===============================
+
+try:
+    # Extract data
+    result_pydantic = extract_financial_data(context_text)
+    
+    # Convert to dictionary
+    if hasattr(result_pydantic, 'model_dump'):
+        result = result_pydantic.model_dump()
+    else:
+        result = result_pydantic.dict()
+    
+    # Pretty print results
+    result_json_string = json.dumps(result, indent=2)
+    print("\n" + "="*50)
+    print("📊 EXTRACTION RESULTS")
+    print("="*50)
+    print(result_json_string)
+    
+    # Save to file
+    output_filename = "financials_extracted.json"
+    with open(output_filename, "w") as f:
+        json.dump(result, f, indent=2)
+    
+    print(f"\n✅ Results saved to: {output_filename}")
+    
+    # In Colab, also offer to download
+    if IN_COLAB:
+        print("\n📥 Downloading results file...")
+        files.download(output_filename)
+    
+    # Print summary with currency information
+    balance_sheet_items = len(result.get('balance_sheet', {}).get('financial_items', []))
+    profit_loss_items = len(result.get('profit_loss', {}).get('financial_items', []))
+    
+    bs_currency = result.get('balance_sheet', {}).get('currency_unit', 'Not specified')
+    pl_currency = result.get('profit_loss', {}).get('currency_unit', 'Not specified')
+    
+    print(f"\n📈 EXTRACTION SUMMARY:")
+    print(f"   Balance Sheet items: {balance_sheet_items}")
+    print(f"   Balance Sheet currency: {bs_currency}")
+    print(f"   Profit & Loss items: {profit_loss_items}")
+    print(f"   Profit & Loss currency: {pl_currency}")
+    print(f"   Total items extracted: {balance_sheet_items + profit_loss_items}")
+    
+    # Show sample items if available
+    if balance_sheet_items > 0:
+        sample_bs = result['balance_sheet']['financial_items'][0]
+        print(f"\n📊 Sample Balance Sheet item:")
+        print(f"   {sample_bs.get('particulars', 'N/A')}: {sample_bs.get('current_year', 'N/A')}")
+        if sample_bs.get('currency_unit'):
+            print(f"   Unit: {sample_bs['currency_unit']}")
+    
+    if profit_loss_items > 0:
+        sample_pl = result['profit_loss']['financial_items'][0]
+        print(f"\n💰 Sample Profit & Loss item:")
+        print(f"   {sample_pl.get('particulars', 'N/A')}: {sample_pl.get('current_year', 'N/A')}")
+        if sample_pl.get('currency_unit'):
+            print(f"   Unit: {sample_pl['currency_unit']}")
+
+except Exception as e:
+    print(f"\n❌ EXTRACTION FAILED: {e}")
+    print("\nPossible issues:")
+    print("1. API quota exceeded - wait and try again")
+    print("2. PDF content not suitable for extraction")
+    print("3. Network connectivity issues")
+    print("4. Invalid API key")
+    
+    # Create empty fallback file
+    fallback_result = {
+        "balance_sheet": {"financial_items": []},
+        "profit_loss": {"financial_items": []},
+        "error": str(e)
     }
+    
+    with open("financials_extracted.json", "w") as f:
+        json.dump(fallback_result, f, indent=2)
+    
+    print("\n📄 Created empty structure file for reference")
 
-    final_data = {}
-    for key in output.keys():
-        final_data[key] = clean_section(output[key])
-
-    # Optional: comparative analysis
-    items_list = final_data["balance_sheet"]["financial_items"]
-    result = perform_comparative_analysis(items_list)
-
-    return {"comparative_analysis": result}
+print("\n🎉 Process completed!")
