@@ -1,433 +1,363 @@
 # ===============================
-# GOOGLE COLAB SETUP - RUN THIS FIRST
+# ROBUST FINANCIAL PDF EXTRACTOR - WORKS WITH ALL PDF TYPES
 # ===============================
 
-# Install required packages
-!pip install -q langchain-google-genai langchain-community pdfplumber pytesseract pydantic
-pip install pypdf
-# Install system dependencies for OCR (if needed)
-!apt-get install -qq tesseract-ocr
+# Install packages
+!pip install -q google-generativeai langchain-google-genai langchain-community pdfplumber pytesseract pydantic pypdf pillow
+
+print("Dependencies installed successfully!")
 
 # Import required libraries
 import os
 import json
-from pydantic import BaseModel, Field
-from typing import List, Optional
 import time
+import re
+from typing import List, Optional
 
 # Check if we're in Colab
 try:
-    from google.colab import files, drive
+    from google.colab import files
     IN_COLAB = True
-    print("✅ Running in Google Colab")
+    print("Running in Google Colab")
 except ImportError:
     IN_COLAB = False
-    print("⚠ Not running in Google Colab")
+    print("Running locally")
 
-# LangChain Imports
+# Core imports
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema.document import Document
-
-# OCR libraries
 import pdfplumber
 import pytesseract
 
 # ===============================
-# 1. Define Pydantic Schema for Structured Output
+# 1. SIMPLE SETUP
 # ===============================
 
-class FinancialItem(BaseModel):
-    """A single financial item with current and previous year values."""
-    particulars: str = Field(description="The name of the financial item (e.g., 'Total Revenue', 'Equity Share Capital').")
-    current_year: Optional[float] = Field(description="The value for the current year (can be null if not found).")
-    previous_year: Optional[float] = Field(description="The value for the previous year (can be null if not found).")
-    currency_unit: Optional[str] = Field(description="The unit of currency (e.g., 'Crores of Rupees', 'Lakhs of Rupees', 'Thousands of Rupees', 'Rupees').", default=None)
-
-class BalanceSheet(BaseModel):
-    """Extracted Balance Sheet items."""
-    financial_items: List[FinancialItem]
-    currency_unit: Optional[str] = Field(description="Overall currency unit for the balance sheet (e.g., 'Crores of Rupees').", default=None)
-
-class ProfitLoss(BaseModel):
-    """Extracted Profit & Loss items."""
-    financial_items: List[FinancialItem]
-    currency_unit: Optional[str] = Field(description="Overall currency unit for the profit & loss statement (e.g., 'Crores of Rupees').", default=None)
-
-class FinancialDataExtraction(BaseModel):
-    """The root object containing both Balance Sheet and Profit & Loss data."""
-    balance_sheet: BalanceSheet
-    profit_loss: ProfitLoss
-
-# ===============================
-# 2. PDF Upload and Setup
-# ===============================
-
-def setup_pdf_file():
-    """Handle PDF file upload in Colab or local path."""
-    pdf_path = None
-    
+def setup_files():
+    """Setup PDF and API key."""
     if IN_COLAB:
-        print("📁 Please upload your PDF file:")
+        print("Upload your PDF file:")
         uploaded = files.upload()
-        
-        if uploaded:
-            # Get the first uploaded file
-            filename = list(uploaded.keys())[0]
-            pdf_path = f"/content/{filename}"
-            print(f"✅ Uploaded: {filename}")
-        else:
-            print("❌ No file uploaded")
-            return None
+        pdf_path = f"/content/{list(uploaded.keys())[0]}"
     else:
-        # For local development
-        pdf_path = input("Enter the path to your PDF file: ").strip()
+        pdf_path = input("Enter PDF path: ").strip()
+    
+    # API Key
+    api_key = input("Enter Gemini API key: ").strip()
+    os.environ["GOOGLE_API_KEY"] = api_key
     
     return pdf_path
 
-def setup_api_key():
-    """Setup Google Gemini API key."""
-    if IN_COLAB:
-        # In Colab, you can use Colab's built-in secrets or input
-        try:
-            from google.colab import userdata
-            api_key = userdata.get('GOOGLE_API_KEY')  # Set this in Colab secrets
-            print("✅ API key loaded from Colab secrets")
-        except:
-            api_key = input("🔑 Enter your Google Gemini API key: ").strip()
-    else:
-        api_key = input("🔑 Enter your Google Gemini API key: ").strip()
-    
-    os.environ["GOOGLE_API_KEY"] = api_key
-    return api_key
-
-# Setup files and API
-pdf_path = setup_pdf_file()
-if not pdf_path:
-    raise ValueError("No PDF file provided!")
-
-api_key = setup_api_key()
-if not api_key:
-    raise ValueError("No API key provided!")
-
+pdf_path = setup_files()
 print(f"Using PDF: {pdf_path}")
 
 # ===============================
-# 3. Enhanced PDF Loading Function
+# 2. ROBUST PDF LOADING
 # ===============================
 
-def load_pdf_with_fallback(pdf_path):
-    """Load PDF with OCR fallback if needed."""
-    docs = []
+def load_pdf_robust(pdf_path):
+    """Load PDF with multiple fallback methods."""
+    print("Loading PDF...")
+    documents = []
     
-    print("📖 Loading PDF...")
-    
-    # First attempt: Standard PDF text extraction
+    # Method 1: Try PyPDFLoader first (fastest)
     try:
         loader = PyPDFLoader(pdf_path)
         docs = loader.load()
-        print(f"✅ Loaded {len(docs)} pages using standard extraction")
-    except Exception as e:
-        print(f"⚠ Standard PDF loader failed: {e}")
-
-    # Check if we got meaningful content
-    total_text = sum(len(d.page_content.strip()) for d in docs)
-    print(f"📄 Total text extracted: {total_text} characters")
-    
-    if total_text < 100:  # If very little text extracted
-        print("🔍 PDF appears scanned. Attempting OCR...")
-        docs = []  # Reset docs for OCR
+        total_chars = sum(len(d.page_content.strip()) for d in docs)
         
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for i, page in enumerate(pdf.pages, 1):
-                    print(f"Processing page {i}/{len(pdf.pages)}", end="...")
-                    
-                    # Try text extraction first
-                    text = page.extract_text() or ""
-                    
-                    # If extracted text is too short, try OCR
-                    if len(text.strip()) < 50:
-                        try:
-                            im = page.to_image(resolution=150).original
-                            ocr_text = pytesseract.image_to_string(im)
-                            if len(ocr_text.strip()) > len(text.strip()):
-                                text = ocr_text
-                            print(" OCR applied")
-                        except Exception as ocr_e:
-                            print(f" OCR failed: {ocr_e}")
-                    else:
-                        print(" text extracted")
-                    
-                    if text.strip():
-                        docs.append(Document(page_content=text, metadata={"page": i}))
-                        
-            print(f"✅ OCR processed {len(docs)} pages")
-            
-        except Exception as e:
-            print(f"❌ OCR fallback failed: {e}")
-
-    if not docs or sum(len(d.page_content.strip()) for d in docs) == 0:
-        raise ValueError("❌ No readable text found in PDF!")
+        if total_chars > 2000:  # Good text extraction
+            print(f"Standard extraction successful: {len(docs)} pages, {total_chars} chars")
+            return docs
+        else:
+            print(f"Standard extraction poor quality: {total_chars} chars - trying OCR")
+    except Exception as e:
+        print(f"Standard extraction failed: {e} - trying OCR")
     
-    return docs
+    # Method 2: pdfplumber with OCR fallback
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_num, page in enumerate(pdf.pages, 1):
+                print(f"Processing page {page_num}/{len(pdf.pages)}...", end="")
+                
+                # Try text extraction first
+                text = page.extract_text() or ""
+                
+                # If text is minimal, use OCR
+                if len(text.strip()) < 100:
+                    try:
+                        image = page.to_image(resolution=300)
+                        ocr_text = pytesseract.image_to_string(image.original)
+                        if len(ocr_text.strip()) > len(text.strip()):
+                            text = ocr_text
+                        print(" OCR")
+                    except:
+                        print(" OCR failed")
+                else:
+                    print(" Text")
+                
+                if text.strip():
+                    documents.append(Document(
+                        page_content=text,
+                        metadata={"page": page_num}
+                    ))
+        
+        print(f"pdfplumber extraction: {len(documents)} pages")
+        return documents
+        
+    except Exception as e:
+        print(f"pdfplumber failed: {e}")
+        return []
+
+# Load the PDF
+documents = load_pdf_robust(pdf_path)
+if not documents:
+    raise ValueError("Failed to extract any text from PDF!")
 
 # ===============================
-# 4. Load and Process PDF
+# 3. SMART CONTEXT PREPARATION
 # ===============================
 
-docs = load_pdf_with_fallback(pdf_path)
-print(f"✅ Successfully loaded {len(docs)} pages")
-
-# Show a sample of the content
-sample_text = docs[0].page_content[:500] if docs else ""
-print(f"\n📋 Sample content preview:\n{sample_text}...\n")
-
-# ===============================
-# 5. Process Text for Financial Extraction
-# ===============================
-
-def prepare_context(docs):
-    """Prepare context text from documents."""
-    all_text = "\n\n".join([doc.page_content for doc in docs if doc.page_content.strip()])
+def prepare_context_smart(documents):
+    """Prepare context with financial focus."""
+    print("Preparing context...")
     
-    # Financial keywords to identify relevant content
+    # Combine all text
+    all_text = "\n".join([doc.page_content for doc in documents])
+    
+    # Financial keywords for filtering
     financial_keywords = [
-        'balance sheet', 'profit', 'loss', 'revenue', 'sales', 'income',
-        'assets', 'liabilities', 'equity', 'expenses', 'cash flow',
-        'financial statement', 'consolidated', 'standalone', 'current year',
-        'previous year', 'total', 'net profit', 'gross profit', 'crores',
-        'lakhs', 'thousands', 'rupees', 'rs.', '₹', 'inr'
+        'balance sheet', 'assets', 'liabilities', 'equity', 'share capital',
+        'reserves', 'current assets', 'non-current assets', 'profit', 'loss',
+        'revenue', 'sales', 'income', 'expenses', 'total', 'crores', 'lakhs',
+        'financial statements', 'consolidated', 'standalone'
     ]
     
-    # If text is too long, split and find relevant chunks
-    if len(all_text) > 40000:
-        print("📊 Text is long, finding financial content...")
-        splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=400)
-        chunks = splitter.split_text(all_text)
+    # If text is too long, smart filtering
+    if len(all_text) > 30000:
+        print("Large document - applying smart filtering...")
         
-        # Score chunks based on financial keywords
-        chunk_scores = []
-        for i, chunk in enumerate(chunks):
-            score = sum(1 for keyword in financial_keywords if keyword.lower() in chunk.lower())
-            chunk_scores.append((score, i, chunk))
+        # Split and score chunks
+        chunks = []
+        chunk_size = 4000
+        for i in range(0, len(all_text), chunk_size):
+            chunk = all_text[i:i+chunk_size]
+            score = sum(1 for keyword in financial_keywords 
+                       if keyword.lower() in chunk.lower())
+            if score > 2:  # Only keep chunks with financial content
+                chunks.append(chunk)
         
-        # Sort by score and take top chunks
-        chunk_scores.sort(reverse=True, key=lambda x: x[0])
-        top_chunks = [chunk for score, i, chunk in chunk_scores[:6] if score > 0]
-        
-        if top_chunks:
-            context_text = "\n\n".join(top_chunks)
-            print(f"✅ Selected {len(top_chunks)} relevant chunks")
+        if chunks:
+            context_text = "\n".join(chunks[:10])  # Top 10 chunks
+            print(f"Selected {len(chunks[:10])} relevant chunks")
         else:
-            # Fallback to first few chunks
-            context_text = "\n\n".join(chunks[:4])
-            print("⚠ No highly relevant chunks found, using first 4 chunks")
+            context_text = all_text[:25000]  # Fallback
+            print("Using first 25k characters as fallback")
     else:
         context_text = all_text
-        print("✅ Using full document text")
+        print("Using full document")
     
-    print(f"📝 Final context length: {len(context_text)} characters")
+    print(f"Context ready: {len(context_text)} characters")
     return context_text
 
-context_text = prepare_context(docs)
+context_text = prepare_context_smart(documents)
 
 # ===============================
-# 6. Setup LLM with Structured Output
+# 4. SIMPLE LLM WITHOUT STRUCTURED OUTPUT
 # ===============================
 
-print("🤖 Setting up AI model...")
+def setup_simple_llm():
+    """Setup simple LLM without structured output complications."""
+    print("Setting up AI model...")
+    
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash-exp",
+        temperature=0,
+        max_retries=3,
+        request_timeout=120
+    )
+    
+    # Test the LLM
+    test_response = llm.invoke("Say 'Hello'")
+    print("AI model ready and tested!")
+    return llm
 
-llm_base = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-exp",
-    temperature=0,
-    max_retries=2,
-    request_timeout=120  # Longer timeout for Colab
-)
-
-# Apply structured output
-llm = llm_base.with_structured_output(FinancialDataExtraction)
-
-print("✅ AI model ready")
+llm = setup_simple_llm()
 
 # ===============================
-# 7. Enhanced Prompt Template
+# 5. ROBUST EXTRACTION WITH JSON PARSING
 # ===============================
 
-prompt_template = """
-You are an expert financial analyst specializing in Indian financial statements. Extract financial data from the provided document context.
+EXTRACTION_PROMPT = """
+You are a financial data extraction expert. Extract financial data from the provided document and return it as valid JSON.
+
+IMPORTANT: Return ONLY valid JSON in this exact format:
+{{
+    "financial_items": [
+        {{
+            "particulars": "Full descriptive name with category",
+            "current_year": number_or_null,
+            "previous_year": number_or_null
+        }}
+    ]
+}}
 
 EXTRACTION RULES:
-1. Look for Balance Sheet items: Assets, Liabilities, Equity, Share Capital, Reserves, Current Assets, Non-current Assets, etc.
-2. Look for Profit & Loss items: Revenue, Sales, Income, Expenses, Profit, Loss, EBITDA, Operating Profit, etc.
-3. Extract numerical values with their proper labels
-4. Look for current year and previous year columns (often labeled as different financial years like 2023-24, 2022-23)
-5. Only extract explicitly mentioned items - do not calculate or infer values
-6. If a value is not clearly stated, set it as null
+1. Extract ALL financial line items from Balance Sheet and P&L
+2. Use descriptive names like "Assets: Current assets: Cash and cash equivalents"
+3. Convert all amounts to numbers (remove ₹, Rs., commas)
+4. Include current year and previous year values
+5. Use null if value is not available
 
-CURRENCY UNIT DETECTION:
-- Pay special attention to currency units mentioned in the document
-- Common Indian units: "Crores of Rupees", "Lakhs of Rupees", "Thousands of Rupees", "Rupees"
-- Look for phrases like "All figures in Crores except per share data", "₹ in Crores", "Rs. in Lakhs", etc.
-- If currency unit is mentioned at statement level, apply it to the overall statement
-- If different items have different units, specify at item level
-
-NUMBER FORMATTING:
-- Remove currency symbols (₹, Rs., INR) and commas from numbers
-- Keep only numerical values (including decimals)
-- Preserve negative values with minus sign
-
-DOCUMENT CONTEXT:
+DOCUMENT CONTENT:
 {context}
 
-Extract all financial data following the provided schema structure. Pay special attention to currency units and ensure they are captured accurately.
+Return only valid JSON. No explanations or additional text.
 """
 
-# ===============================
-# 8. Main Extraction Function
-# ===============================
-
-def extract_financial_data(context_text):
-    """Extract financial data with error handling and currency unit detection."""
-    print("🔍 Starting financial data extraction...")
-    
-    # First, let's detect currency units in the context
-    currency_patterns = [
-        r'(?i)all figures.?in\s(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)',
-        r'(?i)₹\s*in\s*(crores?|lakhs?|thousands?)',
-        r'(?i)rs\.?\s*in\s*(crores?|lakhs?|thousands?)',
-        r'(?i)\(\s*in\s*(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)?\s*\)',
-        r'(?i)figures?\s*(?:are\s*)?in\s*(crores?|lakhs?|thousands?)\s*(?:of\s*)?(?:rupees?|rs\.?|₹|inr)?'
-    ]
-    
-    detected_currency = None
-    for pattern in currency_patterns:
-        import re
-        match = re.search(pattern, context_text)
-        if match:
-            unit = match.group(1).lower()
-            if 'crore' in unit:
-                detected_currency = "Crores of Rupees"
-            elif 'lakh' in unit:
-                detected_currency = "Lakhs of Rupees"  
-            elif 'thousand' in unit:
-                detected_currency = "Thousands of Rupees"
-            break
-    
-    if detected_currency:
-        print(f"💰 Detected currency unit: {detected_currency}")
-    else:
-        print("💰 No specific currency unit detected, will extract from context")
+def extract_with_json_parsing(llm, context_text):
+    """Extract financial data with robust JSON parsing."""
+    print("Starting financial data extraction...")
     
     try:
-        # Add delay to avoid rate limiting
-        time.sleep(2)
+        # Format prompt
+        formatted_prompt = EXTRACTION_PROMPT.format(context=context_text)
         
-        formatted_prompt = prompt_template.format(context=context_text)
-        print("📤 Sending request to AI model...")
-        
+        print("Sending request to AI...")
         response = llm.invoke(formatted_prompt)
-        print("✅ AI extraction complete")
         
-        return response
-        
-    except Exception as e:
-        print(f"❌ Initial extraction failed: {e}")
-        
-        # Try with shorter context
-        if len(context_text) > 15000:
-            print("🔄 Retrying with shorter context...")
-            shorter_context = context_text[:12000] + "\n\n[Content truncated for processing]"
-            formatted_prompt = prompt_template.format(context=shorter_context)
-            
-            time.sleep(3)  # Longer delay for retry
-            response = llm.invoke(formatted_prompt)
-            print("✅ Retry successful")
-            return response
+        # Handle different response types
+        response_text = ""
+        if hasattr(response, 'content'):
+            response_text = response.content
+        elif isinstance(response, str):
+            response_text = response
         else:
-            raise
+            response_text = str(response)
+        
+        print(f"Received response of length: {len(response_text)}")
+        print("Response preview:", response_text[:200])
+        
+        # Extract JSON from response
+        json_data = extract_json_from_text(response_text)
+        
+        if json_data and 'financial_items' in json_data:
+            items = json_data['financial_items']
+            print(f"Successfully extracted {len(items)} financial items")
+            return json_data
+        else:
+            print("No valid financial items found in response")
+            return {"financial_items": []}
+            
+    except Exception as e:
+        print(f"Extraction failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"financial_items": []}
+
+def extract_json_from_text(text):
+    """Extract JSON object from text response."""
+    try:
+        # Try direct JSON parsing first
+        return json.loads(text)
+    except:
+        pass
+    
+    try:
+        # Find JSON object in text
+        start_idx = text.find('{')
+        if start_idx == -1:
+            return None
+        
+        # Find matching closing brace
+        brace_count = 0
+        end_idx = start_idx
+        
+        for i, char in enumerate(text[start_idx:], start_idx):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    end_idx = i + 1
+                    break
+        
+        if brace_count == 0:
+            json_str = text[start_idx:end_idx]
+            return json.loads(json_str)
+        else:
+            return None
+            
+    except Exception as e:
+        print(f"JSON extraction failed: {e}")
+        return None
 
 # ===============================
-# 9. Run Extraction and Save Results
+# 6. EXECUTE EXTRACTION
 # ===============================
 
-try:
-    # Extract data
-    result_pydantic = extract_financial_data(context_text)
+print("="*60)
+print("STARTING FINANCIAL DATA EXTRACTION")
+print("="*60)
+
+# Extract financial data
+result = extract_with_json_parsing(llm, context_text)
+
+# Display results
+print("\n" + "="*50)
+print("EXTRACTION RESULTS")
+print("="*50)
+
+if result and result.get('financial_items'):
+    # Format output nicely
+    formatted_result = json.dumps(result, indent=4, ensure_ascii=False)
+    print(formatted_result)
     
-    # Convert to dictionary
-    if hasattr(result_pydantic, 'model_dump'):
-        result = result_pydantic.model_dump()
-    else:
-        result = result_pydantic.dict()
+    # Save results
+    output_file = "financial_extraction_results.json"
+    with open(output_file, "w", encoding='utf-8') as f:
+        json.dump(result, f, indent=4, ensure_ascii=False)
     
-    # Pretty print results
-    result_json_string = json.dumps(result, indent=2)
-    print("\n" + "="*50)
-    print("📊 EXTRACTION RESULTS")
-    print("="*50)
-    print(result_json_string)
+    print(f"\nResults saved to: {output_file}")
     
-    # Save to file
-    output_filename = "financials_extracted.json"
-    with open(output_filename, "w") as f:
-        json.dump(result, f, indent=2)
-    
-    print(f"\n✅ Results saved to: {output_filename}")
-    
-    # In Colab, also offer to download
+    # Download in Colab
     if IN_COLAB:
-        print("\n📥 Downloading results file...")
-        files.download(output_filename)
+        files.download(output_file)
     
-    # Print summary with currency information
-    balance_sheet_items = len(result.get('balance_sheet', {}).get('financial_items', []))
-    profit_loss_items = len(result.get('profit_loss', {}).get('financial_items', []))
+    # Summary
+    num_items = len(result['financial_items'])
+    print(f"\nSUMMARY:")
+    print(f"Total financial items extracted: {num_items}")
     
-    bs_currency = result.get('balance_sheet', {}).get('currency_unit', 'Not specified')
-    pl_currency = result.get('profit_loss', {}).get('currency_unit', 'Not specified')
+    # Show first few items
+    if num_items > 0:
+        print("\nFirst few items:")
+        for i, item in enumerate(result['financial_items'][:5], 1):
+            print(f"{i}. {item['particulars']}")
+            print(f"   Current: {item.get('current_year', 'N/A')}")
+            print(f"   Previous: {item.get('previous_year', 'N/A')}")
     
-    print(f"\n📈 EXTRACTION SUMMARY:")
-    print(f"   Balance Sheet items: {balance_sheet_items}")
-    print(f"   Balance Sheet currency: {bs_currency}")
-    print(f"   Profit & Loss items: {profit_loss_items}")
-    print(f"   Profit & Loss currency: {pl_currency}")
-    print(f"   Total items extracted: {balance_sheet_items + profit_loss_items}")
+    print(f"\nSUCCESS! Extracted {num_items} financial items from PDF")
+else:
+    print("No financial items were extracted. Possible reasons:")
+    print("1. PDF contains no financial statements")
+    print("2. Text quality is too poor (try better OCR)")
+    print("3. Financial data is in non-standard format")
+    print("4. API issues or context too large")
     
-    # Show sample items if available
-    if balance_sheet_items > 0:
-        sample_bs = result['balance_sheet']['financial_items'][0]
-        print(f"\n📊 Sample Balance Sheet item:")
-        print(f"   {sample_bs.get('particulars', 'N/A')}: {sample_bs.get('current_year', 'N/A')}")
-        if sample_bs.get('currency_unit'):
-            print(f"   Unit: {sample_bs['currency_unit']}")
+    # Save empty result for debugging
+    with open("debug_extraction.json", "w") as f:
+        json.dump({
+            "financial_items": [],
+            "debug_info": {
+                "pages_processed": len(documents),
+                "context_length": len(context_text),
+                "has_financial_keywords": any(keyword in context_text.lower() 
+                    for keyword in ['balance', 'asset', 'liability', 'revenue', 'profit'])
+            }
+        }, f, indent=4)
     
-    if profit_loss_items > 0:
-        sample_pl = result['profit_loss']['financial_items'][0]
-        print(f"\n💰 Sample Profit & Loss item:")
-        print(f"   {sample_pl.get('particulars', 'N/A')}: {sample_pl.get('current_year', 'N/A')}")
-        if sample_pl.get('currency_unit'):
-            print(f"   Unit: {sample_pl['currency_unit']}")
+    print("Debug info saved to debug_extraction.json")
 
-except Exception as e:
-    print(f"\n❌ EXTRACTION FAILED: {e}")
-    print("\nPossible issues:")
-    print("1. API quota exceeded - wait and try again")
-    print("2. PDF content not suitable for extraction")
-    print("3. Network connectivity issues")
-    print("4. Invalid API key")
-    
-    # Create empty fallback file
-    fallback_result = {
-        "balance_sheet": {"financial_items": []},
-        "profit_loss": {"financial_items": []},
-        "error": str(e)
-    }
-    
-    with open("financials_extracted.json", "w") as f:
-        json.dump(fallback_result, f, indent=2)
-    
-    print("\n📄 Created empty structure file for reference")
-
-print("\n🎉 Process completed!")
+print("\nProcess completed!")
