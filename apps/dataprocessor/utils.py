@@ -9,11 +9,8 @@ import pandas as pd
 from pdf2image import convert_from_bytes
 from concurrent.futures import ThreadPoolExecutor
 from rapidfuzz import process, fuzz
-from apps.dataprocessor.services import perform_comparative_analysis
+from apps.dataprocessor.services import perform_comparative_analysis,generate_comparative_pls
 
-# ===========================
-# CONFIG
-# ===========================
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 BALANCE_KEYWORDS = ["balance sheet", "equity", "assets", "liabilities", "reserves"]
@@ -182,9 +179,7 @@ def clean_section(section):
         })
     return {"financial_items": cleaned}
 
-# ===========================
 # MAIN FUNCTION
-# ===========================
 def process_financial_file(file):
     """
     Accepts a file (PDF), processes OCR, parses financial data,
@@ -206,17 +201,15 @@ def process_financial_file(file):
         elif section == "other":
             other_rows.extend(rows)
 
-    output = {
-        "balance_sheet": rows_to_json(balance_rows),
-        "profit_loss": rows_to_json(pl_rows)
-    }
+    balance_sheet = clean_section(rows_to_json(balance_rows))
+    pl_sheet = clean_section(rows_to_json(pl_rows))
+    
+    result1 = perform_comparative_analysis(
+        balance_sheet.get("financial_items",[])
+    )
 
-    final_data = {}
-    for key in output.keys():
-        final_data[key] = clean_section(output[key])
+    result = generate_comparative_pls(
+        pl_sheet.get("financial_items",[])
+    )
 
-    # Optional: comparative analysis
-    items_list = final_data["balance_sheet"]["financial_items"]
-    result = perform_comparative_analysis(items_list)
-
-    return {"comparative_analysis": result}
+    return {"comparative_analysis_bs": result1, "comparative_analysis_pl" : result}

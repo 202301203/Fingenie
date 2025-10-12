@@ -1,17 +1,98 @@
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from .utils import process_financial_file
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+import os
+import uuid
+import json
 
-@api_view(["POST"])
-@parser_classes([MultiPartParser, FormParser])
-def upload_financial_file(request):
-    if "file" not in request.FILES:
-        return Response({"error": "No file uploaded"}, status=400)
+# Import core logic functions
+from .services import (
+    extract_raw_financial_data,
+    generate_summary_from_data,
+    load_pdf_robust,
+    prepare_context_smart
+)
+
+# Simple form for file upload
+def upload_file_view(request):
+    """Renders the file upload form."""
+    return render(request, 'pdf_app/upload.html')
+
+@csrf_exempt
+def extract_data_api(request):
+    """
+    Handles the file upload, performs robust extraction, and generates a business summary.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+    if 'pdf_file' not in request.FILES:
+        return JsonResponse({'error': 'No file uploaded.'}, status=400)
+
+    uploaded_file = request.FILES['pdf_file']
+    api_key = request.POST.get('api_key')
     
-    uploaded_file = request.FILES["file"]
+    if not api_key:
+        return JsonResponse({'error': 'Gemini API key is required.'}, status=400)
+
+    # 1. Save the file temporarily
+    unique_name = str(uuid.uuid4())
+    file_extension = os.path.splitext(uploaded_file.name)[1]
+    temp_filename = f"{unique_name}{file_extension}"
+    pdf_path = os.path.join(settings.MEDIA_ROOT, temp_filename)
+    
+    os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+    
+    extraction_result = {"financial_items": [], "summary": None}
+    
     try:
-        data = process_financial_file(uploaded_file)
-        return Response(data)
+        with open(pdf_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+        
+        # --- STEP 1: LOAD AND PREPARE CONTEXT ---
+        documents = load_pdf_robust(pdf_path)
+        if not documents:
+            raise ValueError("Failed to extract any usable text from PDF.")
+        
+        context_text = prepare_context_smart(documents)
+        
+        # --- STEP 2: EXTRACT RAW FINANCIAL DATA ---
+        raw_data_result = extract_raw_financial_data(context_text, api_key)
+        
+        if not raw_data_result.get('success'):
+            return JsonResponse(raw_data_result, status=500)
+            
+        financial_items = raw_data_result['financial_items']
+        extraction_result['financial_items'] = financial_items
+        
+        if not financial_items:
+            # If no items were extracted, skip the summary step
+             return JsonResponse({
+                'financial_items': [],
+                'summary': {'pros': ["Extraction successful but no financial tables found."], 'cons': []}
+            }, status=200)
+
+        # --- STEP 3: GENERATE SUMMARY FROM EXTRACTED DATA ---
+        summary_result = generate_summary_from_data(financial_items, api_key)
+        
+        if not summary_result.get('success'):
+             # If summary fails, return raw data and log the error
+            print(f"Summary failed: {summary_result.get('error')}")
+            extraction_result['summary'] = {'pros': [], 'cons': [f"Summary generation failed: {summary_result.get('error')}"]}
+        else:
+            extraction_result['summary'] = summary_result['summary']
+
+        # --- STEP 4: RETURN COMBINED RESULTS ---
+        return JsonResponse(extraction_result, status=200)
+
     except Exception as e:
-        return Response({"error": str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f"An internal server error occurred during processing: {e}"}, status=500)
+
+    finally:
+        # Clean up the temporary file, regardless of success/failure
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
