@@ -1,0 +1,79 @@
+# Install required packages
+!pip install requests pandas -q
+
+import requests
+import json
+import pandas as pd
+
+# Base URL for the CRISIL ratings endpoint
+BASE_URL = "https://www.crisilratings.com/content/crisilratings/en/home/our-business/ratings/credit-ratings-list/_jcr_content/wrapper_100_par/columncontrol_copy/container-100-1/"
+URLS = {
+    "company_name": BASE_URL + "ratingresultlisting.suggest.CR.company_name.json",
+    "rating": BASE_URL + "ratingresultlisting.suggest.CR.rating.json",
+    "instrument": BASE_URL + "ratingresultlisting.suggest.CR.ins_desc.json",
+    "industry": BASE_URL + "ratingresultlisting.suggest.CR.industry_name.json"
+}
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Referer": "https://www.crisilratings.com/en/home/our-business/ratings/credit-ratings-list.html",
+}
+
+def fetch_json(url):
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching data from {url}: {e}")
+        return []
+
+def fetch_crisil_ratings():
+    print("Fetching CRISIL ratings...")
+    data = {}
+    
+    for key, url in URLS.items():
+        print(f"Fetching {key} data...")
+        data[key] = fetch_json(url)
+
+    lengths = [len(v) for v in data.values()]
+    if len(set(lengths)) != 1:
+        print("Warning: Mismatch in data lengths. Some records may be misaligned.")
+
+    ratings = []
+    max_len = max(lengths)
+
+    for i in range(max_len):
+        entry = {
+            "company_name": data['company_name'][i] if i < len(data['company_name']) else None,
+            "rating": data['rating'][i] if i < len(data['rating']) else None,
+            "instrument": data['instrument'][i] if i < len(data['instrument']) else None,
+            "industry": data['industry'][i] if i < len(data['industry']) else None,
+        }
+        ratings.append(entry)
+
+    with open("crisil_ratings_full.json", "w", encoding="utf-8") as f:
+        json.dump(ratings, f, indent=2, ensure_ascii=False)
+
+    print(f"Saved {len(ratings)} entries to 'crisil_ratings_full.json'")
+    return ratings
+
+# Run data fetch
+all_ratings = fetch_crisil_ratings()
+
+# Search by company name
+search_name = input("Enter company name to search: ").strip().lower()
+matched = []
+
+for record in all_ratings:
+    cname = record.get('company_name')
+    if cname and search_name in str(cname).lower():
+        matched.append(record)
+
+if matched:
+    print(f"Found {len(matched)} matching entries:")
+    df = pd.DataFrame(matched)
+    display(df)
+else:
+    print(f"No entries found for company name: {search_name}")
