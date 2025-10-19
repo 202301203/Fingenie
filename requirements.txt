@@ -1,0 +1,11 @@
+# requirements.txt
+
+django
+yfinance
+langchain-google-genai
+langchain-community
+pypdf
+pdfplumber
+pytesseract
+pydantic
+# Add any other libraries you use

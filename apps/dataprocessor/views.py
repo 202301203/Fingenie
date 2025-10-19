@@ -58,14 +58,22 @@ def extract_data_api(request):
         
         context_text = prepare_context_smart(documents)
         
+        
         # --- STEP 2: EXTRACT RAW FINANCIAL DATA ---
         raw_data_result = extract_raw_financial_data(context_text, api_key)
         
         if not raw_data_result.get('success'):
             return JsonResponse(raw_data_result, status=500)
             
-        financial_items = raw_data_result['financial_items']
+        # Capture all the extracted data, not just financial_items
+        financial_items = raw_data_result.get('financial_items', [])
+        company_name = raw_data_result.get('company_name')
+        ticker_symbol = raw_data_result.get('ticker_symbol')
+
+        # Store everything in the main result object
         extraction_result['financial_items'] = financial_items
+        extraction_result['company_name'] = company_name
+        extraction_result['ticker_symbol'] = ticker_symbol
         
         if not financial_items:
             # If no items were extracted, skip the summary step

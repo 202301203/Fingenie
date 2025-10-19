@@ -17,6 +17,8 @@ class FinancialItem(BaseModel):
     previous_year: Optional[float] = Field(None, description="The previous year's financial amount as a number, or null")
 
 class FinancialExtractionResult(BaseModel):
+    company_name: Optional[str] = Field(None, description="The full legal name of the company.")
+    ticker_symbol: Optional[str] = Field(None, description="The stock market ticker symbol, including the exchange suffix if available (e.g., RELIANCE.NS, MSFT).")
     financial_items: List[FinancialItem]
 
 # --- Pydantic Schema for Summary (Step 2) ---
@@ -108,13 +110,28 @@ def prepare_context_smart(documents: List[Document]) -> str:
 
 # --- 5. ROBUST EXTRACTION WITH JSON MODE (Step 1) ---
 
-EXTRACTION_PROMPT = """
-You are a financial data extraction expert. Extract ALL quantitative financial line items from the Balance Sheet, Profit & Loss Statement, and Cash Flow Statement from the provided document. Return it as valid JSON strictly adhering to the specified schema.
+# apps/dataprocessor/services.py
 
-EXTRACTION RULES:
-1. Extract ALL financial line items and use descriptive names (e.g., "Assets: Current assets: Cash and cash equivalents").
-2. Convert all amounts to numbers (remove currency symbols, Rs., commas). Use **negative numbers** for losses, credits, or items typically shown in parentheses (like tax expense or dividend paid). Do not use parentheses or surrounding quotes for numeric values.
-3. Use null if a value is genuinely not available or if the 'particulars' line is a header or purely descriptive without a value.
+EXTRACTION_PROMPT = """
+You are an expert financial analyst. Your most important and primary goal is to identify the company name and its stock ticker from the document content. After you have identified the company, your second goal is to extract all quantitative financial line items.
+
+Return a valid JSON object that strictly follows the specified schema.
+
+**PRIORITY 1: IDENTIFY THE COMPANY**
+- Find the full legal company name.
+- Find the stock market ticker. You MUST include the correct exchange suffix for international stocks.
+    - **India (NSE):** Append `.NS` (e.g., `RELIANCE.NS`, `INFY.NS`)
+    - **USA (NASDAQ/NYSE):** Use the standard symbol (e.g., `MSFT`, `AAPL`)
+    - **United Kingdom (LSE):** Append `.L` (e.g., `HSBA.L`)
+    - **Japan (TSE):** Append `.T` (e.g., `7203.T`)
+    - **Germany (XETRA):** Append `.DE` (e.g., `VOW3.DE`)
+    - **Canada (TSX):** Append `.TO` (e.g., `SHOP.TO`)
+- If the company is not publicly listed or the ticker cannot be found, you MUST set the `ticker_symbol` field to null.
+
+**PRIORITY 2: EXTRACT FINANCIAL DATA**
+- Extract ALL financial line items with descriptive names.
+- Convert all amounts to numbers and use negative numbers for losses or items in parentheses.
+- Use null if a value is genuinely not available.
 
 DOCUMENT CONTENT:
 {context}
@@ -142,15 +159,18 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
 
     formatted_prompt = EXTRACTION_PROMPT.format(context=context_text)
     
+    # CORRECTED version with fixed indentation and logic
     try:
         response = llm.invoke(formatted_prompt)
         response_text = response.content
         
-        # In JSON Mode, the response content is the pure JSON string
+        # The response content is the pure JSON string
         json_data = json.loads(response_text) 
         
         if json_data and 'financial_items' in json_data:
-            return {"financial_items": json_data['financial_items'], "success": True}
+            # FIX: Return the entire dictionary + success flag
+            # This ensures company_name and ticker_symbol are included
+            return {**json_data, "success": True}
         else:
             return {"error": "AI failed to return valid JSON or 'financial_items' key is missing."}
             
