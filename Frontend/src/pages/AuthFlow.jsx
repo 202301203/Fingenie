@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import "../App.css";
 import { useGoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import fgLogo from "../images/fglogo.png";
+import Glogo from "../images/Glogo.png";
 
 // Custom Hook for hover/focus state management
 const useInteractionState = (defaultStyle, hoverStyle) => {
@@ -128,7 +130,7 @@ const CreateAccount = ({ onSwitch }) => {
       <div style={{ ...styles.modal, ...styles.pulse }}>
         <div style={styles.logo}>
           <img
-            src="fglogo.png"
+            src={fgLogo}
             alt="Site logo"
             style={{ height: "130px", width: "auto" }}
           />
@@ -241,7 +243,7 @@ const CreateAccount = ({ onSwitch }) => {
           onMouseLeave={googleBtnProps.onMouseLeave}
         >
           <img
-            src="Glogo.png"
+            src={Glogo}
             alt="Google logo"
             style={styles.googleIcon}
           />
@@ -315,7 +317,7 @@ const LoginPage = ({ onSwitch }) => {
     <div style={styles.modal}>
       <div style={styles.logo}>
         <img
-          src="fglogo.png"
+          src={fgLogo}
           alt="Site logo"
           style={{ height: "130px", width: "auto" }}
         />
