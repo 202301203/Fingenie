@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../App.css";
 import { useGoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
 import fgLogo from "../images/fglogo.png";
 import Glogo from "../images/Glogo.png";
 
@@ -29,6 +30,7 @@ const useInputFocus = () => {
 
 // 1. Create Account Page
 const CreateAccount = ({ onSwitch }) => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
   const [contact, setContact] = useState("");
@@ -98,6 +100,8 @@ const CreateAccount = ({ onSwitch }) => {
     }
     // All validations passed
     alert(`Account created for ${username} (${email})!`);
+
+    navigate("/mainpageafterlogin");
   };
 
   const handleGoogleSuccess = (tokenResponse) => {
@@ -256,6 +260,7 @@ const CreateAccount = ({ onSwitch }) => {
 
 // 2. & 3. Login Page
 const LoginPage = ({ onSwitch }) => {
+  const navigate = useNavigate();
   const [loginType, setLoginType] = useState("email"); // 'email' or 'username'
   const [emailError, setEmailError] = useState("");
   const [identifier, setIdentifier] = useState("");
@@ -306,6 +311,8 @@ const LoginPage = ({ onSwitch }) => {
 
     // Login logic placeholder
     alert(`Logging in with ${loginType}: ${identifier}`);
+
+    navigate("/mainpageafterlogin");
   };
 
   const handleToggle = (type) => {
