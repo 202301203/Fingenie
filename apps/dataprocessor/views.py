@@ -27,10 +27,12 @@ def extract_data_api(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-    if 'pdf_file' not in request.FILES:
+    # --- MODIFIED KEY ---
+    if 'file' not in request.FILES:
         return JsonResponse({'error': 'No file uploaded.'}, status=400)
 
-    uploaded_file = request.FILES['pdf_file']
+    uploaded_file = request.FILES['file']
+    # --------------------
     api_key = request.POST.get('api_key')
     
     if not api_key:
@@ -39,6 +41,11 @@ def extract_data_api(request):
     # 1. Save the file temporarily
     unique_name = str(uuid.uuid4())
     file_extension = os.path.splitext(uploaded_file.name)[1]
+    
+    # --- ADDED PDF CHECK ---
+    if file_extension.lower() != '.pdf':
+        return JsonResponse({'error': 'Invalid file type. Only PDF files are accepted.'}, status=400)
+    # -----------------------
     temp_filename = f"{unique_name}{file_extension}"
     pdf_path = os.path.join(settings.MEDIA_ROOT, temp_filename)
     
