@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState('first'); // 'first' | 'upload' | 'summary'
+  const [currentPage, setCurrentPage] = useState('first'); // 'first' | 'upload'
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
@@ -755,3 +755,4 @@ const styles = {
 };
 
 export default FileUploadApp;
+
