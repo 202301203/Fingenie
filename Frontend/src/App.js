@@ -20,7 +20,7 @@ function App() {
         <Route path="/AuthFlow" element={<AuthFlow />} />
         <Route path="/mainpageafterlogin" element={<MainPageAfterLogin />} />
         <Route path="/FileUploadApp" element={<FileUploadApp />} />
-        <Route path="/summary" element={<SummaryPage />} />
+        <Route path="/summary_page" element={<SummaryPage />} />
       </Routes>
     </Router>
   );
