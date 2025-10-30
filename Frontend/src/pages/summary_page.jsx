@@ -1,10 +1,32 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Download, User, ChevronDown, X, History, Settings, LogOut } from 'lucide-react';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
-import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import ReactDOM from 'react-dom/client';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  TimeScale,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+import 'chartjs-adapter-date-fns';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  TimeScale,
+  Tooltip,
+  Legend
+);
 
 
 export default function FinGenieApp() {
@@ -15,6 +37,61 @@ export default function FinGenieApp() {
   const [hoverTimer, setHoverTimer] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Data passed from upload page (server response)
+  const backendResult = location && location.state ? location.state : {};
+  const companyNameFromBackend = backendResult.company_name || backendResult.company || null;
+  const summaryFromBackend = backendResult.summary || null;
+  const tickerFromBackend = backendResult.ticker_symbol || backendResult.ticker || null;
+
+  // Stock data states
+  const [stockChartData, setStockChartData] = useState(null);
+  const [latestPrice, setLatestPrice] = useState(null);
+  const [priceDifference, setPriceDifference] = useState(null);
+  const [percentDifference, setPercentDifference] = useState(null);
+  const [loadingStock, setLoadingStock] = useState(false);
+
+  useEffect(() => {
+    // Fetch stock data for 1 month if ticker present
+    const ticker = tickerFromBackend;
+    if (!ticker) return;
+
+    const fetchStock = async () => {
+      setLoadingStock(true);
+      try {
+        const res = await fetch(`/stock/graph-data/${encodeURIComponent(ticker)}/1M/`);
+        if (!res.ok) {
+          console.error('Stock API error', res.status);
+          setLoadingStock(false);
+          return;
+        }
+        const json = await res.json();
+
+        // json.chartData is an array of {x: timestamp_ms, y: [O,H,L,C]}
+        const labels = [];
+        const closes = [];
+        if (Array.isArray(json.chartData)) {
+          json.chartData.forEach(point => {
+            labels.push(new Date(point.x));
+            closes.push(Number(point.y[3]));
+          });
+        }
+
+        setStockChartData({ labels, closes, currency: json.currency || 'USD' });
+        setLatestPrice(json.latestPrice);
+        setPriceDifference(json.priceDifference);
+        setPercentDifference(json.percentDifference);
+
+      } catch (err) {
+        console.error('Failed to fetch stock data', err);
+      } finally {
+        setLoadingStock(false);
+      }
+    };
+
+    fetchStock();
+  }, [tickerFromBackend]);
 
 
 
@@ -217,24 +294,111 @@ export default function FinGenieApp() {
   );
 
   // Summary Page
-  const SummaryPage = () => (
-    <>
-      <h2 style={styles.companyName}>Apple Inc.</h2>
-      <div style={styles.contentBox}>
+  const SummaryPage = () => {
+    const displayName = companyNameFromBackend || 'Unknown Company';
 
-        <div style={styles.prosSection}>
-          <h3 style={styles.prosTitle}>→ Pros</h3>
-          <ul style={styles.prosList}>
-            <li>Strong brand recognition and customer loyalty</li>
-            <li>Consistent revenue growth and profitability</li>
-            <li>Diverse product portfolio and ecosystem</li>
-            <li>Robust cash flow and financial stability</li>
-            <li>Innovation in technology and design</li>
-          </ul>
+    return (
+      <>
+        <h2 style={styles.companyName}>{displayName}</h2>
+
+        <div style={styles.contentBox}>
+          {/* Summary Section */}
+          <div style={styles.prosSection}>
+            <h3 style={styles.prosTitle}>Summary</h3>
+            {summaryFromBackend ? (
+              <div>
+                {summaryFromBackend.pros && summaryFromBackend.pros.length > 0 && (
+                  <>
+                    <h4 style={styles.subHeading}>Pros</h4>
+                    <ul style={styles.prosList}>
+                      {summaryFromBackend.pros.map((p, i) => (
+                        <li key={`pro-${i}`} style={styles.proItem}>{p}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {summaryFromBackend.cons && summaryFromBackend.cons.length > 0 && (
+                  <>
+                    <h4 style={styles.subHeading}>Cons</h4>
+                    <ul style={styles.prosList}>
+                      {summaryFromBackend.cons.map((c, i) => (
+                        <li key={`con-${i}`} style={styles.conItem}>{c}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p style={{ color: '#333' }}>No summary available. Please upload a PDF first.</p>
+            )}
+          </div>
+
+          {/* Stock Chart Section */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <h3 style={styles.prosTitle}>Stock (1 Month)</h3>
+
+            {!tickerFromBackend && (
+              <p>Company is not publicly listed or ticker unavailable.</p>
+            )}
+
+            {tickerFromBackend && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                  <div style={{ fontFamily: 'Bricolage Grotesque, Arial, sans-serif', color: '#0b1220', fontWeight: 700, fontSize: 18 }}>{displayName}</div>
+                  <div style={{ color: '#0b1220', fontWeight: 600, fontSize: 16 }}>{tickerFromBackend}</div>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    {latestPrice && (
+                      <div style={{ color: '#000', fontSize: '18px', fontWeight: 700 }}>{latestPrice} {stockChartData?.currency || ''}</div>
+                    )}
+                    {priceDifference && (
+                      <div style={{ color: String(priceDifference).startsWith('+') ? 'green' : 'red', fontWeight: 600 }}>{priceDifference} ({percentDifference})</div>
+                    )}
+                  </div>
+                </div>
+
+                {loadingStock && <p style={{ color: '#333' }}>Loading stock chart...</p>}
+
+                {stockChartData && (
+                  <div style={styles.chartWrap}>
+                    <div style={styles.chartContainer}>
+                      <Line
+                        data={{
+                          labels: stockChartData.labels,
+                          datasets: [
+                            {
+                              label: `${tickerFromBackend} Close`,
+                              data: stockChartData.closes,
+                              borderColor: 'rgba(75,192,192,1)',
+                              backgroundColor: 'rgba(75,192,192,0.2)',
+                              pointRadius: 2,
+                              tension: 0.25,
+                            },
+                          ],
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          interaction: { mode: 'index', intersect: false },
+                          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                          scales: {
+                            x: { type: 'time', time: { unit: 'day' } },
+                            y: { beginAtZero: false },
+                          },
+                        }}
+                        height={300}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   // Ratios Page
  const RatiosPage = () => (
@@ -485,9 +649,43 @@ const styles = {
   },
 
   prosList: {
-    color: '#1a1a1a',
+    color: '#111827',
     lineHeight: '1.8',
     paddingLeft: '1.5rem',
+  },
+
+  subHeading: {
+    color: '#0b1220',
+    fontSize: '16px',
+    margin: '0.5rem 0',
+    fontWeight: 700,
+  },
+
+  proItem: {
+    color: '#0b1220',
+    marginBottom: '0.5rem',
+    fontFamily: 'Inter, Arial, sans-serif'
+  },
+
+  conItem: {
+    color: '#3b1220',
+    marginBottom: '0.5rem',
+    fontFamily: 'Inter, Arial, sans-serif'
+  },
+
+  chartWrap: {
+    display: 'flex',
+    justifyContent: 'center',
+  },
+
+  chartContainer: {
+    width: '50%',
+    minWidth: 320,
+    maxWidth: 800,
+    height: 320,
+    backgroundColor: '#ffffff',
+    padding: '0.5rem',
+    borderRadius: 12,
   },
 
   ratiosLayout: {

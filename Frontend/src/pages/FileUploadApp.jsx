@@ -21,6 +21,8 @@ const FileUploadApp = () => {
   const [currentPage, setCurrentPage] = useState('first'); // 'first' | 'upload'
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [apiKey, setApiKey] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -257,6 +259,18 @@ if (validFiles.length > 0) {
                 </div>
               </div>
 
+              {/* API Key input - optional (will be sent with the upload) */}
+              <div style={{ margin: '1rem 0', textAlign: 'left' }}>
+                <label style={{ display: 'block', marginBottom: '0.25rem', color: '#D1DFDF' }}>LLM API Key (optional)</label>
+                <input
+                  type="text"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Paste API key here if you want to use a custom key"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #a7a7a7' }}
+                />
+              </div>
+
               <div style={styles.uploadTitle}>
                 <h1 style={styles.title}>
                   Upload Your Files
@@ -269,7 +283,7 @@ if (validFiles.length > 0) {
                 style={{
                   ...styles.uploadArea,
                   ...(dragActive ? styles.uploadAreaActive : {}),
-                  ...(uploadedFiles.length >= numberOfFiles ? styles.uploadAreaDisabled : {})
+                  ...(uploadedFiles.length >= numberOfFiles || isProcessing ? styles.uploadAreaDisabled : {})
                 }}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -282,7 +296,7 @@ if (validFiles.length > 0) {
                   accept=".xlsx,.xls,.csv,.pdf"
                   onChange={handleFileChange}
                   style={styles.fileInput}
-                  disabled={uploadedFiles.length >= numberOfFiles}
+                  disabled={uploadedFiles.length >= numberOfFiles || isProcessing}
                 />
 
                 <div style={styles.uploadContent}>
@@ -310,9 +324,9 @@ if (validFiles.length > 0) {
                     type="button"
                     style={{
                       ...styles.chooseButton,
-                      ...(uploadedFiles.length >= numberOfFiles ? styles.chooseButtonDisabled : {})
+                      ...(uploadedFiles.length >= numberOfFiles || isProcessing ? styles.chooseButtonDisabled : {})
                     }}
-                    disabled={uploadedFiles.length >= numberOfFiles}
+                    disabled={uploadedFiles.length >= numberOfFiles || isProcessing}
                   >
                     Choose Files
                   </button>
@@ -342,6 +356,7 @@ if (validFiles.length > 0) {
                       <button
                         onClick={() => removeFile(file.id)}
                         style={styles.removeButton}
+                        disabled={isProcessing}
                       >
                         Remove
                       </button>
@@ -353,11 +368,66 @@ if (validFiles.length > 0) {
               {/* Generate Report Button */}
               {uploadedFiles.length === numberOfFiles && (
                 <div style={styles.generateSection}>
-                  <button style={styles.generateButton}
-                  // Navigate to summary page 
-                  onClick={() => navigate("/summary_page")}>      
-                    Generate Financial Report
+                  <button
+                    style={{
+                      ...styles.generateButton,
+                      opacity: isProcessing ? 0.7 : 1,
+                      cursor: isProcessing ? 'not-allowed' : 'pointer'
+                    }}
+                    onClick={async () => {
+                      if (isProcessing) return;
+                      const fileObj = uploadedFiles[0];
+                      if (!fileObj || !fileObj.file) {
+                        alert('No file ready to upload.');
+                        return;
+                      }
+
+                      setIsProcessing(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', fileObj.file);
+                        // include API key if provided by the user
+                        if (apiKey && apiKey.trim() !== '') {
+                          formData.append('api_key', apiKey.trim());
+                        }
+
+                        const res = await fetch('/dataprocessor/extract/', {
+                          method: 'POST',
+                          body: formData,
+                        });
+
+                        if (!res.ok) {
+                          const errorJson = await res.json().catch(() => ({}));
+                          const msg = errorJson.error || `Server returned ${res.status}`;
+                          alert('Upload failed: ' + msg);
+                          return;
+                        }
+
+                        const json = await res.json();
+                        navigate('/summary_page', { state: json });
+
+                      } catch (err) {
+                        console.error('Upload error', err);
+                        alert('An error occurred while uploading. Check console for details.');
+                      } finally {
+                        setIsProcessing(false);
+                      }
+                    }}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Processing…' : 'Generate Financial Report'}
                   </button>
+                </div>
+              )}
+
+              {/* Processing overlay */}
+              {isProcessing && (
+                <div style={styles.processingOverlay}>
+                  <div style={styles.processingBox}>
+                    <div style={styles.spinner} />
+                    <div>Processing file — this may take a moment...</div>
+                  </div>
+                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
                 </div>
               )}
 
@@ -750,6 +820,38 @@ const styles = {
     borderRadius: '24px',
     cursor: 'pointer',
     transition: 'background-color 0.2s'
+  },
+
+  processingOverlay: {
+    position: 'fixed',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 2000
+  },
+
+  processingBox: {
+    backgroundColor: 'white',
+    padding: '1rem 1.25rem',
+    borderRadius: 8,
+    display: 'flex',
+    gap: 12,
+    alignItems: 'center',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+  },
+
+  spinner: {
+    width: 18,
+    height: 18,
+    border: '3px solid #ddd',
+    borderTop: '3px solid #0A2540',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
   },
 
 };
