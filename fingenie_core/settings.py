@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
+    'apps.stockgraph',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS

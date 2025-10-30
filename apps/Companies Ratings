@@ -3,54 +3,84 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #Scoring Helpers
-def normalize(value, min_val, max_val, invert=False):
-    """Scaling the values to a 0–100 range"""
-    if value is None:
+def normalize(value, mean, std, invert=False, clip=(0, 100)):
+    """Scaling the values to a 0–100 range."""
+    if value is None or np.isnan(value):
         return 50
-    value = np.clip(value, min_val, max_val)
-    score = 100 * (value - min_val) / (max_val - min_val)
-    return 100 - score if invert else score
+
+    score = 50 + 15 * ((value - mean) / std)
+    score = np.clip(score, clip[0], clip[1])
+
+    if invert:
+        score = 100 - score
+
+    return score
 
 
-def compute_scores(data):
+def compute_subscores(data):
     """Computing normalized financial health scores based on key metrics."""
-    bs, is_, cf = data["balance_sheet"], data["income_statement"], data["cash_flow"]
+    bs = data["balance_sheet"]
+    is_ = data["income_statement"]
+    cf = data["cash_flow"]
     prev = data.get("previous_year", {})
 
-    #Liquidity
+    # Liquidity
     current_ratio = bs["current_assets"] / max(bs["current_liabilities"], 1)
-    liquidity = normalize(current_ratio, 0.5, 3.0)
+    quick_ratio = (bs["current_assets"] - bs.get("inventory", 0)) / max(bs["current_liabilities"], 1)
+    liquidity = (
+        0.6 * normalize(current_ratio, mean=1.5, std=0.75) +
+        0.4 * normalize(quick_ratio, mean=1.0, std=0.5)
+    )
 
-    #Stability
+    # Stability
     debt_to_equity = bs["total_liabilities"] / max(bs["equity"], 1)
+    interest_cover = is_["ebit"] / max(is_.get("interest_expense", 1), 1)
     retained_ratio = bs["retained_earnings"] / bs["total_assets"]
     stability = (
-        0.6 * normalize(debt_to_equity, 0, 3.0, invert=True)
-        + 0.4 * normalize(retained_ratio, 0, 0.5)
+        0.4 * normalize(debt_to_equity, mean=1.5, std=1.0, invert=True) +
+        0.4 * normalize(interest_cover, mean=4.0, std=2.0) +
+        0.2 * normalize(retained_ratio, mean=0.3, std=0.15)
     )
 
     #Profitability
     roa = is_["net_income"] / bs["total_assets"]
-    ebit_margin = is_["ebit"] / is_["revenue"]
+    roe = is_["net_income"] / max(bs["equity"], 1)
+    net_margin = is_["net_income"] / is_["revenue"]
     profitability = (
-        0.6 * normalize(roa, 0, 0.2)
-        + 0.4 * normalize(ebit_margin, 0, 0.25)
+        0.4 * normalize(roa, mean=0.08, std=0.05) +
+        0.3 * normalize(roe, mean=0.12, std=0.08) +
+        0.3 * normalize(net_margin, mean=0.10, std=0.05)
     )
 
     #Efficiency
-    turnover = is_["revenue"] / bs["total_assets"]
-    growth = (is_["revenue"] - prev.get("revenue", is_["revenue"])) / max(prev.get("revenue", is_["revenue"]), 1)
+    asset_turnover = is_["revenue"] / bs["total_assets"]
+    op_cf_ratio = cf["operating_cash_flow"] / bs["total_assets"]
+    revenue_growth = (
+        (is_["revenue"] - prev.get("revenue", is_["revenue"])) /
+        max(prev.get("revenue", is_["revenue"]), 1)
+    )
     efficiency = (
-        0.7 * normalize(turnover, 0.3, 2.0)
-        + 0.3 * normalize(growth, -0.1, 0.3)
+        0.4 * normalize(asset_turnover, mean=1.0, std=0.4) +
+        0.3 * normalize(op_cf_ratio, mean=0.1, std=0.08) +
+        0.3 * normalize(revenue_growth, mean=0.1, std=0.15)
     )
 
     #Transparency
     m_score = data.get("beneish_m_score", -2.0)
-    transparency = normalize(m_score, -3.0, -1.0, invert=True)
+    z_score = data.get("altman_z_score", 3.0)
+    transparency = (
+        0.6 * normalize(m_score, mean=-2.2, std=0.4, invert=True) +
+        0.4 * normalize(z_score, mean=3.0, std=1.0)
+    )
 
-    #Overall
-    overall = np.mean([liquidity, stability, profitability, efficiency, transparency])
+    #Overall weighted score
+    overall = (
+        0.15 * liquidity +
+        0.20 * stability +
+        0.25 * profitability +
+        0.20 * efficiency +
+        0.20 * transparency
+    )
 
     return {
         "Liquidity": liquidity,
@@ -58,12 +88,12 @@ def compute_scores(data):
         "Profitability": profitability,
         "Efficiency": efficiency,
         "Transparency": transparency,
-        "Overall": overall,
+        "Overall": overall
     }
 
 
-# --- Visualization ---
-def draw_gauge(score, label, description, explanation):
+#Visualization
+def draw_single_gauge(score, label, desc, meaning):
     """Drawing a half-circle gauge for a given score."""
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(5, 3))
     ax.set_theta_offset(np.pi)
@@ -71,36 +101,38 @@ def draw_gauge(score, label, description, explanation):
     ax.set_ylim(0, 10)
     ax.set_axis_off()
 
-    #Coloring segments
+    # Coloring segments
     zones = [
-        (0, 0.628, '#FF4C4C'),
-        (0.628, 1.257, '#FFA64D'),
-        (1.257, 1.885, '#FFD93D'),
-        (1.885, 2.513, '#9FEF77'),
-        (2.513, 3.142, '#3CB371'),
+        (0, 0.628, '#FF4C4C', "Poor"),
+        (0.628, 1.257, '#FFA64D', "Weak"),
+        (1.257, 1.885, '#FFD93D', "Fair"),
+        (1.885, 2.513, '#9FEF77', "Good"),
+        (2.513, 3.142, '#3CB371', "Excellent")
     ]
-    for start, end, color in zones:
-        ax.barh(5, width=end - start, left=start, height=5, color=color, alpha=0.9, edgecolor='white')
+
+    for start, end, color, _ in zones:
+        ax.barh(5, width=end - start, left=start, height=5,
+                color=color, alpha=0.9, edgecolor='white')
 
     #Needle
     theta = np.interp(score, [0, 100], [0, np.pi])
-    ax.plot([theta, theta], [0, 5], color='black', lw=4)
+    ax.plot([theta, theta], [0, 5], color='black', lw=4, zorder=5)
 
-    #Numeric ticks
+    #Scale Labels
     for val in [0, 25, 50, 75, 100]:
-        t = np.interp(val, [0, 100], [0, np.pi])
-        ax.text(t, 5.8, str(val), fontsize=7, ha='center', va='center')
+        theta_val = np.interp(val, [0, 100], [0, np.pi])
+        ax.text(theta_val, 5.8, f"{val}", fontsize=7, ha='center', va='center')
 
-    ax.set_title(f"{label}\n({description})", fontsize=13, pad=20, fontweight='bold')
+    ax.set_title(f"{label}\n({desc})", fontsize=13, pad=20, fontweight='bold')
     plt.xlabel(f"Score: {score:.1f}", fontsize=11, labelpad=25, fontweight='bold')
     plt.show()
 
-    print(f" {label} Score: {score:.1f}/100")
-    print(f"→ {explanation}\n")
+    print(f"{label} Score: {score:.2f}/100")
+    print(f"   {meaning}\n")
 
 
-#Example
-example_data = json.loads("""
+#Example data for testing
+example_json = """
 {
     "balance_sheet": {
         "current_assets": 120000,
@@ -119,20 +151,21 @@ example_data = json.loads("""
     "previous_year": {"revenue": 250000},
     "beneish_m_score": -2.1
 }
-""")
+"""
 
-scores = compute_scores(example_data)
+data = json.loads(example_json)
+scores = compute_subscores(data)
 
 descriptions = {
     "Liquidity": "Short-term solvency strength",
-    "Stability": "Debt–equity balance",
-    "Profitability": "Earnings performance",
-    "Efficiency": "Asset utilization",
-    "Transparency": "Accounting reliability",
+    "Stability": "Debt–equity balance & solvency",
+    "Profitability": "Earnings performance & margins",
+    "Efficiency": "Asset and cash-flow utilization",
+    "Transparency": "Accounting reliability & risk",
     "Overall": "Composite financial health"
 }
 
-explanations = {
+meanings = {
     "Liquidity": "This shows how well the company can cover shortterm debts. A score above 70 is strong.",
     "Stability": "This reflects debt sustainability and equity balance. Higher value means lower risk.",
     "Profitability": "It measures how effectively the company turns sales into profit.",
@@ -141,6 +174,6 @@ explanations = {
     "Overall": "An average measure of the company’s total financial health."
 }
 
-# --- Display Gauges ---
-for metric, value in scores.items():
-    draw_gauge(value, metric, descriptions[metric], explanations[metric])
+# Render gauges for all metrics
+for label, score in scores.items():
+    draw_single_gauge(score, label, descriptions[label], meanings[label])

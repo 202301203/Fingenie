@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState('first'); // 'first' | 'upload' | 'summary'
+  const [currentPage, setCurrentPage] = useState('first'); // 'first' | 'upload'
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
@@ -27,9 +27,6 @@ const FileUploadApp = () => {
   // File size constraint (10MB limit)
   const MAX_FILE_SIZE_MB = 10;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-  // Summary data state
-  const [summaryData, setSummaryData] = useState(null);
 
   // Handle file input change
   const handleFileChange = (e) => {
@@ -137,45 +134,6 @@ if (validFiles.length > 0) {
   const goBack = () => {
     setCurrentPage('first');
     setUploadedFiles([]);
-    setSummaryData(null);
-  };
-
-  // Generate summary and navigate to summary page
-  const goToSummary = () => {
-    
-    const items = [];
-
-
-    if (uploadedFiles.length === 0) {
-      items.push("No files were uploaded — no summary available.");
-    } else {
-      items.push(`Summary part....................`);
-      items.push(`Key financial metric A: $X,XXX,XXX`);
-      // Also list uploaded file names as context
-      items.push(`Files processed: ${uploadedFiles.map(f => f.name).join(', ')}`);
-    }
-
-    const summary = {
-      title: "Financial Summary Report",
-      subtitle: "Company name -xyz",  //company name
-      items
-    };
-
-    setSummaryData(summary);
-    setCurrentPage('summary');
-  };
-
-  // Download summary as txt (simple implementation)
-  const downloadSummary = () => {
-    if (!summaryData) return;
-    const textLines = [`${summaryData.title}`, `${summaryData.subtitle}`, "", ...summaryData.items];
-    const blob = new Blob([textLines.join("\n\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "financial-summary.txt";
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   // Header component
@@ -191,10 +149,10 @@ if (validFiles.length > 0) {
         <span style={styles.navLink}>Chatbot</span>
         <span style={styles.navLink}>Blog page</span>
         <div
-          style={styles.userMenu}
-          onMouseEnter={() => setShowDropdown(true)}
-          onMouseLeave={() => setShowDropdown(false)}
-        >
+            style={styles.userMenu}
+            onMouseEnter={() => setShowDropdown(true)}
+            onMouseLeave={() => setShowDropdown(false)}
+          >
           <User size={24} style={styles.userIcon} />
           {showDropdown && (
             <div style={styles.dropdown}>
@@ -211,15 +169,14 @@ if (validFiles.length > 0) {
                 <span>Settings</span>
               </div>
                     <div
-          style={styles.dropdownItem}
-          onClick={() => {
-            // (Optional) clear user data or tokens here
-            navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-          }}
-        >
-          <LogOut size={16} />
-          <span>Sign out</span>
-        </div>
+                    style={styles.dropdownItem}
+                    onClick={() => {
+                      navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                    }}
+                  >
+                    <LogOut size={16} />
+                    <span>Sign out</span>
+                  </div>
 
             </div>
           )}
@@ -396,51 +353,15 @@ if (validFiles.length > 0) {
               {/* Generate Report Button */}
               {uploadedFiles.length === numberOfFiles && (
                 <div style={styles.generateSection}>
-                  <button style={styles.generateButton} onClick={goToSummary}>
+                  <button style={styles.generateButton}
+                  // Navigate to summary page 
+                  onClick={() => navigate("/summary_page")}>      
                     Generate Financial Report
                   </button>
                 </div>
               )}
 
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Summary page
-  if (currentPage === 'summary') {
-    return (
-      <div style={styles.container}>
-        <Header />
-
-        <div style={styles.summaryPage}>
-          <h2 style={styles.summaryTitle}>{summaryData?.title || "Financial Summary Report"}</h2>
-          <p style={styles.summarySubtitle}>{summaryData?.subtitle || "Company name -xyz"}</p> 
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: 980, margin: '0 auto 16px' }}>
-            <button style={styles.downloadButton} onClick={downloadSummary}>
-              Download <Download size={18} />
-            </button>
-          </div>
-
-          <div style={styles.summaryBox}>
-            <h3 style={styles.summaryHeader}>→ summary</h3>
-            <ul style={styles.summaryList}>
-              {summaryData?.items?.map((it, idx) => (
-                <li key={idx} style={{ marginBottom: 8 }}>{it}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={{ maxWidth: 980, margin: '18px auto 0', display: 'flex', gap: 12 }}>
-            <button style={styles.backToUploadButton} onClick={() => setCurrentPage('upload')}>
-              ← Back to Upload
-            </button>
-            <button style={styles.newUploadButton} onClick={() => { setUploadedFiles([]); setCurrentPage('first'); setSummaryData(null); }}>
-              Upload More
-            </button>
           </div>
         </div>
       </div>
@@ -831,73 +752,7 @@ const styles = {
     transition: 'background-color 0.2s'
   },
 
-  // Summary styles
-  summaryPage: {
-    padding: '2.5rem 1rem',
-    maxWidth: '980px',
-    margin: '0 auto'
-  },
-  summaryTitle: {
-    fontSize: '1.8rem',
-    fontWeight: 700,
-    color: '#ffffffff',
-    backgroundColor: '#515266',
-    padding: '1.5rem 1rem',
-    borderRadius: '24px',
-    marginBottom: 8
-  },
-  summarySubtitle: {
-    fontSize: '20px',
-    color: '#090a0aff',
-    marginBottom: 0,
-    marginBottom: 0
-  },
-  downloadButton: {
-    background: '#1e293b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 24,
-    padding: '10px 12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 0
-  },
-  summaryBox: {
-    background: '#D1DFDF',
-    color: '#000000ff',
-    padding: '1.5rem',
-    borderRadius: 24
-  },
-  summaryHeader: {
-    fontSize: '22px',
-    marginTop: 0,
-    marginBottom: 12,
-    color: '#000000ff'
-  },
-  summaryList: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
-    lineHeight: '1.8rem'
-  },
-  backToUploadButton: {
-    background: '#1e293b',
-    color: '#ffffffff',
-    border: '1px solid #cfcfcf',
-    padding: '8px 12px',
-    borderRadius: 8,
-    cursor: 'pointer'
-  },
-  newUploadButton: {
-    background: '#1e293b',
-    color: '#ffffffff',
-    border: 'none',
-    borderRadius: 8,
-    padding: '8px 12px',
-    cursor: 'pointer'
-  }
 };
 
 export default FileUploadApp;
+
