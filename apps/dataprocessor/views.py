@@ -33,10 +33,10 @@ def extract_data_api(request):
 
     uploaded_file = request.FILES['file']
     # --------------------
-    api_key = request.POST.get('api_key')
-    
+    # Prefer api_key sent from frontend (if provided), otherwise fall back to server-side configured key
+    api_key = request.POST.get('api_key') or getattr(settings, 'GENIE_API_KEY', None) or os.environ.get('GENIE_API_KEY')
     if not api_key:
-        return JsonResponse({'error': 'Gemini API key is required.'}, status=400)
+        return JsonResponse({'error': 'No API key provided. Provide api_key in the POST or set GENIE_API_KEY in settings or environment.'}, status=500)
 
     # 1. Save the file temporarily
     unique_name = str(uuid.uuid4())
