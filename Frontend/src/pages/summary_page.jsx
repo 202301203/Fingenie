@@ -1,6 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, User, ChevronDown, X, History, Settings, LogOut } from 'lucide-react';
+import {
+  Download,
+  User,
+  ChevronDown,
+  X,
+  History,
+  Settings,
+  LogOut,
+  Wrench,
+  BarChart,
+  TrendingUp,
+  Search,
+  Activity,
+  BookOpen,
+  Cpu,
+  GitCompare
+} from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -36,6 +52,8 @@ export default function FinGenieApp() {
   const [hoveredRatio, setHoveredRatio] = useState(null);
   const [hoverTimer, setHoverTimer] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -191,20 +209,82 @@ export default function FinGenieApp() {
 
   // Header Component
   const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        {/* LEFT: ONLY THE LOGO REMAINS HERE */}
-        <div style={styles.logo}>
-          <img src={fglogo_Wbg} style={{ height: "80px", width: "auto" }} />
+     <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logo}>
+            <img
+              src={fglogo_Wbg}
+              style={{ height: "80px", width: "auto" }}
+              alt="logo"
+            />
+          </div>
         </div>
-      </div>
 
-      <div style={styles.headerRight}>
-        {/* RIGHT: NAVIGATION LINKS AND PROFILE ICON */}
-        <nav style={styles.headerNav}>
-          <a href="#" style={styles.headerLink}>Chatbot</a>
-          <a href="#" style={styles.headerLink}>Blog page</a>
+        <nav style={styles.nav}>
+          {/* Home */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/mainpageafterlogin")}
+          >
+            Home
+          </span>
 
+          {/* News */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/NewsPage")}
+          >
+            News
+          </span>
+
+          {/* About */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/AboutUs")}
+          >
+            About us
+          </span>
+
+          {/* Tools Menu */}
+          <div
+            style={styles.toolsMenu}
+            onMouseEnter={() => setShowToolsDropdown(true)}
+            onMouseLeave={() => setShowToolsDropdown(false)}
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
+            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
+
+            {showToolsDropdown && (
+              <div style={styles.dropdown}>
+                <div style={styles.dropdownItem}>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Search size={16} />
+                  <span>Search Companies</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Activity size={16} />
+                  <span>Charts & KPIs</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Menu */}
           <div
             style={styles.userMenu}
             onMouseEnter={() => setShowDropdown(true)}
@@ -227,23 +307,21 @@ export default function FinGenieApp() {
                   <span>Settings</span>
                 </div>
 
-                {/* Sign Out /////////////////////////// */}
-                <div
-                  style={styles.dropdownItem}
-                  onClick={() => {
-                    // (Optional) clear user data or tokens here
+                 <div
+                 style={styles.dropdownItem}
+                 onClick={() => {
+                   // (Optional) clear user data or tokens here
                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                  }}
-                >
-                  <LogOut size={16} />
-                  <span>Sign out</span>
-                </div>
+                 }}
+               >
+                 <LogOut size={16} />
+                 <span>Sign out</span>
+               </div>
               </div>
             )}
           </div>
         </nav>
-      </div>
-    </header>
+      </header>
   );
 
   // Navigation Component
@@ -281,16 +359,24 @@ export default function FinGenieApp() {
   // Footer Component
   const Footer = () => (
     <footer style={styles.footer}>
-      <div style={styles.footerLeft}>
-        <p style={styles.copyright}>
-          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Blog</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-        </p>
-      </div>
-      <div style={styles.footerRight}>
-        <h4 style={styles.functionsTitle}>functions</h4>
-        <p style={styles.functionsList}>AI summary, Debt ratings, stock graphs, search companies</p>
-      </div>
-    </footer>
+  <div style={styles.footerLeft}>
+    <p style={styles.copyright}>
+            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+          </p>
+  </div>
+
+  <div style={styles.footerRight}>
+    <h4 style={styles.functionsTitle}>Functions</h4>
+    <ul style={styles.functionsList}>
+      <li style={styles.functionsItem}>AI summary</li>
+      <li style={styles.functionsItem}>stock graphs</li>
+      <li style={styles.functionsItem}>Debt ratings</li>
+      <li style={styles.functionsItem}>search companies</li>
+      <li style={styles.functionsItem}>Blog Page</li>
+      <li style={styles.functionsItem}>Charts & KPIs</li>
+    </ul>
+  </div>
+</footer>
   );
 
   // Summary Page
@@ -521,10 +607,19 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.2rem 3rem',
-    backgroundColor: '#ffffffff',
-    borderBottom: '1px solid #000000ff',
-  },
+    padding: '2rem 4rem',
+    position: 'relative',
+    zIndex: 10,
+    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
+    backdropFilter: 'blur(10px)',            // Blur background
+    WebkitBackdropFilter: 'blur(10px)',      // Safari support
+    borderRadius: '15px',
+    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
+    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
+    borderBottom: '2px solid black',
+
+    color: 'white',
+    },
 
   headerLeft: {
     display: 'flex',
@@ -533,23 +628,15 @@ const styles = {
   },
 
   logo: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: 'white',
-  },
-
-  headerNav: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
     display: 'flex',
-    gap: '1.5rem',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  headerLink: {
-    color: '#292323ff',
-    textDecoration: 'none',
-    fontSize: '14px',
-    transition: 'color 0.3s',
-  },
-
+ 
   headerRight: {
     display: 'flex',
     alignItems: 'center',
@@ -914,48 +1001,68 @@ const styles = {
     color: '#ddd',
   },
 
-  footer: {
-    backgroundColor: '#4A5559',
-    color: 'white',
-    padding: '1.5rem 3rem',
+ footer: {
+    backgroundColor: '#4D5C61',
+    color: '#FFFFFF',
+    padding: '2rem 4rem',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 'auto',
+    alignItems: 'flex-start',
+    marginTop: '4rem',
+    position: 'relative',
+    zIndex: 5,
   },
 
-  footerLeft: {},
+  footerLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
 
   copyright: {
     fontSize: '13px',
-    margin: 0,
+    marginBottom: 0,
+    lineHeight: 1.8,
   },
 
   footerLink: {
-    color: 'white',
+    color: '#FFFFFF',
     textDecoration: 'none',
+    transition: 'opacity 0.3s',
   },
 
   footerRight: {
+    flex: 1,
     textAlign: 'right',
   },
 
   functionsTitle: {
     fontSize: '14px',
-    fontWeight: 'bold',
-    margin: '0 0 0.5rem 0',
+    fontWeight: '700',
+    marginRight: '10rem',
   },
 
-  functionsList: {
-    fontSize: '12px',
+ functionsList: {
+  listStyle: 'none',
+  margin: 0,
+  padding: 0,
+  display: 'grid',
+  gridTemplateColumns: '3.5fr 1fr',
+  textAlign: 'right', 
+  gap: '6px 0px',
+},
+
+  functionsItem: {
+    fontSize: '13px',
     margin: 0,
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
   },
+  
 
   dropdown: {
     position: 'absolute',
-    right: '15px',
-    top: '65px',
-    color: 'black',
+    right: '0',
+    top: '32px',
     backgroundColor: '#D9D9D9',
     borderRadius: '8px',
     boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
@@ -963,6 +1070,7 @@ const styles = {
     minWidth: '120px',
     zIndex: 1000
   },
+
 
   dropdownItem: {
     display: 'flex',
@@ -993,4 +1101,37 @@ const styles = {
         marginLeft: '0.2rem',
     },
 
+    toolsMenu: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    marginLeft: "1rem", // spacing between menus
+    color: "Black",
+  },
+
+  nav: {
+    display: "flex",
+    gap: "1.5rem",
+    marginTop: "10px",
+  },
+
+  navLink: {
+    cursor: "pointer",
+    color: "#000000",
+    textDecoration: "none",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "opacity 0.3s",
+  },
+  
+  userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    color: 'Black'
+  },
+
+  userIcon: {
+    transition: 'color 0.2s'
+  },
 };
