@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/',include('apps.accounts.urls')),
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
 ]
