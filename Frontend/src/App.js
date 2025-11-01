@@ -7,6 +7,7 @@ import AuthFlow from "./pages/AuthFlow";
 import MainPageAfterLogin from "./pages/mainpageafterlogin";
 import FileUploadApp from "./pages/FileUploadApp";
 import SummaryPage from "./pages/summary_page";
+import NewsPage from "./pages/news_page";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Route path="/mainpageafterlogin" element={<MainPageAfterLogin />} />
       <Route path="/FileUploadApp" element={<FileUploadApp />} />
       <Route path="/summary_page" element={<SummaryPage />} />
+      <Route path="/NewsPage" element={<NewsPage />} />
     </Routes>
   );
 }
