@@ -41,6 +41,10 @@ const CreateAccount = ({ onSwitch }) => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const createBtnProps = useInteractionState(styles.button, styles.buttonHover);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupColor, setPopupColor] = useState("#4CAF50");
+
   const googleBtnProps = useInteractionState(
     styles.googleButton,
     styles.googleButtonHover
@@ -70,7 +74,9 @@ const CreateAccount = ({ onSwitch }) => {
 
     // Check if all fields are filled
     if (!username || !email || !password || !contact) {
-      alert("Please fill out all fields.");
+      setPopupMessage("Please fill out all fields.");
+      setPopupColor("#d6867dff"); // red
+      setShowPopup(true);
       return;
     }
 
@@ -99,7 +105,7 @@ const CreateAccount = ({ onSwitch }) => {
       setPasswordError("");
     }
     // All validations passed
-    alert(`Account created for ${username} (${email})!`);
+    setShowPopup(true);
 
     navigate("/mainpageafterlogin");
   };
@@ -109,7 +115,11 @@ const CreateAccount = ({ onSwitch }) => {
     const decodedToken = jwtDecode(tokenResponse.credential);
 
     console.log("Google Login Success. Decoded Data:", decodedToken);
-    alert(`Signed in as ${decodedToken.name} (${decodedToken.email})!`);
+    setPopupMessage(
+      `Signed in as ${decodedToken.name} (${decodedToken.email})!`
+    );
+    setPopupColor("#4CAF50"); // green
+    setShowPopup(true);
 
     //  CRUCIAL NEXT STEP:
     // Send the ID token (tokenResponse.credential) to your server (e.g., in server.js)
@@ -119,7 +129,9 @@ const CreateAccount = ({ onSwitch }) => {
 
   const handleGoogleError = () => {
     console.error("Google Sign-In Failed");
-    alert("Google Sign-In failed. Please try again.");
+    setPopupMessage("Google Sign-In failed. Please try again.");
+    setPopupColor("#E74C3C"); // red
+    setShowPopup(true);
   };
 
   // 3. Get the actual Google login function using the hook
@@ -130,6 +142,56 @@ const CreateAccount = ({ onSwitch }) => {
   });
 
   return (
+    <>
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
+            <h3>
+              {popupColor === "#4CAF50"
+                ? "✅ Account Created"
+                : "⚠️ Incomplete Details"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    <div>
+      {/* Your Google Login button goes here */}
+
+      {/* ✅ Custom Popup */}
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
+            <h3>
+              {popupColor === "#4CAF50"
+                ? "✅ Google Sign-In Successful"
+                : "❌ Google Sign-In Failed"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
     <div style={styles.outerContainer}>
       <div style={{ ...styles.modal, ...styles.pulse }}>
         <div style={styles.logo}>
@@ -254,7 +316,7 @@ const CreateAccount = ({ onSwitch }) => {
           Google
         </div>
     </div>
-    
+    </>
   );
 };
 
@@ -270,6 +332,9 @@ const LoginPage = ({ onSwitch }) => {
   const signUpLinkProps = useInteractionState(styles.link, styles.linkHover);
   const identifierInput = useInputFocus();
   const passwordInput = useInputFocus();
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupColor, setPopupColor] = useState("#4CAF50");
 
   const validatePassword = (pwd) => {
     if (pwd.length < 8) return "Password must be at least 8 characters";
@@ -285,7 +350,9 @@ const LoginPage = ({ onSwitch }) => {
 
   const handleLogin = () => {
     if (!identifier || !password) {
-      alert("Please enter your details.");
+      setPopupMessage("Please enter your details.");
+      setPopupColor("#E74C3C");
+      setShowPopup(true);
       return;
     }
 
@@ -310,7 +377,9 @@ const LoginPage = ({ onSwitch }) => {
     }
 
     // Login logic placeholder
-    alert(`Logging in with ${loginType}: ${identifier}`);
+    setPopupMessage(`Logging in with ${loginType}: ${identifier}`);
+    setPopupColor("#4CAF50");
+    setShowPopup(true);
 
     navigate("/mainpageafterlogin");
   };
@@ -321,6 +390,28 @@ const LoginPage = ({ onSwitch }) => {
   };
 
   return (
+    <>
+    {/* ✅ Popup */}
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={styles.popupBoxStyle}>
+            <h3>
+              {popupColor === "#88a089ff" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     <div style={styles.modal}>
       <div style={styles.logo}>
         <img
@@ -398,6 +489,7 @@ const LoginPage = ({ onSwitch }) => {
         </p>
 
     </div>
+    </>
   );
 };
 
@@ -613,6 +705,39 @@ const styles = {
     backgroundColor: "transparent",
     color: "#57556a",
   },
+    popupOverlayStyle :{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    },
+    
+     popupBoxStyle : {
+      backgroundColor: "#b1cfb2ff",
+      color: "black",
+      padding: "20px",
+      borderRadius: "8px",
+      textAlign: "center",
+      boxShadow: "0 4px 8px rgba(20, 13, 13, 0.3)",
+    },
+    okButtonStyle: {
+      marginTop: "10px",
+      padding: "8px 16px",
+      border: "1px solid black",
+      borderRadius: "10px",
+      backgroundColor: "white",
+      color: "black",
+      cursor: "pointer",
+      transition: "all 0.2s ease-in-out",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    },
+
   // Animation utility (using a small, repeated animation for effect)
   pulse: {
     animation: "pulse-animation 2s infinite alternate",
