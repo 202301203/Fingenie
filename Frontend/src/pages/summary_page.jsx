@@ -118,13 +118,79 @@ export default function FinGenieApp() {
 
   // Ratio data
   const ratios = [
-    { id: 1, name: 'Ratio 1', short: 'Measures liquidity and short-term obligations.', long: 'The Current Ratio measures the company\'s ability to pay short-term obligations. Formula: Current Assets / Current Liabilities. A ratio above 1.0 indicates good liquidity.' , fromBackend: 'Current Ratio = 1.85' },
-    { id: 2, name: 'Ratio 2', short: 'Evaluates profitability margins.', long: 'The Net Profit Margin shows the percentage of revenue that translates to profit. Formula: Net Profit / Revenue × 100. Higher percentages indicate better profitability.',fromBackend: 'ROA = 7.4%' },
-    { id: 3, name: 'Ratio 3', short: 'Analyzes asset efficiency.', long: 'The Asset Turnover Ratio measures how efficiently a company uses its assets. Formula: Revenue / Total Assets. Higher values indicate better asset utilization.',fromBackend: 'Debt-to-Equity = 0.62' },
-    { id: 4, name: 'Ratio 4', short: 'Assesses debt levels and leverage.', long: 'The Debt-to-Equity Ratio evaluates financial leverage. Formula: Total Debt / Total Equity. Lower ratios indicate less financial risk.',  fromBackend: 'Operating Margin = 18.3%' },
-    { id: 5, name: 'Ratio 5', short: 'Measures return on investments.', long: 'Return on Equity (ROE) shows how effectively equity generates profit. Formula: Net Income / Shareholder Equity × 100. Higher ROE indicates better returns.',  fromBackend: 'Inventory Turnover = 4.7 times/year' },
-    { id: 6, name: 'Ratio 6', short: 'Evaluates operational efficiency.', long: 'The Operating Margin measures operational profitability. Formula: Operating Income / Revenue × 100. Higher margins indicate better operational efficiency.', fromBackend: 'Current Ratio = 1.85' }
-  ];
+  {
+    id: 1,
+    name: 'Current Ratio',
+    short: 'Measures a company’s ability to cover its short-term liabilities with its short-term assets (liquidity).',
+    long: 'A liquidity ratio that indicates a company’s capacity to meet its one-year or near-term obligations using its readily available current assets. A ratio above 1.0 is generally considered acceptable, meaning current assets exceed current liabilities.',
+    fromBackend: {
+      formula: 'Current Assets / Current Liabilities',
+      calculation: '62,000 / 100,000',
+      result: '0.62',
+      interpretation: 'Indicates good short-term liquidity.',
+    },
+  },
+  {
+    id: 2,
+    name: 'Quick Ratio',
+    short: 'A more stringent measure of short-term liquidity that excludes inventory and other less-liquid current assets.',
+    long: 'A liquidity ratio that measures a company’s ability to pay off its current liabilities without relying on the sale of inventory or pre-paid expenses. Because inventory is often the least liquid current asset, this ratio provides a more conservative view of a company’s immediate cash position. A ratio above 1.0 is generally preferred.',
+    fromBackend: {
+      formula: '(Current Assets - Inventory) / Current Liabilities',
+      calculation: '50,000 / 100,000',
+      result: '0.50',
+      interpretation: 'Indicates potential liquidity issues.',
+    },
+  },
+  {
+    id: 3,
+    name: 'Debt-to-Equity Ratio',
+    short: 'Measures the proportion of debt used to finance a company\'s assets relative to shareholders\' equity (financial leverage).',
+    long: 'A solvency ratio that compares a company\'s total debt (both short-term and long-term liabilities) to the equity held by its shareholders. It indicates how much a company is relying on borrowed money (leverage) versus owned funds. A higher ratio generally implies greater financial risk.',
+    fromBackend: {
+      formula: 'Total Debt / Shareholders\' Equity',
+      calculation: '50,000 / 100,000',
+      result: '0.50',
+      interpretation: 'Indicates potential liquidity issues.',
+    },
+  },
+  {
+    id: 4,
+    name: 'Asset Turnover Ratio',
+    short: 'Measures a company\'s efficiency in using its assets to generate revenue (sales).',
+    long: 'An efficiency ratio that measures how effectively a company is utilizing its total assets to produce sales. A higher ratio suggests the company is operating more efficiently, generating more revenue for every dollar of assets. This ratio is highly dependent on the industry.',
+    fromBackend: {
+      formula: 'Revenue / Total Assets',
+      calculation: '100,000 / 500,000',
+      result: '0.20',
+      interpretation: 'Indicates efficient use of assets to generate sales.',
+    },
+  },
+  {
+    id: 5,
+    name: 'Return on Assets (ROA)',
+    short: 'Measures a company\'s profitability relative to its total assets (how efficiently assets generate profit).',
+    long: 'A profitability ratio that shows the percentage of profit a company earns from its total resources (assets). It indicates management\'s efficiency in using the company\'s assets to generate earnings. It is often calculated using average total assets for a more accurate result..',
+    fromBackend: {
+      formula: 'Net Income / Total Assets',
+      calculation: '18,300 / 500,000',
+      result: '0.0366',
+      interpretation: 'Indicates how efficiently assets are being used to generate profit.',
+    },
+  },
+    {
+    id: 6,
+    name: 'Return on Equity (ROE)',
+    short: 'Measures the return generated for the shareholders on their investment in the company (profitability for owners).',
+    long: 'A profitability ratio that calculates the net income earned as a percentage of shareholders\' equity. It is a key metric for investors, showing how effectively a company is using the money invested by shareholders to generate profit. A higher ROE is generally seen as better.',
+    fromBackend: {
+      formula: 'Net Income / Shareholders\' Equity',
+      calculation: '18,300 / 100,000',
+      result: '0.183',
+      interpretation: 'It interprets the return generated for the shareholders on their investment. It is the single most important measure of how well management uses the owners\' capital.',
+    },
+  },
+];
  const modifiedRatios = ratios.map(ratio => ({
         ...ratio,
         fromBackend: ratio.fromBackend || ratio.long.split('.')[0] + '...',
@@ -496,7 +562,8 @@ export default function FinGenieApp() {
                     <div key={ratio.id} style={styles.ratioRow}>
                         
                         {/* Column 1 (150px): Ratio Button */}
-                        <button style={styles.ratioButton}>
+                        <button style={styles.ratioButton} 
+                          onClick={() => setShowDetailedRatios(true)}>
                             {ratio.name}
                         </button>
                         
@@ -508,7 +575,12 @@ export default function FinGenieApp() {
                         {/* Column 3 (1fr): Description Box */}
                         <div style={styles.ratioDescription}>
                             <p style={styles.ratioDescText}>
-                                {ratio.fromBackend}
+                                <div>
+                                  <strong>Formula:</strong> {ratio.fromBackend.formula} <br />
+                                  <strong>Calculation:</strong> {ratio.fromBackend.calculation} <br />
+                                  <strong>Result:</strong> {ratio.fromBackend.result} <br />
+                                  <strong>Interpretation:</strong> {ratio.fromBackend.interpretation}
+                                </div>
                             </p>
                         </div>
                     </div>
@@ -836,7 +908,7 @@ const styles = {
   },
 
   ratioDescription: {
-    backgroundColor: '#4D5C61',
+    backgroundColor: '#D1DFDF',
     padding: '2rem',
     borderRadius: '25px',
     position: 'relative',
@@ -863,7 +935,7 @@ const styles = {
   ratioDescText: {
     fontSize: '14px',
     lineHeight: '1.8',
-    color: '#ffffffff',
+    color: '#202020ff',
   },
 
   modalOverlay: {
@@ -1135,3 +1207,4 @@ const styles = {
     transition: 'color 0.2s'
   },
 };
+
