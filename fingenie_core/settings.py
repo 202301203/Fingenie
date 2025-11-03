@@ -30,7 +30,9 @@ SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "fingenie-sz41.onrender.com",
+]
 
 
 # Application definition
@@ -67,6 +69,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://fingenie-sz41.onrender.com",
 ]
 
 ROOT_URLCONF = 'fingenie_core.urls'
