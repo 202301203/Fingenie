@@ -70,6 +70,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://fingenie-sz41.onrender.com",
+    'https://fingenie-eight.vercel.app/",
 ]
 
 ROOT_URLCONF = 'fingenie_core.urls'
