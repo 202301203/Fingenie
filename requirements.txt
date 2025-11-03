@@ -8,4 +8,6 @@ pypdf
 pdfplumber
 pytesseract
 pydantic
-# Add any other libraries you use
+Pillow
+python-dotenv
+requests
