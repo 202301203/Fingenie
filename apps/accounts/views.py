@@ -8,9 +8,11 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.db import IntegrityError
 import json
 import logging
 import re
+import requests  # Add this import
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -73,12 +75,160 @@ def parse_json_request(request):
         logger.error(f"JSON parse error: {str(e)}")
         return None
 
-# Authentication Views
+# Google OAuth Service
+class GoogleOAuthService:
+    @staticmethod
+    def verify_google_token(token):
+        """
+        Verify Google OAuth token and return user info
+        """
+        try:
+            # Method 1: Using google-auth library (recommended)
+            try:
+                from google.oauth2 import id_token
+                from google.auth.transport import requests as google_requests
+                
+                client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+                if not client_id:
+                    raise ValueError("GOOGLE_OAUTH_CLIENT_ID not configured")
+                
+                idinfo = id_token.verify_oauth2_token(
+                    token, 
+                    google_requests.Request(), 
+                    client_id
+                )
+                
+                # Validate the issuer
+                if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                    raise ValueError("Invalid token issuer")
+                
+                return {
+                    'email': idinfo.get('email', '').lower(),
+                    'first_name': idinfo.get('given_name', ''),
+                    'last_name': idinfo.get('family_name', ''),
+                    'name': idinfo.get('name', ''),
+                    'picture': idinfo.get('picture', ''),
+                    'email_verified': idinfo.get('email_verified', False),
+                    'sub': idinfo.get('sub')  # Google user ID
+                }
+                
+            except ImportError:
+                # Fallback: Use Google's tokeninfo endpoint
+                return GoogleOAuthService.verify_google_token_fallback(token)
+                
+        except ValueError as e:
+            logger.error(f"Google token verification failed: {str(e)}")
+            raise e
+        except Exception as e:
+            logger.error(f"Google token verification error: {str(e)}")
+            raise e
+
+    @staticmethod
+    def verify_google_token_fallback(token):
+        """
+        Fallback method using Google's tokeninfo endpoint
+        """
+        try:
+            response = requests.get(
+                f'https://oauth2.googleapis.com/tokeninfo?id_token={token}'
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Verify audience
+                client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+                if client_id and data.get('aud') != client_id:
+                    raise ValueError("Token audience doesn't match")
+                
+                return {
+                    'email': data.get('email', '').lower(),
+                    'first_name': data.get('given_name', ''),
+                    'last_name': data.get('family_name', ''),
+                    'name': data.get('name', ''),
+                    'picture': data.get('picture', ''),
+                    'email_verified': data.get('email_verified', False) == 'true',
+                    'sub': data.get('sub')
+                }
+            else:
+                raise ValueError(f"Google API returned status {response.status_code}")
+                
+        except Exception as e:
+            logger.error(f"Google tokeninfo fallback failed: {str(e)}")
+            raise e
+
+    @staticmethod
+    def create_username_from_google_info(google_info):
+        """
+        Generate a unique username from Google profile info
+        """
+        name = google_info.get('name', '')
+        email = google_info.get('email', '')
+        first_name = google_info.get('first_name', '')
+        
+        # Try to create username from name
+        if name:
+            base_username = re.sub(r'[^a-zA-Z0-9_]', '', name.replace(' ', '_').lower())
+        elif first_name:
+            base_username = re.sub(r'[^a-zA-Z0-9_]', '', first_name.lower())
+        else:
+            base_username = email.split('@')[0]
+            base_username = re.sub(r'[^a-zA-Z0-9_]', '', base_username)
+        
+        # Ensure reasonable length
+        base_username = base_username[:25]
+        
+        # Ensure uniqueness
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{counter}"
+            counter += 1
+            if counter > 100:  # Safety limit
+                raise ValueError("Could not generate unique username")
+        
+        return username
+
+    @staticmethod
+    def get_or_create_google_user(google_info):
+        """
+        Get existing user or create new one from Google info
+        """
+        email = google_info.get('email', '')
+        
+        if not email:
+            raise ValueError("No email provided by Google")
+        
+        try:
+            # Try to get existing user by email
+            user = User.objects.get(email=email)
+            logger.info(f"Existing Google user found: {user.username}")
+            return user, False  # False = not created
+            
+        except User.DoesNotExist:
+            # Create new user
+            username = GoogleOAuthService.create_username_from_google_info(google_info)
+            
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=google_info.get('first_name', '')[:30],
+                last_name=google_info.get('last_name', '')[:30],
+            )
+            
+            # Mark as OAuth user (no password)
+            user.set_unusable_password()
+            user.save()
+            
+            logger.info(f"New Google user created: {username}")
+            return user, True  # True = created
+
+# Traditional Authentication Views
 @csrf_exempt
 @require_http_methods(["POST"])
 def register_api(request):
     """
-    Register a new user
+    Register a new user with email/password
     POST data: { "username": "", "email": "", "password": "" }
     """
     try:
@@ -130,7 +280,8 @@ def register_api(request):
         return success_response(
             {
                 "username": user.username,
-                "email": user.email
+                "email": user.email,
+                "auth_method": "email_password"
             },
             "Registration successful",
             status=201
@@ -197,7 +348,8 @@ def login_api(request):
             return success_response(
                 {
                     "username": user.username,
-                    "email": user.email
+                    "email": user.email,
+                    "auth_method": "email_password"
                 },
                 "Login successful"
             )
@@ -213,6 +365,65 @@ def login_api(request):
             str(e) if settings.DEBUG else None
         )
 
+# Google OAuth Views
+@csrf_exempt
+@require_http_methods(["POST"])
+def google_login_api(request):
+    """
+    Handle Google OAuth login/registration
+    POST data: { "token": "google_oauth_token" }
+    """
+    try:
+        data = parse_json_request(request)
+        if data is None:
+            return error_response("Invalid JSON data", 400)
+
+        token = data.get("token")
+        if not token:
+            return error_response("Google token is required", 400)
+
+        # Verify Google token and get user info
+        google_info = GoogleOAuthService.verify_google_token(token)
+        
+        # Check if email is verified (important for security)
+        if not google_info.get('email_verified', False):
+            return error_response("Google email not verified", 400)
+
+        # Get or create user
+        user, created = GoogleOAuthService.get_or_create_google_user(google_info)
+        
+        # Log the user in
+        login(request, user)
+        
+        message = "Registration successful" if created else "Login successful"
+        
+        return success_response(
+            {
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_new_user": created,
+                "auth_method": "google_oauth"
+            },
+            message
+        )
+
+    except ValueError as e:
+        logger.error(f"Google authentication failed: {str(e)}")
+        return error_response(f"Google authentication failed: {str(e)}", 400)
+    except IntegrityError as e:
+        logger.error(f"Database error during Google auth: {str(e)}")
+        return error_response("User creation failed", 500)
+    except Exception as e:
+        logger.error(f"Google login error: {str(e)}")
+        return error_response(
+            "Google authentication failed", 
+            500, 
+            str(e) if settings.DEBUG else None
+        )
+
+# Common Authentication Views
 @csrf_exempt
 @require_http_methods(["POST"])
 def logout_api(request):
@@ -248,7 +459,9 @@ def check_auth_api(request):
                 {
                     "authenticated": True,
                     "username": request.user.username,
-                    "email": request.user.email
+                    "email": request.user.email,
+                    "first_name": request.user.first_name,
+                    "last_name": request.user.last_name
                 }
             )
         else:
@@ -263,112 +476,28 @@ def check_auth_api(request):
         )
 
 @csrf_exempt
-@require_http_methods(["POST"])
-def google_login_api(request):
+@require_http_methods(["GET"])
+def user_profile_api(request):
     """
-    Authenticate user using Google OAuth token
-    POST data: { "token": "google_oauth_token" }
+    Get current user profile information
     """
+    if not request.user.is_authenticated:
+        return error_response("Authentication required", 401)
+    
     try:
-        data = parse_json_request(request)
-        if data is None:
-            return error_response("Invalid JSON data", 400)
-
-        token = data.get("token")
-        if not token:
-            return error_response("Google token is required", 400)
-
-        # Check if google-auth is available
-        try:
-            from google.oauth2 import id_token
-            from google.auth.transport import requests as google_requests
-        except ImportError:
-            logger.error("google-auth library not installed")
-            return error_response("Google authentication not available", 500)
-
-        # Verify Google configuration
-        client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
-        if not client_id:
-            logger.error("GOOGLE_OAUTH_CLIENT_ID not configured")
-            return error_response("Google authentication not configured", 500)
-
-        # Verify the token
-        try:
-            idinfo = id_token.verify_oauth2_token(
-                token, 
-                google_requests.Request(), 
-                client_id
-            )
-        except ValueError as e:
-            logger.error(f"Invalid Google token: {str(e)}")
-            return error_response("Invalid Google token", 400)
-
-        # Validate token issuer
-        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
-            return error_response("Invalid token issuer", 400)
-
-        # Extract user information
-        email = idinfo.get("email", "").lower()
-        given_name = idinfo.get("given_name", "")
-        family_name = idinfo.get("family_name", "")
-        name = idinfo.get("name", "")
-        
-        if not email:
-            return error_response("Email not provided by Google", 400)
-
-        # Get or create user
-        try:
-            user = User.objects.get(email=email)
-            logger.info(f"Existing Google user: {user.username}")
-        except User.DoesNotExist:
-            # Generate unique username
-            if name:
-                base_username = name.replace(" ", "_").lower()
-            elif given_name:
-                base_username = given_name.lower()
-            else:
-                base_username = email.split("@")[0]
-
-            # Clean username
-            base_username = re.sub(r'[^a-zA-Z0-9_]', '', base_username)[:30]
-            
-            # Ensure uniqueness
-            username = base_username
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base_username}_{counter}"
-                counter += 1
-
-            # Create new user
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                first_name=given_name[:30] if given_name else "",
-                last_name=family_name[:30] if family_name else ""
-            )
-            user.set_unusable_password()  # OAuth users don't need password
-            user.save()
-            logger.info(f"New Google user created: {username}")
-
-        # Log the user in
-        login(request, user)
-        
-        return success_response(
-            {
-                "username": user.username,
-                "email": user.email
-            },
-            "Google login successful"
-        )
-
+        user = request.user
+        return success_response({
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "date_joined": user.date_joined.isoformat() if user.date_joined else None
+        })
     except Exception as e:
-        logger.error(f"Google login error: {str(e)}")
-        return error_response(
-            "Google login failed", 
-            500, 
-            str(e) if settings.DEBUG else None
-        )
+        logger.error(f"Profile fetch error: {str(e)}")
+        return error_response("Failed to fetch profile", 500)
 
+# Utility Views
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def test_api(request):
@@ -394,22 +523,12 @@ def get_csrf_token(request):
 
 @csrf_exempt
 @require_http_methods(["GET"])
-def user_profile_api(request):
+def auth_methods_api(request):
     """
-    Get current user profile information
+    Return available authentication methods
     """
-    if not request.user.is_authenticated:
-        return error_response("Authentication required", 401)
-    
-    try:
-        user = request.user
-        return success_response({
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "date_joined": user.date_joined.isoformat() if user.date_joined else None
-        })
-    except Exception as e:
-        logger.error(f"Profile fetch error: {str(e)}")
-        return error_response("Failed to fetch profile", 500)
+    methods = {
+        "email_password": True,
+        "google_oauth": bool(getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)),
+    }
+    return success_response({"auth_methods": methods})

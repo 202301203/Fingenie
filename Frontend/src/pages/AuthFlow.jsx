@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../App.css";
-import { GoogleLogin } from "@react-oauth/google"; // Changed from useGoogleLogin
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import fgLogo from "../images/fglogo.png";
-import Glogo from "../images/Glogo.png";
+
+// Add CSRF token function
+function getCSRFToken() {
+  return getCookie('csrftoken');
+}
 
 function getCookie(name) {
   let cookieValue = null;
@@ -39,23 +43,68 @@ const useInputFocus = () => {
   };
 };
 
+// Shared Google Auth Handler
+const useGoogleAuth = () => {
+  const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const token = credentialResponse.credential;
+
+    try {
+      console.log("Sending Google token to backend...");
+      
+      const response = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken(),
+        },
+        credentials: "include",
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.is_new_user) {
+          alert(`🎉 Welcome to Fingenie, ${data.username}! Your account has been created via Google.`);
+        } else {
+          alert(`👋 Welcome back, ${data.username}!`);
+        }
+        navigate("/mainpageafterlogin");
+      } else {
+        alert(data.error || "Google authentication failed");
+      }
+    } catch (err) {
+      console.error("Google authentication failed:", err);
+      alert("Google authentication failed. Please try again.");
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error("Google Sign-In was cancelled or failed");
+    alert("Google Sign-In was cancelled or failed. Please try again.");
+  };
+
+  return { handleGoogleSuccess, handleGoogleError };
+};
+
 // 1. Create Account Page
 const CreateAccount = ({ onSwitch }) => {
   const navigate = useNavigate();
+  const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
+  
   const [username, setUsername] = useState("");
-  const [countryCode, setCountryCode] = useState("+91");
-  const [contact, setContact] = useState("");
-  const [contactError, setContactError] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const createBtnProps = useInteractionState(styles.button, styles.buttonHover);
 
   // Input focus hooks
   const usernameInput = useInputFocus();
-  const contactInput = useInputFocus();
   const emailInput = useInputFocus();
   const passwordInput = useInputFocus();
 
@@ -74,7 +123,7 @@ const CreateAccount = ({ onSwitch }) => {
   const handleCreateAccount = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!username || !email || !password || !contact) {
+    if (!username || !email || !password) {
       alert("Please fill out all fields.");
       return;
     }
@@ -94,21 +143,28 @@ const CreateAccount = ({ onSwitch }) => {
       setPasswordError("");
     }
 
+    setIsLoading(true);
+
     try {
       const response = await fetch("http://127.0.0.1:8000/accounts/api/register/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"), // Added CSRF token
+          "X-CSRFToken": getCSRFToken(),
         },
-        credentials: "include", // Added credentials
-        body: JSON.stringify({ username, email, password }), // Consider adding contact if backend supports it
+        credentials: "include",
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          password,
+          // Remove contact field as it's not in your backend
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Account created successfully for ${data.username}`);
+        alert(`✅ Account created successfully for ${data.username}`);
         navigate("/mainpageafterlogin");
       } else {
         alert(data.error || "Registration failed");
@@ -116,38 +172,9 @@ const CreateAccount = ({ onSwitch }) => {
     } catch (err) {
       console.error("Error during registration:", err);
       alert("Server error. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    const token = credentialResponse.credential; // Correct property for GoogleLogin
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Signed in as ${data.email}`);
-        navigate("/mainpageafterlogin");
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      console.error("Google login failed:", err);
-    }
-  };
-
-  const handleGoogleError = () => {
-    console.error("Google Sign-In Failed");
-    alert("Google Sign-In failed. Please try again.");
   };
 
   return (
@@ -173,54 +200,16 @@ const CreateAccount = ({ onSwitch }) => {
 
         <input
           type="text"
-          placeholder="username"
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           {...usernameInput}
           style={usernameInput.inputStyle}
         />
 
-        {/* Contact Number Section */}
-        <div style={styles.phoneContainer}>
-          <select
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            style={styles.countryCodeSelect}
-          >
-            <option value="+91">+91 🇮🇳</option>
-            <option value="+1">+1 🇺🇸</option>
-            <option value="+44">+44 🇬🇧</option>
-            <option value="+61">+61 🇦🇺</option>
-          </select>
-
-          <input
-            type="tel"
-            placeholder="Contact number"
-            value={contact}
-            onChange={(e) => {
-              const onlyNums = e.target.value.replace(/\D/g, "").slice(0, 10);
-              setContact(onlyNums);
-              if (onlyNums.length === 10) {
-                setContactError("");
-              } else {
-                setContactError("Contact number must be exactly 10 digits");
-              }
-            }}
-            {...contactInput}
-            style={{
-              ...contactInput.inputStyle,
-              flex: 1,
-              borderColor: contactError
-                ? "red"
-                : contactInput.inputStyle.borderColor,
-            }}
-          />
-        </div>
-        {contactError && <p style={styles.errorText}>{contactError}</p>}
-
         <input
           type="email"
-          placeholder="email address"
+          placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           {...emailInput}
@@ -240,11 +229,15 @@ const CreateAccount = ({ onSwitch }) => {
 
         <button
           onClick={handleCreateAccount}
-          style={createBtnProps.style}
+          disabled={isLoading}
+          style={{
+            ...createBtnProps.style,
+            ...(isLoading ? styles.buttonDisabled : {})
+          }}
           onMouseEnter={createBtnProps.onMouseEnter}
           onMouseLeave={createBtnProps.onMouseLeave}
         >
-          Create an account
+          {isLoading ? "Creating Account..." : "Create an account"}
         </button>
       </div>
 
@@ -269,14 +262,18 @@ const CreateAccount = ({ onSwitch }) => {
   );
 };
 
-// 2. Login Page
+// 2. Login Page (keep as is, but add CSRF token)
 const LoginPage = ({ onSwitch }) => {
   const navigate = useNavigate();
+  const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
+  
   const [loginType, setLoginType] = useState("email");
   const [emailError, setEmailError] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   const loginBtnProps = useInteractionState(styles.button, styles.buttonHover);
   const identifierInput = useInputFocus();
   const passwordInput = useInputFocus();
@@ -319,12 +316,14 @@ const LoginPage = ({ onSwitch }) => {
       setPasswordError("");
     }
 
+    setIsLoading(true);
+
     try {
       const response = await fetch("http://127.0.0.1:8000/accounts/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"), // Fixed: single headers declaration
+          "X-CSRFToken": getCSRFToken(),
         },
         credentials: "include",
         body: JSON.stringify({
@@ -337,7 +336,7 @@ const LoginPage = ({ onSwitch }) => {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Login successful! Welcome ${data.username}`);
+        alert(`✅ Login successful! Welcome ${data.username}`);
         navigate("/mainpageafterlogin");
       } else {
         alert(data.error || "Login failed. Please check your credentials.");
@@ -345,38 +344,15 @@ const LoginPage = ({ onSwitch }) => {
     } catch (err) {
       console.error("Login error:", err);
       alert("Server error. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleToggle = (type) => {
     setLoginType(type);
     setIdentifier("");
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    const token = credentialResponse.credential;
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Signed in as ${data.email}`);
-        navigate("/mainpageafterlogin");
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      console.error("Google login failed:", err);
-    }
+    setEmailError("");
   };
 
   return (
@@ -438,11 +414,15 @@ const LoginPage = ({ onSwitch }) => {
 
         <button
           onClick={handleLogin}
-          style={loginBtnProps.style}
+          disabled={isLoading}
+          style={{
+            ...loginBtnProps.style,
+            ...(isLoading ? styles.buttonDisabled : {})
+          }}
           onMouseEnter={loginBtnProps.onMouseEnter}
           onMouseLeave={loginBtnProps.onMouseLeave}
         >
-          Log in
+          {isLoading ? "Logging in..." : "Log in"}
         </button>
 
         <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
@@ -465,31 +445,19 @@ const LoginPage = ({ onSwitch }) => {
       <div style={styles.googleContainer}>
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() => alert("Google Sign-In failed")}
+          onError={handleGoogleError}
           useOneTap
+          theme="filled_blue"
+          size="large"
+          text="continue_with"
+          shape="rectangular"
         />
       </div>
     </div>
   );
 };
 
-// --- MAIN APPLICATION COMPONENT ---
-export const AuthFlow = () => {
-  const [currentPage, setCurrentPage] = useState("create");
 
-  const handleSwitch = (page) => {
-    setCurrentPage(page);
-  };
-
-  return (
-    <div style={styles.appContainer}>
-      {currentPage === "create" && <CreateAccount onSwitch={handleSwitch} />}
-      {currentPage === "login" && <LoginPage onSwitch={handleSwitch} />}
-    </div>
-  );
-};
-
-// --- STYLES ---
 const styles = {
   appContainer: {
     backgroundColor: "#515266",
@@ -541,6 +509,7 @@ const styles = {
     boxSizing: "border-box",
     outline: "none",
     transition: "border-color 0.3s ease-in-out",
+    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   phoneContainer: {
     display: "flex",
@@ -555,6 +524,7 @@ const styles = {
     backgroundColor: "#fff",
     fontFamily: "Bricolage Grotesque, sans-serif",
     cursor: "pointer",
+    outline: "none",
   },
   errorText: {
     color: "red",
@@ -562,6 +532,7 @@ const styles = {
     marginTop: "-4px",
     marginBottom: "8px",
     textAlign: "left",
+    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   inputFocus: {
     borderColor: "#7f8c8d",
@@ -579,10 +550,16 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
     transition: "background-color 0.2s ease-in-out, transform 0.1s ease-out",
+    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   buttonHover: {
     backgroundColor: "#57556a",
     transform: "translateY(-1px)",
+  },
+  buttonDisabled: {
+    backgroundColor: "#a0a0a0",
+    cursor: "not-allowed",
+    transform: "none",
   },
   divider: {
     display: "flex",
@@ -591,9 +568,10 @@ const styles = {
     margin: "20px 0",
     color: "#7f8c8d",
     width: "400px",
+    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   dividerLine: {
-    flexGrow: 1,
+    flexGrow: "1",
     height: "1px",
     backgroundColor: "#c2c9cc",
   },
@@ -611,13 +589,14 @@ const styles = {
     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
   },
   tab: {
-    flex: 1,
+    flex: "1",
     padding: "8px 10px",
     borderRadius: "6px",
     cursor: "pointer",
     fontWeight: "bold",
     fontSize: "14px",
     transition: "background-color 0.2s ease-in-out, color 0.2s ease-in-out",
+    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   tabActive: {
     backgroundColor: "#353342",
@@ -631,5 +610,30 @@ const styles = {
     animation: "pulse-animation 2s infinite alternate",
   },
 };
+// --- MAIN APPLICATION COMPONENT ---
+export const AuthFlow = () => {
+  const [currentPage, setCurrentPage] = useState("create");
 
-export default AuthFlow;
+  const handleSwitch = (page) => {
+    setCurrentPage(page);
+  };
+
+  const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
+
+  // Add a check to make sure it's set
+  if (!googleClientId) {
+    console.error("Google Client ID is not set!");
+    return <div>Error: Google authentication not configured</div>;
+  }
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <div style={styles.appContainer}>
+        {currentPage === "create" && <CreateAccount onSwitch={handleSwitch} />}
+        {currentPage === "login" && <LoginPage onSwitch={handleSwitch} />}
+      </div>
+    </GoogleOAuthProvider>
+  );
+};
+
+// Keep your existing styles object the same...

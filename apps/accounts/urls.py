@@ -9,6 +9,8 @@ urlpatterns = [
     path('api/logout/', views.logout_api, name='logout'),
     path('api/check-auth/', views.check_auth_api, name='check-auth'),
     path('api/google-login/', views.google_login_api, name='google-login'),
+    #path('api/google-connect/', views.google_connect_api, name='google-connect'),
+    #path('api/google-auth-url/', views.google_auth_url_api, name='google-auth-url'),
     
     # Utility endpoints
     path('api/csrf-token/', views.get_csrf_token, name='csrf-token'),

@@ -25,7 +25,7 @@ class FinancialExtractionResult(BaseModel):
 class FinancialSummary(BaseModel):
     pros: List[str] = Field(..., description="List of positive financial or business points, using precise terminology and numbers.")
     cons: List[str] = Field(..., description="List of negative financial or business points, using precise terminology and numbers.")
-
+    financial_health_summary: str = Field(..., description="Overall assessment of company's financial health based on the aggregate pros and cons, providing a big-picture view of strengths and concerns.")
 class RatioItem(BaseModel):
     ratio_name: Literal[
         "Current Ratio", 
@@ -199,27 +199,60 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
 # --- 6. SUMMARY GENERATION (Step 2) ---
 
 SUMMARY_PROMPT = """
-You are a world-class financial analyst. Your task is to analyze the provided raw financial data (extracted from an annual report or financial statement) and generate a concise, balanced summary of the business's current standing, focusing on key strengths (Pros) and weaknesses (Cons).
+ROLE: You are a world-class financial analyst with deep expertise in interpreting corporate financial statements from the Balance Sheet, Income Statement, and Cash Flow Statement.
 
-DATA ANALYSIS RULES:
-1. Focus on the most significant data points, such as major changes in revenue, profit, asset, or liability line items between 'current_year' and 'previous_year'.
-2. Calculate simple metrics like growth rates (e.g., Revenue growth = (Current - Previous) / Previous).
-3. If possible, calculate common ratios like Debt-to-Equity, P/E, or Interest Coverage Ratio if the necessary components (EBIT, Interest Expense, etc.) are clearly available in the data.
-4. Each Pro or Con should be a single, descriptive sentence that includes the specific financial item, the metric, and the associated number.
+PRIMARY TASK: Analyze the provided raw financial data in JSON format. Your analysis must produce two outputs:
+1.A concise, data-driven summary of key strengths (Pros) and weaknesses (Cons).
+2.An overall assessment of the company's financial health.
 
-Example Output Structure (Do NOT use this exact text unless you calculate the numbers):
-Pros
-- Revenue from operations grew by X% this year, from $A to $B.
-- The company's cash and cash equivalents increased by Y%.
+ANALYSIS RULES & INSTRUCTIONS
 
-Cons
-- Non-current liabilities, specifically Borrowings, increased by Z%.
-- Net profit for the year decreased compared to the previous period.
+1. Data Processing:
+    -Extract and analyze the provided financial_items array.
+    -Prioritize significant line items: Revenue, Profit, Total Assets, Total Liabilities, Equity, Borrowings, and Cash Reserves.
+    -Identify and include other items that show major changes.
 
+2. Comparative Analysis:
+    -Perform a year-on-year comparison between current_year and previous_year values.
+    -Calculate the percentage change using the formula: ((Current_Year - Previous_Year) / Previous_Year) * 100.
+    -Highlight both major percentage changes and notable absolute changes (growth or decline).
+
+3. Output Style - Pros & Cons:
+    -Each Pro and Con must be a single, factual, and descriptive sentence.
+    -Each sentence must state:
+        1.The specific financial item.
+        2.The metric or change observed.
+        3.The relevant numeric values and/or percentage change.
+    -Avoid generic, non-quantifiable statements (e.g., "The company is doing well" or "Performance was poor").
+    -Base all insights strictly on the provided data; no speculation.
+
+4. Output Style - Financial Health Assessment:
+    -Based on the aggregate of the Pros and Cons, provide a one-paragraph summary of the company's overall financial health.
+    -This statement should synthesize the key data points into a coherent big-picture view, mentioning the primary drivers of strength and the main areas of concern.
+
+TONE: Objective, analytical, and concise.
+
+STRICTLY FOLLOW THIS OUTPUT FORMAT:
+Return ONLY a valid JSON object. Do not add any other text, explanations, or disclaimers.
+
+json
+{{
+  "FinancialAnalysis": {{
+    "Pros": [
+      "Revenue from operations increased by 12.5%, rising from $8.0M to $9.0M.",
+      "Cash and cash equivalents grew by 25%, indicating improved liquidity."
+    ],
+    "Cons": [
+      "Borrowings increased by 18%, raising the debt-to-equity ratio to 1.6x.",
+      "Net profit margin declined from 15% to 10% due to higher operating expenses."
+    ],
+    "FinancialHealthSummary": "The company demonstrates strong revenue growth and robust cash generation, contributing to solid liquidity. However, this is partially offset by a rising debt burden and contracting profit margins, which warrants monitoring for long-term sustainability."
+  }}
+}}
 RAW EXTRACTED FINANCIAL DATA (JSON Format):
 {financial_data_json}
 
-Generate the analysis and return ONLY the JSON that strictly follows the FinancialSummary schema.
+generate summary and Return ONLY a valid JSON strictly following this schema:
 """
 
 
