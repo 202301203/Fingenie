@@ -11,3 +11,4 @@ pydantic
 Pillow
 python-dotenv
 requests
+gunicorn
