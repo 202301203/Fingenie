@@ -1,11 +1,20 @@
-# requirements.txt
 
-django
-yfinance
-langchain-google-genai
-langchain-community
-pypdf
-pdfplumber
-pytesseract
-pydantic
-# Add any other libraries you use
+Django==5.1.2
+gunicorn==21.2.0
+django-cors-headers==4.4.0
+
+
+python-dotenv==1.0.1
+requests==2.32.3
+Pillow==10.3.0
+pydantic==2.9.2
+
+
+yfinance==0.2.43
+langchain-google-genai==1.0.7
+langchain-community==0.2.15
+
+
+pypdf==5.1.0
+pdfplumber==0.11.5
+pytesseract==0.3.13
