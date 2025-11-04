@@ -231,14 +231,14 @@ export default function FingenieRippleLanding() {
             </div>
           </div>
           <nav style={styles.nav}>
-            <a href="#" style={styles.navLink}>Blog page</a>
+            {/* <a href="#" style={styles.navLink}>Blog page</a> */}
             <button
               onClick={() => navigate("/AuthFlow")}
               style={{ ...styles.navLink, background: "none", border: "none", cursor: "pointer" }}
             >
               Log In
             </button>
-            <a href="#" style={styles.navLink}>Chat Bot</a>
+            {/* <a href="#" style={styles.navLink}>Chat Bot</a> */}
             <FloatingMenu
               triggerText="Tools"
               items={items}
@@ -274,22 +274,25 @@ export default function FingenieRippleLanding() {
         </main>
       </div>
       {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-          <p style={styles.copyright}>
-            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Blog</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+       <footer style={styles.footer}>
+  <div style={styles.footerLeft}>
+    <p style={styles.copyright}>
+            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
           </p>
-        </div>
-        <div style={styles.footerRight}>
-          <h4 style={styles.functionsTitle}>functions</h4>
-          <ul style={styles.functionsList}>
-            <li style={styles.functionsItem}>AI summary</li>
-            <li style={styles.functionsItem}>Debt ratings</li>
-            <li style={styles.functionsItem}>stock graphs</li>
-            <li style={styles.functionsItem}>search companies</li>
-          </ul>
-        </div>
-      </footer>
+  </div>
+
+  <div style={styles.footerRight}>
+    <h4 style={styles.functionsTitle}>Functions</h4>
+    <ul style={styles.functionsList}>
+      <li style={styles.functionsItem}>AI summary</li>
+      <li style={styles.functionsItem}>stock graphs</li>
+      <li style={styles.functionsItem}>Debt ratings</li>
+      <li style={styles.functionsItem}>search companies</li>
+      <li style={styles.functionsItem}>Blog Page</li>
+      <li style={styles.functionsItem}>Charts & KPIs</li>
+    </ul>
+  </div>
+</footer>
     </div>
   );
 }
@@ -477,7 +480,7 @@ description: {
     fontFamily: 'Arial, sans-serif',
   },
 
-  footer: {
+ footer: {
     backgroundColor: '#4D5C61',
     color: '#FFFFFF',
     padding: '2rem 4rem',
@@ -491,13 +494,13 @@ description: {
 
   footerLeft: {
     flex: 1,
+    alignItems: 'center',
   },
 
   copyright: {
     fontSize: '13px',
-    margin: 0,
+    marginBottom: 0,
     lineHeight: 1.8,
-    fontFamily: 'Arial, sans-serif',
   },
 
   footerLink: {
@@ -507,28 +510,31 @@ description: {
   },
 
   footerRight: {
+    flex: 1,
     textAlign: 'right',
   },
 
   functionsTitle: {
     fontSize: '14px',
     fontWeight: '700',
-    margin: '0 0 0.75rem 0',
-    fontFamily: 'Arial, sans-serif',
+    marginRight: '8rem',
   },
 
-  functionsList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
+ functionsList: {
+  listStyle: 'none',
+  margin: 0,
+  padding: 0,
+  display: 'grid',
+  gridTemplateColumns: '3.5fr 1fr',
+  textAlign: 'right', 
+  gap: '6px 0px',
+},
 
   functionsItem: {
     fontSize: '13px',
     margin: 0,
-    fontFamily: '"Bricolage Grotesque", Arial, sans-serif',
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
   },
+  
 };
