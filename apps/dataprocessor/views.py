@@ -10,6 +10,7 @@ import json
 from .services import (
     extract_raw_financial_data,
     generate_summary_from_data,
+    generate_ratios_from_data,
     load_pdf_robust,
     prepare_context_smart
 )
@@ -99,6 +100,12 @@ def extract_data_api(request):
         else:
             extraction_result['summary'] = summary_result['summary']
 
+        ratio_result = generate_ratios_from_data(financial_items,api_key)
+
+        if not ratio_result.get('success'):
+            print(f"Ratio calcuulation Failed: {ratio_result.get('error')}")
+        else:
+            extraction_result['ratios'] = ratio_result['ratios']
         # --- STEP 4: RETURN COMBINED RESULTS ---
         return JsonResponse(extraction_result, status=200)
 
