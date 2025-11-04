@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Download,
@@ -70,21 +71,17 @@ export default function FinGenieApp() {
   const [percentDifference, setPercentDifference] = useState(null);
   const [loadingStock, setLoadingStock] = useState(false);
 
+  // example: use api.getSomeEndpoint() if you need to call a generic API during mount
+  // Removed the placeholder getSomeEndpoint call to avoid runtime errors.
   useEffect(() => {
     // Fetch stock data for 1 month if ticker present
     const ticker = tickerFromBackend;
     if (!ticker) return;
 
-    const fetchStock = async () => {
+        const fetchStock = async () => {
       setLoadingStock(true);
       try {
-        const res = await fetch(`/stock/graph-data/${encodeURIComponent(ticker)}/1M/`);
-        if (!res.ok) {
-          console.error('Stock API error', res.status);
-          setLoadingStock(false);
-          return;
-        }
-        const json = await res.json();
+        const json = await api.getStockData(ticker, '1M');
 
         // json.chartData is an array of {x: timestamp_ms, y: [O,H,L,C]}
         const labels = [];
