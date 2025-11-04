@@ -1,11 +1,11 @@
 import os
 import json
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema.document import Document
+from langchain_core.documents import Document
 import pdfplumber
 import pytesseract
 from pydantic import BaseModel, Field
@@ -25,6 +25,24 @@ class FinancialExtractionResult(BaseModel):
 class FinancialSummary(BaseModel):
     pros: List[str] = Field(..., description="List of positive financial or business points, using precise terminology and numbers.")
     cons: List[str] = Field(..., description="List of negative financial or business points, using precise terminology and numbers.")
+
+class RatioItem(BaseModel):
+    ratio_name: Literal[
+        "Current Ratio", 
+        "Quick Ratio", 
+        "Debt to Equity Ratio", 
+        "Asset Turnover Ratio", 
+        "Return on Assets (ROA)", 
+        "Return on Equity (ROE)"
+    ] = Field(..., description="Name of the financial ratio")
+    formula: str = Field(..., description="Formula used for calculation")
+    calculation: str = Field(..., description="Step-by-step calculation")
+    result: float = Field(..., description="Numeric result of the ratio")
+    interpretation: str = Field(..., description="One-line interpretation of the ratio")
+
+class FinancialRatios(BaseModel):
+    financial_ratios: List[RatioItem] = Field(..., description="List of calculated financial ratios")
+
 
 # --- 2. ROBUST PDF LOADING ---
 
@@ -204,6 +222,80 @@ RAW EXTRACTED FINANCIAL DATA (JSON Format):
 Generate the analysis and return ONLY the JSON that strictly follows the FinancialSummary schema.
 """
 
+
+RATIO_PROMPT = """
+Role:
+You are a financial analyst AI assistant specializing in accounting and ratio analysis. You are skilled at interpreting balance sheets and income statements, calculating standard financial ratios, and explaining their meanings in simple terms.
+
+Goal:
+From the provided financial data, calculate key financial ratios and interpret their results.
+
+Input Data:
+(User will provide raw data here — e.g., Current Assets, Current Liabilities, Inventory, Revenue, Total Assets, Total Debt, Net Income, Equity, etc.)
+
+Task Steps:
+
+1. Identify and extract relevant financial data from the given input.
+
+2. Calculate the following ratios using the correct formulas:
+    - Current Ratio = Current Assets / Current Liabilities
+    - Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+    - Debt to Equity Ratio = Total Debt / Shareholders' Equity
+    - Asset Turnover Ratio = Revenue / Total Assets
+    - Return on Assets (ROA) = Net Income / Total Assets
+    - Return on Equity (ROE) = Net Income / Shareholders' Equity
+
+3. For each ratio:
+    - Provide the formula used
+    - Show the calculation step
+    - Provide the numeric result (rounded to two decimals)
+    - Write a one-line interpretation of what the ratio indicates
+
+4. Return your final response strictly as a JSON object in the following structure:
+{{
+  "financial_ratios": [
+    {{
+      "ratio_name": "",
+      "formula": "",
+      "calculation": "",
+      "result": "",
+      "interpretation": ""
+    }}
+  ]
+}}
+
+Example:
+{{
+    "financial_ratios": [
+        {{
+            "ratio_name": "Current Ratio",
+            "formula": "CA / CL",
+            "calculation": "200000 / 100000",
+            "result": 2.0,
+            "interpretation": "Indicates good short-term liquidity."
+        }},
+        {{
+            "ratio_name": "Quick Ratio",
+            "formula": "(CA - Inventory) / CL",
+            "calculation": "(200000 - 50000) / 100000",
+            "result": 1.5,
+            "interpretation": "Shows immediate liquidity position."
+        }}
+    ]
+}}
+
+5. Additional Instructions:
+    - If any data is missing, clearly mention what is needed to complete the calculation.
+    - Keep the explanations concise and beginner-friendly.
+    - Do not make up data unless explicitly instructed.
+
+RAW EXTRACTED FINANCIAL DATA (JSON Format):
+{financial_data_json}
+
+Generate the ratios and return ONLY the JSON that strictly follows the given format.
+"""
+
+
 def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
     """Generates a structured Pros/Cons summary from the extracted data."""
     os.environ["GOOGLE_API_KEY"] = api_key
@@ -240,4 +332,41 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
 
     except Exception as e:
         print(f"Summary generation failed during AI call: {e}")
+        return {"error": f"Summary generation failed: {e}"}
+
+
+def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a ratios from the extracted data."""
+    os.environ["GOOGLE_API_KEY"] = api_key
+    
+    # 1. Prepare input JSON string for the summary prompt
+    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+
+    # 2. Setup LLM for structured JSON summary
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", 
+            temperature=0.2,
+            max_retries=3,
+            request_timeout=120,
+            response_mime_type="application/json",
+            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
+        )
+    except Exception as e:
+        print(f"Failed to initialize Gemini model for summary: {e}")
+        return {"error": "Failed to initialize Gemini model for summary."}
+
+    # 3. Format and invoke prompt
+    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+
+    try:
+        print("Sending request to AI for ratio analysis...")
+        response = llm.invoke(formatted_prompt)
+        ratios_json = json.loads(response.content)
+        
+        return {"ratios": ratios_json, "success": True}
+        
+
+    except Exception as e:
+        print(f"ratio generation failed during AI call: {e}")
         return {"error": f"Summary generation failed: {e}"}

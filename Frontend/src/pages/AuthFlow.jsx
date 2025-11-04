@@ -1,10 +1,21 @@
 import React, { useState } from "react";
 import "../App.css";
-import { useGoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { GoogleLogin } from "@react-oauth/google"; // Changed from useGoogleLogin
 import { useNavigate } from "react-router-dom";
 import fgLogo from "../images/fglogo.png";
 import Glogo from "../images/Glogo.png";
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      const [key, value] = cookie.trim().split("=");
+      if (key === name) cookieValue = decodeURIComponent(value);
+    }
+  }
+  return cookieValue;
+}
 
 // Custom Hook for hover/focus state management
 const useInteractionState = (defaultStyle, hoverStyle) => {
@@ -69,10 +80,9 @@ const CreateAccount = ({ onSwitch }) => {
     return "";
   };
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // Check if all fields are filled
     if (!username || !email || !password || !contact) {
       setPopupMessage("Please fill out all fields.");
       setPopupColor("#d6867dff"); // red
@@ -80,7 +90,6 @@ const CreateAccount = ({ onSwitch }) => {
       return;
     }
 
-    // Email validation
     if (!emailPattern.test(email)) {
       setEmailError("Please enter a valid email address");
       return;
@@ -88,15 +97,6 @@ const CreateAccount = ({ onSwitch }) => {
       setEmailError("");
     }
 
-    // Contact number validation
-    if (contact.length !== 10) {
-      setContactError("Contact number must be exactly 10 digits");
-      return;
-    } else {
-      setContactError("");
-    }
-
-    // Password validation
     const pwdError = validatePassword(password);
     if (pwdError) {
       setPasswordError(pwdError);
@@ -107,7 +107,29 @@ const CreateAccount = ({ onSwitch }) => {
     // All validations passed
     setShowPopup(true);
 
-    navigate("/mainpageafterlogin");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/accounts/api/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"), // Added CSRF token
+        },
+        credentials: "include", // Added credentials
+        body: JSON.stringify({ username, email, password }), // Consider adding contact if backend supports it
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Account created successfully for ${data.username}`);
+        navigate("/mainpageafterlogin");
+      } else {
+        alert(data.error || "Registration failed");
+      }
+    } catch (err) {
+      console.error("Error during registration:", err);
+      alert("Server error. Please try again later.");
+    }
   };
 
   const handleGoogleSuccess = (tokenResponse) => {
@@ -133,13 +155,6 @@ const CreateAccount = ({ onSwitch }) => {
     setPopupColor("#E74C3C"); // red
     setShowPopup(true);
   };
-
-  // 3. Get the actual Google login function using the hook
-  const googleLogin = useGoogleLogin({
-    onSuccess: handleGoogleSuccess,
-    onError: handleGoogleError,
-    // flow: 'auth-code' is recommended for server-side verification (requires backend setup)
-  });
 
   return (
     <>
@@ -221,7 +236,7 @@ const CreateAccount = ({ onSwitch }) => {
           style={usernameInput.inputStyle}
         />
 
-        {/* Contact Number Section (with validation + selector) */}
+        {/* Contact Number Section */}
         <div style={styles.phoneContainer}>
           <select
             value={countryCode}
@@ -257,8 +272,6 @@ const CreateAccount = ({ onSwitch }) => {
             }}
           />
         </div>
-
-        {/* Error message below input */}
         {contactError && <p style={styles.errorText}>{contactError}</p>}
 
         <input
@@ -289,47 +302,39 @@ const CreateAccount = ({ onSwitch }) => {
         >
           Create an account
         </button>
-
-        {/* <div style={styles.divider}>
-          <span style={styles.dividerLine}></span>
-          <span style={styles.dividerText}>or continue with</span>
-          <span style={styles.dividerLine}></span>
-        </div> */}
       </div>
+
       <div style={styles.divider}>
-          <span style={styles.dividerLine}></span>
-          <span style={styles.dividerText}>or continue with</span>
-          <span style={styles.dividerLine}></span>
-        </div>
-      
-      <div
-          style={styles.google}
-          onClick={googleLogin}
-          onMouseEnter={googleBtnProps.onMouseEnter}
-          onMouseLeave={googleBtnProps.onMouseLeave}
-        >
-          <img
-            src={Glogo}
-            alt="Google logo"
-            style={styles.googleIcon}
-          />
-          Google
-        </div>
+        <span style={styles.dividerLine}></span>
+        <span style={styles.dividerText}>or continue with</span>
+        <span style={styles.dividerLine}></span>
+      </div>
+
+      <div style={styles.googleContainer}>
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          useOneTap
+          theme="filled_blue"
+          size="large"
+          text="continue_with"
+          shape="rectangular"
+        />
+      </div>
     </div>
     </>
   );
 };
 
-// 2. & 3. Login Page
+// 2. Login Page
 const LoginPage = ({ onSwitch }) => {
   const navigate = useNavigate();
-  const [loginType, setLoginType] = useState("email"); // 'email' or 'username'
+  const [loginType, setLoginType] = useState("email");
   const [emailError, setEmailError] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const loginBtnProps = useInteractionState(styles.button, styles.buttonHover);
-  const signUpLinkProps = useInteractionState(styles.link, styles.linkHover);
   const identifierInput = useInputFocus();
   const passwordInput = useInputFocus();
   const [showPopup, setShowPopup] = useState(false);
@@ -348,7 +353,7 @@ const LoginPage = ({ onSwitch }) => {
     return "";
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!identifier || !password) {
       setPopupMessage("Please enter your details.");
       setPopupColor("#E74C3C");
@@ -386,7 +391,33 @@ const LoginPage = ({ onSwitch }) => {
 
   const handleToggle = (type) => {
     setLoginType(type);
-    setIdentifier(""); // Clear input on toggle for better UX
+    setIdentifier("");
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const token = credentialResponse.credential;
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        credentials: "include",
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Signed in as ${data.email}`);
+        navigate("/mainpageafterlogin");
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error("Google login failed:", err);
+    }
   };
 
   return (
@@ -434,52 +465,64 @@ const LoginPage = ({ onSwitch }) => {
         >
           Email address
         </div>
-        <div
-          style={{
-            ...styles.tab,
-            ...(loginType === "username"
-              ? styles.tabActive
-              : styles.tabInactive),
-          }}
-          onClick={() => handleToggle("username")}
-        >
-          Username
+        <div style={styles.header}>Log in to your account</div>
+
+        <div style={styles.tabContainer}>
+          <div
+            style={{
+              ...styles.tab,
+              ...(loginType === "email" ? styles.tabActive : styles.tabInactive),
+            }}
+            onClick={() => handleToggle("email")}
+          >
+            Email address
+          </div>
+          <div
+            style={{
+              ...styles.tab,
+              ...(loginType === "username"
+                ? styles.tabActive
+                : styles.tabInactive),
+            }}
+            onClick={() => handleToggle("username")}
+          >
+            Username
+          </div>
         </div>
-      </div>
 
-      <input
-        type={loginType === "email" ? "email" : "text"}
-        placeholder={loginType === "email" ? "Email address" : "Username"}
-        value={identifier}
-        onChange={(e) => setIdentifier(e.target.value)}
-        {...identifierInput}
-        style={identifierInput.inputStyle}
-      />
-      {loginType === "email" && emailError && (
-        <p style={styles.errorText}>{emailError}</p>
-      )}
+        <input
+          type={loginType === "email" ? "email" : "text"}
+          placeholder={loginType === "email" ? "Email address" : "Username"}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          {...identifierInput}
+          style={identifierInput.inputStyle}
+        />
+        {loginType === "email" && emailError && (
+          <p style={styles.errorText}>{emailError}</p>
+        )}
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        {...passwordInput}
-        style={passwordInput.inputStyle}
-      />
-      {passwordError && <p style={styles.errorText}>{passwordError}</p>}
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          {...passwordInput}
+          style={passwordInput.inputStyle}
+        />
+        {passwordError && <p style={styles.errorText}>{passwordError}</p>}
 
-      <button
-        onClick={handleLogin}
-        style={loginBtnProps.style}
-        onMouseEnter={loginBtnProps.onMouseEnter}
-        onMouseLeave={loginBtnProps.onMouseLeave}
-      >
-        Log in
-      </button>
+        <button
+          onClick={handleLogin}
+          style={loginBtnProps.style}
+          onMouseEnter={loginBtnProps.onMouseEnter}
+          onMouseLeave={loginBtnProps.onMouseLeave}
+        >
+          Log in
+        </button>
 
-      <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
-         Don't have an account?{" "}
+        <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
+          Don't have an account?{" "}
           <span
             style={{ textDecoration: "underline", cursor: "pointer" }}
             onClick={() => onSwitch("create")}
@@ -487,17 +530,29 @@ const LoginPage = ({ onSwitch }) => {
             Sign up
           </span>
         </p>
+      </div>
 
+      <div style={styles.divider}>
+        <span style={styles.dividerLine}></span>
+        <span style={styles.dividerText}>or continue with</span>
+        <span style={styles.dividerLine}></span>
+      </div>
+
+      <div style={styles.googleContainer}>
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => alert("Google Sign-In failed")}
+          useOneTap
+        />
+      </div>
     </div>
     </>
   );
 };
 
-
-
 // --- MAIN APPLICATION COMPONENT ---
 export const AuthFlow = () => {
-  const [currentPage, setCurrentPage] = useState("create"); // 'create' or 'login'
+  const [currentPage, setCurrentPage] = useState("create");
 
   const handleSwitch = (page) => {
     setCurrentPage(page);
@@ -521,11 +576,11 @@ const styles = {
     alignItems: "center",
     animation: "fadeIn 0.8s ease-in-out",
   },
-  "@keyframes fadeIn": {
-    from: { opacity: 0, transform: "scale(0.9)" },
-    to: { opacity: 1, transform: "scale(1)" },
+  outerContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   },
-
   modal: {
     backgroundColor: "#d1dfdf",
     borderRadius: "24px",
@@ -536,34 +591,16 @@ const styles = {
     fontFamily: "Bricolage Grotesque, sans-serif",
     position: "relative",
   },
-
-  google: {
+  googleContainer: {
     marginTop: "20px",
-    backgroundColor: "#f3f5dc",
-    borderRadius: "24px",
-    padding: "12px 10px",
-    width: "100%",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
-    fontSize: "20px",
-    fontWeight: "600",
-    cursor: "pointer",
-    boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
-    transition: "background-color 0.3s ease-in-out",
   },
-
   header: {
     fontSize: "20px",
     fontWeight: "600",
     color: "#353342",
     marginBottom: "10px",
-  },
-
-  subText: {
-    fontSize: "12px",
-    color: "#57556a",
-    marginBottom: "25px",
   },
   logo: {
     fontSize: "40px",
@@ -582,14 +619,12 @@ const styles = {
     outline: "none",
     transition: "border-color 0.3s ease-in-out",
   },
-
   phoneContainer: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
     margin: "8px 0",
   },
-
   countryCodeSelect: {
     padding: "12px",
     borderRadius: "8px",
@@ -598,7 +633,6 @@ const styles = {
     fontFamily: "Bricolage Grotesque, sans-serif",
     cursor: "pointer",
   },
-
   errorText: {
     color: "red",
     fontSize: "12px",
@@ -606,9 +640,8 @@ const styles = {
     marginBottom: "8px",
     textAlign: "left",
   },
-
   inputFocus: {
-    borderColor: "#7f8c8d", // Subtle focus color
+    borderColor: "#7f8c8d",
     boxShadow: "0 0 5px rgba(127, 140, 141, 0.5)",
   },
   button: {
@@ -628,35 +661,13 @@ const styles = {
     backgroundColor: "#57556a",
     transform: "translateY(-1px)",
   },
-  googleButton: {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "24px",
-    border: "1px solid #c2c9cc",
-    backgroundColor: "#dfe4e6",
-    color: "#353342",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "background-color 0.2s ease-in-out",
-  },
-  googleButtonHover: {
-    backgroundColor: "#e7ebee",
-  },
-  googleIcon: {
-    width: "30px",
-    height: "30px",
-    marginRight: "10px",
-  },
   divider: {
     display: "flex",
     alignItems: "center",
     textAlign: "center",
     margin: "20px 0",
     color: "#7f8c8d",
+    width: "400px",
   },
   dividerLine: {
     flexGrow: 1,
@@ -666,18 +677,6 @@ const styles = {
   dividerText: {
     padding: "0 10px",
     fontSize: "18px",
-  },
-  link: {
-    color: "#353342",
-    fontSize: "12px",
-    textDecoration: "none",
-    display: "block",
-    marginTop: "15px",
-    cursor: "pointer",
-    transition: "opacity 0.2s ease-in-out",
-  },
-  linkHover: {
-    opacity: 0.7,
   },
   tabContainer: {
     display: "flex",
@@ -741,10 +740,6 @@ const styles = {
   // Animation utility (using a small, repeated animation for effect)
   pulse: {
     animation: "pulse-animation 2s infinite alternate",
-    "@keyframes pulse-animation": {
-      "0%": { transform: "scale(1)" },
-      "100%": { transform: "scale(1.02)" },
-    },
   },
 };
 
