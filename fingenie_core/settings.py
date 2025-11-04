@@ -52,6 +52,7 @@ EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
     'apps.stockgraph',
+    'apps.sector_overview'
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
@@ -138,7 +139,7 @@ SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 
 
-GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', 'http://972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com')
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com')
 
 # Logging Configuration
 LOGGING = {
@@ -202,6 +203,36 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
+
+GOOGLE_CLIENT_ID = "http://972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com"
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+
+# This must be 1 initially. You'll update the corresponding Site record later.
+SITE_ID = 1
+
+# Define where users land after success/failure
+LOGIN_REDIRECT_URL = '/'      # Redirect to the homepage after login
+LOGOUT_REDIRECT_URL = '/'     # Redirect to the homepage after logout
+ACCOUNT_LOGOUT_ON_GET = True  # Allows logout via simple link click (GET request)
+
+
 
 
 # Static files (CSS, JavaScript, Images)

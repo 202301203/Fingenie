@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 // import all pages
 import HomepageBeforeLogin from "./pages/homepage_beforelogin";
-import AuthFlow from "./pages/AuthFlow";
+import {AuthFlow} from "./pages/AuthFlow";
 import MainPageAfterLogin from "./pages/mainpageafterlogin";
 import FileUploadApp from "./pages/FileUploadApp";
 import SummaryPage from "./pages/summary_page";
