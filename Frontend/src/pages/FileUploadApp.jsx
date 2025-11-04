@@ -8,7 +8,7 @@ import {
   History,
   Settings,
   LogOut,
-  Download
+  Download, Wrench, BarChart, TrendingUp,Search, Activity, BookOpen,Cpu,GitCompare
 } from 'lucide-react';
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
@@ -25,6 +25,8 @@ const FileUploadApp = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+  
 
   // File size constraint (10MB limit)
   const MAX_FILE_SIZE_MB = 10;
@@ -140,51 +142,120 @@ if (validFiles.length > 0) {
 
   // Header component
   const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img src={fglogo_Wbg} style={{ height: "80px", width: "auto" }} alt="logo" />
+   <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logo}>
+            <img
+              src={fglogo_Wbg}
+              style={{ height: "80px", width: "auto" }}
+              alt="logo"
+            />
+          </div>
         </div>
 
-      </div>
-      <nav style={styles.nav}>
-        <span style={styles.navLink}>Chatbot</span>
-        <span style={styles.navLink}>Blog page</span>
-        <div
+        <nav style={styles.nav}>
+          {/* Home */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/mainpageafterlogin")}
+          >
+            Home
+          </span>
+
+          {/* News */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/NewsPage")}
+          >
+            News
+          </span>
+
+          {/* About */}
+          <span
+            style={styles.navLink}
+            onClick={() => navigate("/AboutUs")}
+          >
+            About us
+          </span>
+
+          {/* Tools Menu */}
+          <div
+            style={styles.toolsMenu}
+            onMouseEnter={() => setShowToolsDropdown(true)}
+            onMouseLeave={() => setShowToolsDropdown(false)}
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
+            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
+
+            {showToolsDropdown && (
+              <div style={styles.dropdown}>
+                <div style={styles.dropdownItem}>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Search size={16} />
+                  <span>Search Companies</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Activity size={16} />
+                  <span>Charts & KPIs</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Menu */}
+          <div
             style={styles.userMenu}
             onMouseEnter={() => setShowDropdown(true)}
             onMouseLeave={() => setShowDropdown(false)}
           >
-          <User size={24} style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-                    <div
+            <User size={24} color="black" style={styles.userIcon} />
+
+            {showDropdown && (
+              <div style={styles.dropdown}>
+                <div style={styles.dropdownItem}>
+                  <User size={16} />
+                  <span>Profile</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <History size={16} />
+                  <span>History</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </div>
+
+                  {/* Sign out */}
+                  <div
                     style={styles.dropdownItem}
-                    onClick={() => {
+                      onClick={() => {
+                      // (Optional) clear user data or tokens here
                       navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
                     }}
                   >
                     <LogOut size={16} />
-                    <span>Sign out</span>
-                  </div>
+                        <span>Sign out</span>                            </div>
+              </div>
+            )}
+          </div>
+        </nav>
+      </header>
 
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
   );
 
   // First page - Number input
@@ -453,29 +524,28 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '1rem',
-    backgroundColor: '#fdfdfdff',
+    padding: '2rem 4rem',
+    position: 'relative',
+    zIndex: 10,
+    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
+    backdropFilter: 'blur(10px)',            // Blur background
+    WebkitBackdropFilter: 'blur(10px)',      // Safari support
+    borderRadius: '15px',
+    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
+    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
+    borderBottom: '2px solid black',
+
     color: 'white',
-    borderBottom: '1px solid #000000ff'
   },
 
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
 
   logo: {
-    width: '48px',
-    height: '48px',
-    backgroundColor: 'white',
-    borderRadius: '4px',
-    color: '#334155',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 'bold',
-    margin: '1rem 1rem 0 2rem'
+    width: "40px",
+    height: "40px",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   brandName: {
@@ -485,7 +555,8 @@ const styles = {
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1.5rem'
+    gap: '1.5rem',
+    marginTop: "10px",
   },
 
   navLink: {
@@ -853,7 +924,15 @@ const styles = {
     borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   },
-
+  
+  toolsMenu: {
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+  cursor: "pointer",
+  marginLeft: "1rem",
+  color: "Black"
+},
 };
 
 export default FileUploadApp;

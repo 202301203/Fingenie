@@ -52,6 +52,15 @@ const CreateAccount = ({ onSwitch }) => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const createBtnProps = useInteractionState(styles.button, styles.buttonHover);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupColor, setPopupColor] = useState("#4CAF50");
+
+  const googleBtnProps = useInteractionState(
+    styles.googleButton,
+    styles.googleButtonHover
+  );
+  //const linkProps = useInteractionState(styles.link, styles.linkHover);
 
   // Input focus hooks
   const usernameInput = useInputFocus();
@@ -75,7 +84,9 @@ const CreateAccount = ({ onSwitch }) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!username || !email || !password || !contact) {
-      alert("Please fill out all fields.");
+      setPopupMessage("Please fill out all fields.");
+      setPopupColor("#d6867dff"); // red
+      setShowPopup(true);
       return;
     }
 
@@ -93,6 +104,8 @@ const CreateAccount = ({ onSwitch }) => {
     } else {
       setPasswordError("");
     }
+    // All validations passed
+    setShowPopup(true);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/accounts/api/register/", {
@@ -119,38 +132,81 @@ const CreateAccount = ({ onSwitch }) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    const token = credentialResponse.credential; // Correct property for GoogleLogin
+  const handleGoogleSuccess = (tokenResponse) => {
+    // The ID token (JWT) is in tokenResponse.credential
+    const decodedToken = jwtDecode(tokenResponse.credential);
 
-    try {
-      const res = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "include",
-        body: JSON.stringify({ token }),
-      });
+    console.log("Google Login Success. Decoded Data:", decodedToken);
+    setPopupMessage(
+      `Signed in as ${decodedToken.name} (${decodedToken.email})!`
+    );
+    setPopupColor("#4CAF50"); // green
+    setShowPopup(true);
 
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Signed in as ${data.email}`);
-        navigate("/mainpageafterlogin");
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      console.error("Google login failed:", err);
-    }
+    //  CRUCIAL NEXT STEP:
+    // Send the ID token (tokenResponse.credential) to your server (e.g., in server.js)
+    // for secure verification and user creation/authentication.
+    // Example: sendTokenToServer(tokenResponse.credential);
   };
 
   const handleGoogleError = () => {
     console.error("Google Sign-In Failed");
-    alert("Google Sign-In failed. Please try again.");
+    setPopupMessage("Google Sign-In failed. Please try again.");
+    setPopupColor("#E74C3C"); // red
+    setShowPopup(true);
   };
 
   return (
+    <>
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
+            <h3>
+              {popupColor === "#4CAF50"
+                ? "✅ Account Created"
+                : "⚠️ Incomplete Details"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    <div>
+      {/* Your Google Login button goes here */}
+
+      {/* ✅ Custom Popup */}
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
+            <h3>
+              {popupColor === "#4CAF50"
+                ? "✅ Google Sign-In Successful"
+                : "❌ Google Sign-In Failed"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
     <div style={styles.outerContainer}>
       <div style={{ ...styles.modal, ...styles.pulse }}>
         <div style={styles.logo}>
@@ -266,6 +322,7 @@ const CreateAccount = ({ onSwitch }) => {
         />
       </div>
     </div>
+    </>
   );
 };
 
@@ -280,6 +337,9 @@ const LoginPage = ({ onSwitch }) => {
   const loginBtnProps = useInteractionState(styles.button, styles.buttonHover);
   const identifierInput = useInputFocus();
   const passwordInput = useInputFocus();
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupColor, setPopupColor] = useState("#4CAF50");
 
   const validatePassword = (pwd) => {
     if (pwd.length < 8) return "Password must be at least 8 characters";
@@ -295,7 +355,9 @@ const LoginPage = ({ onSwitch }) => {
 
   const handleLogin = async () => {
     if (!identifier || !password) {
-      alert("Please enter your details.");
+      setPopupMessage("Please enter your details.");
+      setPopupColor("#E74C3C");
+      setShowPopup(true);
       return;
     }
 
@@ -319,33 +381,12 @@ const LoginPage = ({ onSwitch }) => {
       setPasswordError("");
     }
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/accounts/api/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"), // Fixed: single headers declaration
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          identifier,
-          password,
-          login_type: loginType,
-        }),
-      });
+    // Login logic placeholder
+    setPopupMessage(`Logging in with ${loginType}: ${identifier}`);
+    setPopupColor("#4CAF50");
+    setShowPopup(true);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`Login successful! Welcome ${data.username}`);
-        navigate("/mainpageafterlogin");
-      } else {
-        alert(data.error || "Login failed. Please check your credentials.");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      alert("Server error. Please try again later.");
-    }
+    navigate("/mainpageafterlogin");
   };
 
   const handleToggle = (type) => {
@@ -380,14 +421,49 @@ const LoginPage = ({ onSwitch }) => {
   };
 
   return (
-    <div style={styles.outerContainer}>
-      <div style={styles.modal}>
-        <div style={styles.logo}>
-          <img
-            src={fgLogo}
-            alt="Site logo"
-            style={{ height: "130px", width: "auto" }}
-          />
+    <>
+    {/* ✅ Popup */}
+      {showPopup && (
+        <div style={styles.popupOverlayStyle}>
+          <div style={styles.popupBoxStyle}>
+            <h3>
+              {popupColor === "#88a089ff" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p>{popupMessage}</p>
+            <button
+              onClick={() => setShowPopup(false)}
+              style={styles.okButtonStyle}
+              onMouseOver={(e) =>
+                (e.target.style.backgroundColor = "#f0f0f0")
+              }
+              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    <div style={styles.modal}>
+      <div style={styles.logo}>
+        <img
+          src={fgLogo}
+          alt="Site logo"
+          style={{ height: "130px", width: "auto" }}
+        />
+      </div>
+      {/* <div style={styles.header}>Create your account</div> */}
+      <div style={styles.header}>Log in to your account</div>
+      {/* <div style={styles.logo}>OG</div> */}
+
+      <div style={styles.tabContainer}>
+        <div
+          style={{
+            ...styles.tab,
+            ...(loginType === "email" ? styles.tabActive : styles.tabInactive),
+          }}
+          onClick={() => handleToggle("email")}
+        >
+          Email address
         </div>
         <div style={styles.header}>Log in to your account</div>
 
@@ -470,6 +546,7 @@ const LoginPage = ({ onSwitch }) => {
         />
       </div>
     </div>
+    </>
   );
 };
 
@@ -627,6 +704,40 @@ const styles = {
     backgroundColor: "transparent",
     color: "#57556a",
   },
+    popupOverlayStyle :{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    },
+    
+     popupBoxStyle : {
+      backgroundColor: "#b1cfb2ff",
+      color: "black",
+      padding: "20px",
+      borderRadius: "8px",
+      textAlign: "center",
+      boxShadow: "0 4px 8px rgba(20, 13, 13, 0.3)",
+    },
+    okButtonStyle: {
+      marginTop: "10px",
+      padding: "8px 16px",
+      border: "1px solid black",
+      borderRadius: "10px",
+      backgroundColor: "white",
+      color: "black",
+      cursor: "pointer",
+      transition: "all 0.2s ease-in-out",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    },
+
+  // Animation utility (using a small, repeated animation for effect)
   pulse: {
     animation: "pulse-animation 2s infinite alternate",
   },
