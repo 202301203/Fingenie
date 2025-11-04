@@ -32,6 +32,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "fingenie-sz41.onrender.com",
+    "https://fingenie-2exi.vercel.app/",
 ]
 
 
@@ -71,29 +72,10 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "https://fingenie-2exi.vercel.app/",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://fingenie-sz41.onrender.com",
-    'https://fingenie-eight.vercel.app/",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
 ]
 
 ROOT_URLCONF = 'fingenie_core.urls'
