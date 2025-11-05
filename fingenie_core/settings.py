@@ -16,6 +16,10 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+VECTOR_STORE_DIR = os.path.join(BASE_DIR, 'vector_stores')
+if not os.path.exists(VECTOR_STORE_DIR):
+    os.makedirs(VECTOR_STORE_DIR)
+    
 # Media files (uploaded PDFs will be stored here)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -53,7 +57,7 @@ EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
     'apps.stockgraph',
-    'apps.sector_overview'
+    'apps.chatbot'
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
