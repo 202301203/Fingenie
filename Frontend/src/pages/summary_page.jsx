@@ -1,6 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import api from '../api';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useRef,useEffect  } from 'react';
 import {
   Download,
   User,
@@ -17,8 +15,10 @@ import {
   BookOpen,
   Cpu,
   GitCompare
-} from "lucide-react";
-import fglogo_Wbg from '../images/fglogo_Wbg.png';
+} from "lucide-react";import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import api from '../api';
+
+import { useNavigate,useLocation  } from "react-router-dom";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import ReactDOM from 'react-dom/client';
@@ -45,7 +45,6 @@ ChartJS.register(
   Legend
 );
 
-
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
   const [selectedRatio, setSelectedRatio] = useState(1);
@@ -53,10 +52,13 @@ export default function FinGenieApp() {
   const [hoveredRatio, setHoveredRatio] = useState(null);
   const [hoverTimer, setHoverTimer] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sectorDropdown, setSectorDropdown] = useState(false);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation();
+  const summaryRef = useRef();
+  const ratiosRef = useRef();
+   const location = useLocation();
 
   // Data passed from upload page (server response)
   const backendResult = location && location.state ? location.state : {};
@@ -71,18 +73,15 @@ export default function FinGenieApp() {
   const [percentDifference, setPercentDifference] = useState(null);
   const [loadingStock, setLoadingStock] = useState(false);
 
-  // example: use api.getSomeEndpoint() if you need to call a generic API during mount
-  // Removed the placeholder getSomeEndpoint call to avoid runtime errors.
   useEffect(() => {
     // Fetch stock data for 1 month if ticker present
     const ticker = tickerFromBackend;
     if (!ticker) return;
 
-        const fetchStock = async () => {
+    const fetchStock = async () => {
       setLoadingStock(true);
       try {
         const json = await api.getStockData(ticker, '1M');
-
         // json.chartData is an array of {x: timestamp_ms, y: [O,H,L,C]}
         const labels = [];
         const closes = [];
@@ -107,13 +106,28 @@ export default function FinGenieApp() {
 
     fetchStock();
   }, [tickerFromBackend]);
-
-
-
-  const summaryRef = useRef();
-  const ratiosRef = useRef();
-
-  // Ratio data
+ const displayName = companyNameFromBackend || 'Unknown Company';
+  //summary data
+  const summaryData = [
+    {company: displayName,
+    pros: [
+      "Strong brand recognition and customer loyalty",
+      "Consistent revenue growth and profitability",
+      "Diverse product portfolio and ecosystem",
+      "Robust cash flow and financial stability",
+      "Innovation in technology and design",
+    ],
+    cons: [
+      "Revenue growth of 12.55% was outpaced by a 16.88% increase in Cost of Goods Sold.",
+      "The Debt to Equity Ratio worsened due to a 35.10% surge in Total Debt vs. a 15.00% rise in Equity.",
+      "Receivables increased by 21.90%, significantly outpacing sales growth, which may indicate collection issues.",
+      "Operating cash flow grew by only 5.40%, falling behind the 12.55% revenue growth rate.",
+      "Selling and Marketing expenses increased by 20.00%, exerting pressure on the operating margin.",
+    ],
+    financialHealth:
+      "The company posted strong top-line growth with revenue increasing by 12.55% and a healthy 15.20% rise in Net Income for the period. Operational efficiency is robust, evidenced by a 25.10% increase in EBITDA. Liquidity remains stable, with the Current Ratio holding steady at 1.8x, and the Return on Equity (ROE) improving by 90 basis points to 18.0%. The capital base was bolstered by a 15.00% increase in Shareholders' Equity.",}
+  ];
+    // Ratio data
   const ratios = [
   {
     id: 1,
@@ -204,7 +218,6 @@ export default function FinGenieApp() {
     if (hoverTimer) clearTimeout(hoverTimer);
     setHoveredRatio(null);
   };
-
   // PDF Download Function 
   const downloadPDF = async () => {
     const pdf = new jsPDF('p', 'pt', 'a4');
@@ -217,11 +230,34 @@ export default function FinGenieApp() {
     container.style.width = '800px';
     container.style.backgroundColor = 'white';
     document.body.appendChild(container);
-
+    
     // Render all pages inside this container
     const sections = [
-      { title: "Summary Page", content: <SummaryPage /> },
-      { title: "Ratios", content: <RatiosPage /> },
+      { title: "Summary", content: (
+        <div>
+          {summaryFromBackend.map(sd => (
+            <div>
+              <h3>{sd.company}</h3>
+              <p><strong>Pros:</strong> {sd.pros}</p>
+              <p><strong>Cons:</strong> {sd.cons}</p>
+              <p><strong>Financial Health Summary:</strong> {sd.financialHealth}</p>
+            </div>
+          ))}
+        </div>
+      ) },
+      { title: "Ratios", content:  (
+        <div>
+          {ratios.map(r => (
+            <div key={r.id} style={{ marginBottom: "10px" }}>
+              <h3>{r.name}</h3>
+              <p><strong>Formula:</strong> {r.fromBackend.formula}</p>
+              <p><strong>Calculation:</strong> {r.fromBackend.calculation}</p>
+              <p><strong>Result:</strong> {r.fromBackend.result}</p>
+              <p><strong>Interpretation:</strong> {r.fromBackend.interpretation}</p>
+            </div>
+          ))}
+        </div>
+      ) },
     ];
 
     let yOffset = 40;
@@ -387,6 +423,7 @@ export default function FinGenieApp() {
       </header>
   );
 
+
   // Navigation Component
   const Navigation = () => (
     <div style={styles.navigation}>
@@ -422,7 +459,7 @@ export default function FinGenieApp() {
   // Footer Component
   const Footer = () => (
     <footer style={styles.footer}>
-  <div style={styles.footerLeft}>
+      <div style={styles.footerLeft}>
     <p style={styles.copyright}>
             © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
           </p>
@@ -441,8 +478,14 @@ export default function FinGenieApp() {
   </div>
 </footer>
   );
-
+  const sectors = [
+    'Telecom', 'Technology', 'Financial Services', 
+    'Real Estate', 'Banking', 'Infrastructure', 
+    'Pharma', 'Automobile', 'Energy', 
+    'Consumer Goods', 'Metals & Mining', 'Chemicals'
+  ];
   // Summary Page
+
   const SummaryPage = () => {
     const displayName = companyNameFromBackend || 'Unknown Company';
 
@@ -543,15 +586,15 @@ export default function FinGenieApp() {
               </div>
             )}
           </div>
-
-        </div>
-      </>
+           </div>
+     </>
     );
   };
-
   // Ratios Page
  const RatiosPage = () => (
     <>
+      <h2 style={styles.companyName}>Apple Inc.</h2>
+
       <div style={{ ...styles.contentBox, minHeight: '400px', paddingBottom: '1rem', marginBottom: '1rem' }}>
                 
                 {/* Looping through each ratio to create a grid row */}
@@ -560,7 +603,7 @@ export default function FinGenieApp() {
                         
                         {/* Column 1 (150px): Ratio Button */}
                         <button style={styles.ratioButton} 
-                          onClick={() => setShowDetailedRatios(true)}>
+                        onClick={() => setShowDetailedRatios(true)}>
                             {ratio.name}
                         </button>
                         
@@ -572,12 +615,12 @@ export default function FinGenieApp() {
                         {/* Column 3 (1fr): Description Box */}
                         <div style={styles.ratioDescription}>
                             <p style={styles.ratioDescText}>
-                                <div>
-                                  <strong>Formula:</strong> {ratio.fromBackend.formula} <br />
-                                  <strong>Calculation:</strong> {ratio.fromBackend.calculation} <br />
-                                  <strong>Result:</strong> {ratio.fromBackend.result} <br />
-                                  <strong>Interpretation:</strong> {ratio.fromBackend.interpretation}
-                                </div>
+                                  <div>
+                                    <strong>Formula:</strong> {ratio.fromBackend.formula} <br />
+                                    <strong>Calculation:</strong> {ratio.fromBackend.calculation} <br />
+                                    <strong>Result:</strong> {ratio.fromBackend.result} <br />
+                                    <strong>Interpretation:</strong> {ratio.fromBackend.interpretation}
+                                  </div>
                             </p>
                         </div>
                     </div>
@@ -676,7 +719,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
+        padding: '2rem 4rem',
     position: 'relative',
     zIndex: 10,
     background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
@@ -688,28 +731,29 @@ const styles = {
     borderBottom: '2px solid black',
 
     color: 'white',
-    },
+    
+  },
 
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '2rem',
   },
+    headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2rem',
+  },
 
-  logo: {
+
+
+   logo: {
     width: '40px',
     height: '40px',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
- 
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
   },
 
   userProfile: {
@@ -770,6 +814,29 @@ const styles = {
     transition: 'background-color 0.3s',
   },
 
+  CompareSectorHeaderContainer: {
+    display: 'flex',              /* 1. Enable Flexbox */
+    justifyContent: 'space-between', /* 2. Push elements to opposite sides (left/right) */
+    alignItems: 'center',         /* 3. Vertically center the elements */
+    width: '100%',                /* Ensure the container spans the full width */
+  },
+
+  compareSectorButton: {
+    padding: '0.5rem 1.5rem',
+    backgroundColor: '#F8FAF1',
+    color: 'Black',
+    border: 'none',
+    borderRadius: '15px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    transition: 'background-color 0.3s',
+    border: '1px solid #444',
+    marginLeft: 'auto',
+  },
   main: {
     flex: 1,
     padding: '0.5rem 3rem',
@@ -789,6 +856,11 @@ const styles = {
     marginBottom: '2rem',
     color: 'black',
   },
+  contentGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '40px',
+  },
 
   prosSection: {
     backgroundColor: '#D1DFDF',
@@ -796,18 +868,26 @@ const styles = {
     borderRadius: '20px',
     minHeight: '300px'
   },
+  consSection: {
+    backgroundColor: '#dfd1d1ff',
+    padding: '2rem',
+    borderRadius: '20px',
+    minHeight: '300px'
+  },
+
+  financialHealthSummarySec: {
+    backgroundColor: '#d1d5dfff',
+    padding: '2rem',
+    borderRadius: '20px',
+    minHeight: '300px',
+    marginTop: '2rem',
+  },
 
   prosTitle: {
     fontSize: '20px',
     fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: '1rem',
-  },
-
-  prosList: {
-    color: '#111827',
-    lineHeight: '1.8',
-    paddingLeft: '1.5rem',
   },
 
   subHeading: {
@@ -842,6 +922,12 @@ const styles = {
     backgroundColor: '#ffffff',
     padding: '0.5rem',
     borderRadius: 12,
+  },
+
+  prosList: {
+    color: '#1a1a1a',
+    lineHeight: '1.8',
+    paddingLeft: '1.5rem',
   },
 
   ratiosLayout: {
@@ -1070,7 +1156,7 @@ const styles = {
     color: '#ddd',
   },
 
- footer: {
+  footer: {
     backgroundColor: '#4D5C61',
     color: '#FFFFFF',
     padding: '2rem 4rem',
@@ -1100,8 +1186,8 @@ const styles = {
   },
 
   footerRight: {
-    flex: 1,
     textAlign: 'right',
+    flex: 1,
   },
 
   functionsTitle: {
@@ -1110,15 +1196,15 @@ const styles = {
     marginRight: '10rem',
   },
 
- functionsList: {
-  listStyle: 'none',
+  functionsList: {
+    listStyle: 'none',
   margin: 0,
   padding: 0,
   display: 'grid',
   gridTemplateColumns: '3.5fr 1fr',
   textAlign: 'right', 
   gap: '6px 0px',
-},
+  },
 
   functionsItem: {
     fontSize: '13px',
@@ -1126,7 +1212,6 @@ const styles = {
     textTransform: "capitalize",
     whiteSpace: 'nowrap'
   },
-  
 
   dropdown: {
     position: 'absolute',
@@ -1139,7 +1224,6 @@ const styles = {
     minWidth: '120px',
     zIndex: 1000
   },
-
 
   dropdownItem: {
     display: 'flex',
@@ -1169,7 +1253,6 @@ const styles = {
         marginTop: '-2.9rem',
         marginLeft: '0.2rem',
     },
-
     toolsMenu: {
     position: "relative",
     display: "flex",
@@ -1203,5 +1286,51 @@ const styles = {
   userIcon: {
     transition: 'color 0.2s'
   },
-};
 
+dropdownContainer: {
+    position: 'absolute', 
+    
+    // Position vertically below the button with a consistent gap
+    // Assuming the button wrapper is the relative parent
+    marginTop: '0.5rem', // Adds a flexible 8px gap (0.5rem)
+
+    // Positioning horizontally: Align to the right edge
+    // Use a small padding/margin for offset from the screen edge if needed
+    right: 0, 
+
+    // Use relative/flexible width properties:
+    minWidth: '180px', // Minimum readable size
+    maxWidth: '80vw',  // Ensures it doesn't exceed 80% of the viewport width
+
+    // Visuals
+    backgroundColor: '#DCDCDC', 
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+    borderRadius: '8px',
+    zIndex: 10,
+    padding: '0.5rem 0', // Reduced vertical padding for flexibility
+},
+
+  sectorHeader: {
+    fontSize: '14px',
+    fontWeight: 'normal',
+    color: '#444444', // Dark gray text
+    padding: '5px 15px',
+    textAlign: 'center',
+    //marginBottom: '5px',
+    borderBottom: '1px solid #C0C0C0', // Separator line for the header
+  },
+
+  sectorItem: {
+    // Styling for each selectable sector
+    padding: '8px 15px',
+    fontSize: '18px', // Larger font size as seen in the image
+    color: '#333333', // Dark text color
+    textAlign: 'center',
+    cursor: 'pointer',
+    
+    // Hover effect for user interaction
+    ':hover': { 
+      backgroundColor: '#C5C5C5', // Slightly darker hover color
+    },
+  },
+};
