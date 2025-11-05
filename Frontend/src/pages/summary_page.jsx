@@ -521,6 +521,7 @@ export default function FinGenieApp() {
                   </>
                 )}
               </div>
+          ///////////////////////////////////////////////////////////NEED TO ADD FINANCIAL_HEALTH_SUMMARY (CONNECTED TO BACKEND)
             ) : (
               <p style={{ color: '#333' }}>No summary available. Please upload a PDF first.</p>
             )}
@@ -1334,3 +1335,4 @@ dropdownContainer: {
     },
   },
 };
+
