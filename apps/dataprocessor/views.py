@@ -13,6 +13,7 @@ from .models import FinancialReport
 from .services import (
     extract_raw_financial_data,
     generate_summary_from_data,
+    generate_ratios_from_data,
     load_pdf_robust,
     prepare_context_smart
 )
@@ -83,6 +84,20 @@ def extract_data_api(request):
         if not financial_items:
             extraction_result['summary'] = {'pros': ["Extraction successful but no financial tables found."], 'cons': []}
         
+        if not summary_result.get('success'):
+             # If summary fails, return raw data and log the error
+            print(f"Summary failed: {summary_result.get('error')}")
+            extraction_result['summary'] = {'pros': [], 'cons': [f"Summary generation failed: {summary_result.get('error')}"]}
+        else:
+            extraction_result['summary'] = summary_result['summary']
+
+        ratio_result = generate_ratios_from_data(financial_items,api_key)
+
+        if not ratio_result.get('success'):
+            print(f"Ratio calcuulation Failed: {ratio_result.get('error')}")
+        else:
+            extraction_result['ratios'] = ratio_result['ratios']
+        # --- STEP 4: RETURN COMBINED RESULTS ---
         # --- STEP 4: GENERATE SUMMARY FROM EXTRACTED DATA ---
         if financial_items: 
             summary_result = generate_summary_from_data(financial_items, api_key)

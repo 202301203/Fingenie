@@ -1,7 +1,7 @@
 import os
 import json
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -26,6 +26,24 @@ class FinancialExtractionResult(BaseModel):
 class FinancialSummary(BaseModel):
     pros: List[str] = Field(..., description="List of positive financial or business points, using precise terminology and numbers.")
     cons: List[str] = Field(..., description="List of negative financial or business points, using precise terminology and numbers.")
+    financial_health_summary: str = Field(..., description="Overall assessment of company's financial health based on the aggregate pros and cons, providing a big-picture view of strengths and concerns.")
+class RatioItem(BaseModel):
+    ratio_name: Literal[
+        "Current Ratio", 
+        "Quick Ratio", 
+        "Debt to Equity Ratio", 
+        "Asset Turnover Ratio", 
+        "Return on Assets (ROA)", 
+        "Return on Equity (ROE)"
+    ] = Field(..., description="Name of the financial ratio")
+    formula: str = Field(..., description="Formula used for calculation")
+    calculation: str = Field(..., description="Step-by-step calculation")
+    result: float = Field(..., description="Numeric result of the ratio")
+    interpretation: str = Field(..., description="One-line interpretation of the ratio")
+
+class FinancialRatios(BaseModel):
+    financial_ratios: List[RatioItem] = Field(..., description="List of calculated financial ratios")
+
 
 # --- 2. ROBUST PDF LOADING ---
 
@@ -182,28 +200,135 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
 # --- 6. SUMMARY GENERATION (Step 2) ---
 
 SUMMARY_PROMPT = """
-You are a world-class financial analyst. Your task is to analyze the provided raw financial data (extracted from an annual report or financial statement) and generate a concise, balanced summary of the business's current standing, focusing on key strengths (Pros) and weaknesses (Cons).
+ROLE: You are a world-class financial analyst with deep expertise in interpreting corporate financial statements from the Balance Sheet, Income Statement, and Cash Flow Statement.
 
-DATA ANALYSIS RULES:
-1. Focus on the most significant data points, such as major changes in revenue, profit, asset, or liability line items between 'current_year' and 'previous_year'.
-2. Calculate simple metrics like growth rates (e.g., Revenue growth = (Current - Previous) / Previous).
-3. If possible, calculate common ratios like Debt-to-Equity, P/E, or Interest Coverage Ratio if the necessary components (EBIT, Interest Expense, etc.) are clearly available in the data.
-4. Each Pro or Con should be a single, descriptive sentence that includes the specific financial item, the metric, and the associated number.
+PRIMARY TASK: Analyze the provided raw financial data in JSON format. Your analysis must produce two outputs:
+1.A concise, data-driven summary of key strengths (Pros) and weaknesses (Cons).
+2.An overall assessment of the company's financial health.
 
-Example Output Structure (Do NOT use this exact text unless you calculate the numbers):
-Pros
-- Revenue from operations grew by X% this year, from $A to $B.
-- The company's cash and cash equivalents increased by Y%.
+ANALYSIS RULES & INSTRUCTIONS
 
-Cons
-- Non-current liabilities, specifically Borrowings, increased by Z%.
-- Net profit for the year decreased compared to the previous period.
+1. Data Processing:
+    -Extract and analyze the provided financial_items array.
+    -Prioritize significant line items: Revenue, Profit, Total Assets, Total Liabilities, Equity, Borrowings, and Cash Reserves.
+    -Identify and include other items that show major changes.
+
+2. Comparative Analysis:
+    -Perform a year-on-year comparison between current_year and previous_year values.
+    -Calculate the percentage change using the formula: ((Current_Year - Previous_Year) / Previous_Year) * 100.
+    -Highlight both major percentage changes and notable absolute changes (growth or decline).
+
+3. Output Style - Pros & Cons:
+    -Each Pro and Con must be a single, factual, and descriptive sentence.
+    -Each sentence must state:
+        1.The specific financial item.
+        2.The metric or change observed.
+        3.The relevant numeric values and/or percentage change.
+    -Avoid generic, non-quantifiable statements (e.g., "The company is doing well" or "Performance was poor").
+    -Base all insights strictly on the provided data; no speculation.
+
+4. Output Style - Financial Health Assessment:
+    -Based on the aggregate of the Pros and Cons, provide a one-paragraph summary of the company's overall financial health.
+    -This statement should synthesize the key data points into a coherent big-picture view, mentioning the primary drivers of strength and the main areas of concern.
+
+TONE: Objective, analytical, and concise.
+
+STRICTLY FOLLOW THIS OUTPUT FORMAT:
+Return ONLY a valid JSON object. Do not add any other text, explanations, or disclaimers.
+
+json
+{{
+  "FinancialAnalysis": {{
+    "Pros": [
+      "Revenue from operations increased by 12.5%, rising from $8.0M to $9.0M.",
+      "Cash and cash equivalents grew by 25%, indicating improved liquidity."
+    ],
+    "Cons": [
+      "Borrowings increased by 18%, raising the debt-to-equity ratio to 1.6x.",
+      "Net profit margin declined from 15% to 10% due to higher operating expenses."
+    ],
+    "FinancialHealthSummary": "The company demonstrates strong revenue growth and robust cash generation, contributing to solid liquidity. However, this is partially offset by a rising debt burden and contracting profit margins, which warrants monitoring for long-term sustainability."
+  }}
+}}
+RAW EXTRACTED FINANCIAL DATA (JSON Format):
+{financial_data_json}
+
+generate summary and Return ONLY a valid JSON strictly following this schema:
+"""
+
+
+RATIO_PROMPT = """
+Role:
+You are a financial analyst AI assistant specializing in accounting and ratio analysis. You are skilled at interpreting balance sheets and income statements, calculating standard financial ratios, and explaining their meanings in simple terms.
+
+Goal:
+From the provided financial data, calculate key financial ratios and interpret their results.
+
+Input Data:
+(User will provide raw data here — e.g., Current Assets, Current Liabilities, Inventory, Revenue, Total Assets, Total Debt, Net Income, Equity, etc.)
+
+Task Steps:
+
+1. Identify and extract relevant financial data from the given input.
+
+2. Calculate the following ratios using the correct formulas:
+    - Current Ratio = Current Assets / Current Liabilities
+    - Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+    - Debt to Equity Ratio = Total Debt / Shareholders' Equity
+    - Asset Turnover Ratio = Revenue / Total Assets
+    - Return on Assets (ROA) = Net Income / Total Assets
+    - Return on Equity (ROE) = Net Income / Shareholders' Equity
+
+3. For each ratio:
+    - Provide the formula used
+    - Show the calculation step
+    - Provide the numeric result (rounded to two decimals)
+    - Write a one-line interpretation of what the ratio indicates
+
+4. Return your final response strictly as a JSON object in the following structure:
+{{
+  "financial_ratios": [
+    {{
+      "ratio_name": "",
+      "formula": "",
+      "calculation": "",
+      "result": "",
+      "interpretation": ""
+    }}
+  ]
+}}
+
+Example:
+{{
+    "financial_ratios": [
+        {{
+            "ratio_name": "Current Ratio",
+            "formula": "CA / CL",
+            "calculation": "200000 / 100000",
+            "result": 2.0,
+            "interpretation": "Indicates good short-term liquidity."
+        }},
+        {{
+            "ratio_name": "Quick Ratio",
+            "formula": "(CA - Inventory) / CL",
+            "calculation": "(200000 - 50000) / 100000",
+            "result": 1.5,
+            "interpretation": "Shows immediate liquidity position."
+        }}
+    ]
+}}
+
+5. Additional Instructions:
+    - If any data is missing, clearly mention what is needed to complete the calculation.
+    - Keep the explanations concise and beginner-friendly.
+    - Do not make up data unless explicitly instructed.
 
 RAW EXTRACTED FINANCIAL DATA (JSON Format):
 {financial_data_json}
 
-Generate the analysis and return ONLY the JSON that strictly follows the FinancialSummary schema.
+Generate the ratios and return ONLY the JSON that strictly follows the given format.
 """
+
 
 def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
     """Generates a structured Pros/Cons summary from the extracted data."""
@@ -241,4 +366,41 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
 
     except Exception as e:
         print(f"Summary generation failed during AI call: {e}")
+        return {"error": f"Summary generation failed: {e}"}
+
+
+def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a ratios from the extracted data."""
+    os.environ["GOOGLE_API_KEY"] = api_key
+    
+    # 1. Prepare input JSON string for the summary prompt
+    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+
+    # 2. Setup LLM for structured JSON summary
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", 
+            temperature=0.2,
+            max_retries=3,
+            request_timeout=120,
+            response_mime_type="application/json",
+            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
+        )
+    except Exception as e:
+        print(f"Failed to initialize Gemini model for summary: {e}")
+        return {"error": "Failed to initialize Gemini model for summary."}
+
+    # 3. Format and invoke prompt
+    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+
+    try:
+        print("Sending request to AI for ratio analysis...")
+        response = llm.invoke(formatted_prompt)
+        ratios_json = json.loads(response.content)
+        
+        return {"ratios": ratios_json, "success": True}
+        
+
+    except Exception as e:
+        print(f"ratio generation failed during AI call: {e}")
         return {"error": f"Summary generation failed: {e}"}

@@ -1,3 +1,4 @@
+from django.db import models
 # apps/dataprocessor/models.py
 from django.db import models
 
