@@ -34,7 +34,10 @@ SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "fingenie-sz41.onrender.com",
+    "https://fingenie-2exi.vercel.app/",
+]
 
 
 # Application definition
@@ -46,7 +49,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders', 
+    'corsheaders',
+    'rest_framework',
 ]
 
 EXTERNAL_APPS = [
@@ -56,9 +60,13 @@ EXTERNAL_APPS = [
     'apps.chatbot',
     'apps.learning',
     'apps.ai_insights',
+    'apps.sector_overview',
+    'apps.trends',
+    'apps.chatbot'
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,11 +77,34 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "https://fingenie-2exi.vercel.app/",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://fingenie-sz41.onrender.com",
+    "https://fingenie-eight.vercel.app/",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 ROOT_URLCONF = 'fingenie_core.urls'
@@ -107,6 +138,53 @@ DATABASES = {
 }
 
 
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CORS_ALLOW_CREDENTIALS = True
+
+# Session Configuration
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+
+
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com')
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'accounts': {  # Your app name
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+    },
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -136,6 +214,36 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
+
+GOOGLE_CLIENT_ID = "http://972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com"
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+
+# This must be 1 initially. You'll update the corresponding Site record later.
+SITE_ID = 1
+
+# Define where users land after success/failure
+LOGIN_REDIRECT_URL = '/'      # Redirect to the homepage after login
+LOGOUT_REDIRECT_URL = '/'     # Redirect to the homepage after logout
+ACCOUNT_LOGOUT_ON_GET = True  # Allows logout via simple link click (GET request)
+
+
 
 
 # Static files (CSS, JavaScript, Images)

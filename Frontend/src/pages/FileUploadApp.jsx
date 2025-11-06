@@ -14,6 +14,7 @@ import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
 import { useNavigate } from "react-router-dom";
+import api from '../api';
 
 
 const FileUploadApp = () => {
@@ -462,14 +463,11 @@ if (validFiles.length > 0) {
                           formData.append('api_key', apiKey.trim());
                         }
 
-                        const res = await fetch('/dataprocessor/extract/', {
-                          method: 'POST',
-                          body: formData,
-                        });
-
-                        if (!res.ok) {
-                          const errorJson = await res.json().catch(() => ({}));
-                          const msg = errorJson.error || `Server returned ${res.status}`;
+                        try {
+                          const json = await api.postExtract(formData);
+                          navigate('/summary_page', { state: json });
+                        } catch (err) {
+                          const msg = err?.message || 'Upload failed';
                           alert('Upload failed: ' + msg);
                           return;
                         }
