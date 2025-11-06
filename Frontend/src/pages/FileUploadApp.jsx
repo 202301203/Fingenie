@@ -472,6 +472,26 @@ if (validFiles.length > 0) {
                           return;
                         }
 
+                        const json = await res.json();
+                        // Persist report id and api key so other pages (like summary) can find them
+                        try {
+                          if (json && json.report_id) {
+                            localStorage.setItem('currentReportId', json.report_id);
+                          }
+                          // If user provided an API key in the upload form, persist it.
+                          if (apiKey && apiKey.trim() !== '') {
+                            localStorage.setItem('userApiKey', apiKey.trim());
+                          } else if (json && json.api_key) {
+                            // If server returned an api_key, persist that as a fallback
+                            localStorage.setItem('userApiKey', json.api_key);
+                          }
+                        } catch (storageErr) {
+                          // Storage may fail in some browsers (e.g., private mode); continue without failing upload
+                          console.warn('Failed to persist report id or api key to localStorage', storageErr);
+                        }
+
+                        navigate('/summary_page', { state: json });
+
                       } catch (err) {
                         console.error('Upload error', err);
                         alert('An error occurred while uploading. Check console for details.');

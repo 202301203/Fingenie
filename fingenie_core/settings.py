@@ -57,6 +57,9 @@ EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
     'apps.stockgraph',
+    'apps.chatbot',
+    'apps.learning',
+    'apps.ai_insights',
     'apps.sector_overview',
     'apps.trends',
     'apps.chatbot'

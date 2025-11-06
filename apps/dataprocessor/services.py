@@ -6,6 +6,7 @@ import pandas as pd
 
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
+# This is the NEW, CORRECT line
 from langchain_core.documents import Document
 import pdfplumber
 import pytesseract
