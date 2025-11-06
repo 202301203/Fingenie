@@ -23,3 +23,5 @@ dist/
 # Others
 .env
 *.DS_Store
+
+.early.coverage

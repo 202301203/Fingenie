@@ -26,6 +26,7 @@ urlpatterns = [
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
     path('sector/',include('apps.sector_overview.urls')),
+    path('trends/',include('apps.trends.urls')),
 ]
 
 # Serve media files during development

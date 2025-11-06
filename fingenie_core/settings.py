@@ -30,7 +30,15 @@ SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+<<<<<<< Updated upstream
 ALLOWED_HOSTS = []
+=======
+ALLOWED_HOSTS = [
+    "fingenie-sz41.onrender.com", 
+    'localhost',
+    '127.0.0.1',
+]
+>>>>>>> Stashed changes
 
 
 # Application definition
@@ -50,7 +58,8 @@ EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
     'apps.stockgraph',
-    'apps.sector_overview'
+    'apps.sector_overview',
+    'apps.trends',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
@@ -71,6 +80,11 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+<<<<<<< Updated upstream
+=======
+    #"https://fingenie-sz41.onrender.com",
+    #"https://fingenie-eight.vercel.app/",
+>>>>>>> Stashed changes
 ]
 
 CSRF_TRUSTED_ORIGINS = [
