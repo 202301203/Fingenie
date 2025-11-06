@@ -610,7 +610,6 @@ const styles = {
   },
 };
 
-// --- MAIN APPLICATION COMPONENT ---
 const AuthFlow = () => {
   const [currentPage, setCurrentPage] = useState("create");
 
@@ -618,7 +617,6 @@ const AuthFlow = () => {
     setCurrentPage(page);
   };
 
-  // ✅ Correct Google Client ID format
   const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
 
   // Add a check to make sure it's set
@@ -638,29 +636,3 @@ const AuthFlow = () => {
 };
 
 export default AuthFlow; // ✅ Use default export
-// --- MAIN APPLICATION COMPONENT ---
-// export const AuthFlow = () => {
-//   const [currentPage, setCurrentPage] = useState("create");
-
-//   const handleSwitch = (page) => {
-//     setCurrentPage(page);
-//   };
-
-//   // ✅ Correct Google Client ID format
-//   const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
-
-//   // Add a check to make sure it's set
-//   if (!googleClientId) {
-//     console.error("Google Client ID is not set!");
-//     return <div>Error: Google authentication not configured</div>;
-//   }
-
-//   return (
-//     <GoogleOAuthProvider clientId={googleClientId}>
-//       <div style={styles.appContainer}>
-//         {currentPage === "create" && <CreateAccount onSwitch={handleSwitch} />}
-//         {currentPage === "login" && <LoginPage onSwitch={handleSwitch} />}
-//       </div>
-//     </GoogleOAuthProvider>
-//   );
-// };
