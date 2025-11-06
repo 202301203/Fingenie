@@ -9,3 +9,8 @@ pdfplumber
 pytesseract
 pydantic
 # Add any other libraries you use
+
+django
+django-cors-headers
+google-generativeai
+requests
