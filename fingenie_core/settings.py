@@ -31,9 +31,7 @@ SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "fingenie-sz41.onrender.com", 
-    'localhost',
-    '127.0.0.1',
+    "fingenie-sz41.onrender.com",
 ]
 
 
