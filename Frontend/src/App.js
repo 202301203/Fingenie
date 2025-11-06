@@ -3,11 +3,12 @@ import { Routes, Route } from "react-router-dom";
 
 // import all pages
 import HomepageBeforeLogin from "./pages/homepage_beforelogin";
-import {AuthFlow} from "./pages/AuthFlow";
+import AuthFlow from "./pages/AuthFlow";
 import MainPageAfterLogin from "./pages/mainpageafterlogin";
 import FileUploadApp from "./pages/FileUploadApp";
 import SummaryPage from "./pages/summary_page";
 import NewsPage from "./pages/news_page";
+import TrendsPage from "./pages/Trends_KPI";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
       <Route path="/FileUploadApp" element={<FileUploadApp />} />
       <Route path="/summary_page" element={<SummaryPage />} />
       <Route path="/NewsPage" element={<NewsPage />} />
+      <Route path="/Trends_KPI" element={<TrendsPage />} />   
     </Routes>
   );
 }

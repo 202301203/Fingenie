@@ -561,7 +561,6 @@ const LoginPage = ({ onSwitch }) => {
   );
 };
 
-
 const styles = {
   appContainer: {
     backgroundColor: "#515266",
@@ -748,14 +747,16 @@ const styles = {
     animation: "pulse-animation 2s infinite alternate",
   },
 };
+
 // --- MAIN APPLICATION COMPONENT ---
-export const AuthFlow = () => {
+const AuthFlow = () => {
   const [currentPage, setCurrentPage] = useState("create");
 
   const handleSwitch = (page) => {
     setCurrentPage(page);
   };
 
+  // ✅ Correct Google Client ID format
   const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
 
   // Add a check to make sure it's set
@@ -774,4 +775,4 @@ export const AuthFlow = () => {
   );
 };
 
-// Keep your existing styles object the same...
+export default AuthFlow; // ✅ Use default export

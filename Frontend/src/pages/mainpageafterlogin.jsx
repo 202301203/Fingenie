@@ -199,7 +199,7 @@ export default function FinGenieLanding() {
                 style={styles.aiBlock}
                 onClick={() => {
                   // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to dashboard on logout
+                  navigate("/FileUploadApp"); // Redirect to AI Summary
                 }}
               >
                 <h1 style={styles.blockTitle}>AI Summary Generator</h1>
@@ -240,12 +240,17 @@ export default function FinGenieLanding() {
             </CustomTiltCard>
 
             <CustomTiltCard rotateAmplitude={15}>
-              <div style={styles.chartsBlock}>
+              <div style={styles.chartsBlock}
+               onClick={() => {
+                  // (Optional) clear user data or tokens here
+                  navigate("/Trends_KPI"); // Redirect to Trends and KPI page 
+                }}  
+              >
                 <div style={styles.iconBackground}>
                   <PieChart size={260} color="#BBD0D0" />
                 </div>
                 <h3 style={{ ...styles.blockTitle, color: "#1a1a1a" }}>
-                  Charts & KPIs
+                  Trends & KPIs
                 </h3>
                 <p style={{ ...styles.blockText, color: "#1a1a1a" }}>
                   Visualize company performance with real-time metrics.
@@ -661,3 +666,4 @@ const styles = {
     color: "Black",
   },
 };
+

@@ -16,6 +16,10 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+VECTOR_STORE_DIR = os.path.join(BASE_DIR, 'vector_stores')
+if not os.path.exists(VECTOR_STORE_DIR):
+    os.makedirs(VECTOR_STORE_DIR)
+    
 # Media files (uploaded PDFs will be stored here)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -32,6 +36,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "fingenie-sz41.onrender.com",
+    "https://fingenie-2exi.vercel.app/",
 ]
 
 
@@ -52,7 +57,12 @@ EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
     'apps.stockgraph',
-    'apps.sector_overview'
+    'apps.chatbot',
+    'apps.learning',
+    'apps.ai_insights',
+    'apps.sector_overview',
+    'apps.trends',
+    'apps.chatbot'
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
@@ -71,10 +81,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "https://fingenie-2exi.vercel.app/",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://fingenie-sz41.onrender.com",
-    'https://fingenie-eight.vercel.app/",
+    "https://fingenie-eight.vercel.app/",
 ]
 
 CSRF_TRUSTED_ORIGINS = [

@@ -14,6 +14,7 @@ import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
 import { useNavigate } from "react-router-dom";
+import api from '../api';
 
 
 const FileUploadApp = () => {
@@ -462,19 +463,33 @@ if (validFiles.length > 0) {
                           formData.append('api_key', apiKey.trim());
                         }
 
-                        const res = await fetch('/dataprocessor/extract/', {
-                          method: 'POST',
-                          body: formData,
-                        });
-
-                        if (!res.ok) {
-                          const errorJson = await res.json().catch(() => ({}));
-                          const msg = errorJson.error || `Server returned ${res.status}`;
+                        try {
+                          const json = await api.postExtract(formData);
+                          navigate('/summary_page', { state: json });
+                        } catch (err) {
+                          const msg = err?.message || 'Upload failed';
                           alert('Upload failed: ' + msg);
                           return;
                         }
 
                         const json = await res.json();
+                        // Persist report id and api key so other pages (like summary) can find them
+                        try {
+                          if (json && json.report_id) {
+                            localStorage.setItem('currentReportId', json.report_id);
+                          }
+                          // If user provided an API key in the upload form, persist it.
+                          if (apiKey && apiKey.trim() !== '') {
+                            localStorage.setItem('userApiKey', apiKey.trim());
+                          } else if (json && json.api_key) {
+                            // If server returned an api_key, persist that as a fallback
+                            localStorage.setItem('userApiKey', json.api_key);
+                          }
+                        } catch (storageErr) {
+                          // Storage may fail in some browsers (e.g., private mode); continue without failing upload
+                          console.warn('Failed to persist report id or api key to localStorage', storageErr);
+                        }
+
                         navigate('/summary_page', { state: json });
 
                       } catch (err) {
