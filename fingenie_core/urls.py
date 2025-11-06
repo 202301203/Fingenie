@@ -27,6 +27,7 @@ urlpatterns = [
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
     path('sector/',include('apps.sector_overview.urls')),
     path('trends/',include('apps.trends.urls')),
+    path('api/chat/', include('apps.chatbot.urls')), #Link Chatbot app
 ]
 
 # Serve media files during development
