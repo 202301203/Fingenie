@@ -5,7 +5,8 @@ from typing import List, Optional, Dict, Any
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema.document import Document
+# This is the NEW, CORRECT line
+from langchain_core.documents import Document
 import pdfplumber
 import pytesseract
 from pydantic import BaseModel, Field
