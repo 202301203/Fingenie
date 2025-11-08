@@ -9,4 +9,7 @@ urlpatterns = [
     
     # This was the simple HTML upload form view you already had
     path('upload/', views.upload_file_view, name='upload_file'),
+    
+    #path('api/analyze-financials/', views.upload_financial_statement, name='analyze_financials'),
+    
 ]

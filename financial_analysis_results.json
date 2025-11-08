@@ -1,0 +1,272 @@
+{
+  "success": true,
+  "company_info": {
+    "company_name": "HMT Limited",
+    "ticker_symbol": null
+  },
+  "extracted_data": {
+    "company_name": "HMT Limited",
+    "ticker_symbol": null,
+    "financial_items": [
+      {
+        "particulars": "ASSETS: Non-current Assets: Property, Plant and Equipment",
+        "current_year": 896.29,
+        "previous_year": 936.96
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets: Investment Property",
+        "current_year": 160.13,
+        "previous_year": 179.85
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets: Financial Assets: Investments",
+        "current_year": 71977.91,
+        "previous_year": 71977.91
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets: Financial Assets: Other Financial Assets",
+        "current_year": 1884.05,
+        "previous_year": 6045.26
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets: Deferred Tax Asset (Net)",
+        "current_year": 4.28,
+        "previous_year": 24.64
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets: Other Non Current Assets",
+        "current_year": 67.98,
+        "previous_year": 64.98
+      },
+      {
+        "particulars": "ASSETS: Non-current Assets",
+        "current_year": 74990.64,
+        "previous_year": 79229.6
+      },
+      {
+        "particulars": "ASSETS: Current assets: Inventories",
+        "current_year": 974.81,
+        "previous_year": 837.05
+      },
+      {
+        "particulars": "ASSETS: Current assets: Financial Assets: Trade Receivables",
+        "current_year": 1767.31,
+        "previous_year": 230.62
+      },
+      {
+        "particulars": "ASSETS: Current assets: Financial Assets: Cash and Cash Equivalents",
+        "current_year": 7638.04,
+        "previous_year": 321.93
+      },
+      {
+        "particulars": "ASSETS: Current assets: Financial Assets: Bank balances other than Cash and Cash Equivalents",
+        "current_year": 9769.51,
+        "previous_year": 5416.73
+      },
+      {
+        "particulars": "ASSETS: Current assets: Financial Assets: Loans",
+        "current_year": 26088.58,
+        "previous_year": 24573.58
+      },
+      {
+        "particulars": "ASSETS: Current assets: Financial Assets: Other Financial Assets",
+        "current_year": 282.56,
+        "previous_year": 257.53
+      },
+      {
+        "particulars": "ASSETS: Current assets: Current Tax Assets (Net)",
+        "current_year": 965.48,
+        "previous_year": 464.8
+      },
+      {
+        "particulars": "ASSETS: Current assets: Other Current Assets",
+        "current_year": 9523.21,
+        "previous_year": 10435.9
+      },
+      {
+        "particulars": "ASSETS: Current assets",
+        "current_year": 57009.5,
+        "previous_year": 42538.14
+      },
+      {
+        "particulars": "ASSETS: Non Current Assets Held for Sale",
+        "current_year": 296.15,
+        "previous_year": 0.09
+      },
+      {
+        "particulars": "ASSETS: Non Current Assets Held for Sale",
+        "current_year": 296.15,
+        "previous_year": 0.09
+      },
+      {
+        "particulars": "TOTAL ASSETS",
+        "current_year": 132296.29,
+        "previous_year": 121767.83
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Equity: Share Capital",
+        "current_year": 35560.16,
+        "previous_year": 35560.16
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Equity: Other Equity",
+        "current_year": 7832.74,
+        "previous_year": 7106.19
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Total Equity",
+        "current_year": 43392.9,
+        "previous_year": 42666.35
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Non-current Liabilities: Financial liabilities: Non-current Financial Liability",
+        "current_year": null,
+        "previous_year": 11.13
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Non-current Liabilities: Provisions: Provision for Employee Benefits",
+        "current_year": 241.01,
+        "previous_year": -9.21
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Non-current Liabilities",
+        "current_year": 241.01,
+        "previous_year": 1.92
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Financial Liabilities: Borrowings",
+        "current_year": 64171.74,
+        "previous_year": 64160.61
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Financial Liabilities: Trade Payables: Total outstanding dues to Micro, Small & Medium Enterprises",
+        "current_year": 10.52,
+        "previous_year": 2.17
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Financial Liabilities: Trade Payables: Total outstanding dues of creditors other than Micro, Small & Medium Enterprises",
+        "current_year": 417.56,
+        "previous_year": 178.68
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Financial Liabilities: Other Financial Liabilities",
+        "current_year": 3686.0,
+        "previous_year": 3686.0
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Other Current Liabilities",
+        "current_year": 19065.62,
+        "previous_year": 10334.82
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Provisions: Provision for Employee Benefits",
+        "current_year": 130.93,
+        "previous_year": 452.33
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Provisions: Others",
+        "current_year": 285.35,
+        "previous_year": 284.95
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities: Current Tax Liabilities (Net)",
+        "current_year": 894.66,
+        "previous_year": null
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Current Liabilities",
+        "current_year": 88662.38,
+        "previous_year": 79099.56
+      },
+      {
+        "particulars": "EQUITY AND LIABILITIES: Total Liabilities",
+        "current_year": 88903.39,
+        "previous_year": 79101.48
+      },
+      {
+        "particulars": "TOTAL EQUITY AND LIABILITIES",
+        "current_year": 132296.29,
+        "previous_year": 121767.83
+      }
+    ],
+    "success": true
+  },
+  "summary": {
+    "pros": [
+      "Cash and Cash Equivalents increased significantly by 2273.07% from 321.93 to 7638.04, indicating a strong improvement in liquidity.",
+      "Trade Receivables saw a substantial increase of 666.32% from 230.62 to 1767.31, potentially reflecting higher sales or extended credit to customers.",
+      "Total Current Assets grew by 34.02% from 42538.14 to 57009.5, enhancing the company's short-term asset base.",
+      "Bank balances other than Cash and Cash Equivalents increased by 80.36% from 5416.73 to 9769.51.",
+      "The current ratio improved from 0.54 in the previous year to 0.64 in the current year, indicating a better, though still constrained, ability to cover short-term obligations.",
+      "Total Assets increased by 8.65% from 121767.83 to 132296.29.",
+      "Other Equity increased by 10.22% from 7106.19 to 7832.74, contributing to overall equity growth."
+    ],
+    "cons": [
+      "Non-current Financial Assets (Other Financial Assets) experienced a significant decline of 68.83% from 6045.26 to 1884.05, potentially impacting long-term investment value.",
+      "Property, Plant and Equipment decreased by 4.34% from 936.96 to 896.29, suggesting a reduction in operational fixed assets.",
+      "Investment Property decreased by 11.00% from 179.85 to 160.13.",
+      "Non Current Assets Held for Sale increased dramatically from 0.09 to 296.15, indicating a significant portion of assets are being prepared for disposal, which could affect future operational capacity.",
+      "Total Current Liabilities increased by 12.09% from 79099.56 to 88662.38, adding pressure on short-term liquidity.",
+      "Other Current Liabilities surged by 84.48% from 10334.82 to 19065.62.",
+      "Trade Payables to Micro, Small & Medium Enterprises increased by 384.79% from 2.17 to 10.52, and to other creditors by 133.69% from 178.68 to 417.56, which could signal extended payment cycles or cash flow strain.",
+      "The current ratio of 0.64 remains below 1, indicating that current assets are insufficient to cover current liabilities, posing a short-term liquidity risk.",
+      "Non-current Liabilities saw a substantial increase from 1.92 to 241.01, primarily due to a significant rise in Provision for Employee Benefits.",
+      "Deferred Tax Asset (Net) decreased significantly by 82.63% from 24.64 to 4.28."
+    ],
+    "financial_health_summary": "The company presents a mixed financial health profile. A significant strength is the remarkable improvement in short-term liquidity, evidenced by a massive 2273.07% increase in Cash and Cash Equivalents and a 666.32% surge in Trade Receivables, leading to a 34.02% growth in total current assets and an improved current ratio. However, critical concerns persist regarding asset quality and the growing burden of liabilities. Non-current assets, particularly 'Other Financial Assets' and 'Property, Plant and Equipment,' have declined. The substantial increase in 'Non Current Assets Held for Sale' suggests a strategic shift towards divestment. Furthermore, total current liabilities increased by 12.09%, driven by significant increases in 'Other Current Liabilities' and 'Trade Payables,' indicating ongoing working capital pressures. Despite the improvement, the current ratio remains below 1, highlighting a continued challenge in meeting short-term obligations. Overall, while the company has significantly bolstered its immediate cash position, it faces challenges with declining non-current asset values and a high, increasing level of current liabilities, which could impact long-term stability and operational capacity.",
+    "success": true
+  },
+  "ratios": {
+    "financial_ratios": [
+      {
+        "ratio_name": "Current Ratio",
+        "formula": "Current Assets / Current Liabilities",
+        "calculation": "57009.50 / 88662.38",
+        "result": 0.64,
+        "interpretation": "The company has $0.64 in current assets for every $1 in current liabilities, indicating a potential short-term liquidity challenge."
+      },
+      {
+        "ratio_name": "Quick Ratio",
+        "formula": "(Current Assets - Inventory) / Current Liabilities",
+        "calculation": "(57009.50 - 974.81) / 88662.38 = 56034.69 / 88662.38",
+        "result": 0.63,
+        "interpretation": "The company has $0.63 in quick assets for every $1 in current liabilities, suggesting a limited ability to cover short-term obligations without relying on inventory sales."
+      },
+      {
+        "ratio_name": "Debt to Equity Ratio",
+        "formula": "Total Debt / Shareholders' Equity",
+        "calculation": "88903.39 / 43392.90",
+        "result": 2.05,
+        "interpretation": "The company has $2.05 of debt for every $1 of equity, indicating a relatively high reliance on debt financing."
+      },
+      {
+        "ratio_name": "Asset Turnover Ratio",
+        "formula": "Revenue / Total Assets",
+        "calculation": "Revenue data is not available in the provided financial information, therefore this ratio cannot be calculated.",
+        "result": 0.0,
+        "interpretation": "Cannot be interpreted due to missing Revenue data."
+      },
+      {
+        "ratio_name": "Return on Assets (ROA)",
+        "formula": "Net Income / Total Assets",
+        "calculation": "Net Income data is not available in the provided financial information, therefore this ratio cannot be calculated.",
+        "result": 0.0,
+        "interpretation": "Cannot be interpreted due to missing Net Income data."
+      },
+      {
+        "ratio_name": "Return on Equity (ROE)",
+        "formula": "Net Income / Shareholders' Equity",
+        "calculation": "Net Income data is not available in the provided financial information, therefore this ratio cannot be calculated.",
+        "result": 0.0,
+        "interpretation": "Cannot be interpreted due to missing Net Income data."
+      }
+    ],
+    "success": true
+  },
+  "metadata": {
+    "file_type": "pdf",
+    "content_length": 2572,
+    "items_extracted": 36,
+    "ai_model": "gemini-2.5-flash"
+  }
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financial Trend Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f8f9fa;
+      padding: 2rem;
+    }
+    .card {
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+    pre {
+      background-color: #f1f1f1;
+      padding: 1rem;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    .spinner-border {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4">
+    <div class="card p-4">
+      <h3 class="mb-3 text-center text-primary">📊 Multi-Year Financial Trend Analyzer</h3>
+      <p class="text-muted text-center">Upload 3 or more financial statements (PDF/Excel) and get trend insights.</p>
+
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="apiKey" class="form-label">Gemini API Key</label>
+          <input type="password" class="form-control" id="apiKey" name="api_key" placeholder="Enter your Gemini API Key" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="files" class="form-label">Upload Files (min 3) — PDF or Excel</label>
+          <input type="file" class="form-control" id="files" name="files" multiple required accept=".pdf,.xlsx,.xls">
+        </div>
+
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span id="btnText">Generate Trend Analysis</span>
+            <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none"></span>
+          </button>
+        </div>
+      </form>
+
+      <div id="resultContainer" class="mt-4 d-none">
+        <h5 class="text-success">✅ Trend Analysis Result</h5>
+        <pre id="resultOutput"></pre>
+      </div>
+
+      <div id="errorContainer" class="mt-3 d-none">
+        <h6 class="text-danger">❌ Error</h6>
+        <pre id="errorOutput"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('loadingSpinner');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultOutput = document.getElementById('resultOutput');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorOutput = document.getElementById('errorOutput');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const files = document.getElementById('files').files;
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (files.length < 3) {
+        alert("Please upload at least 3 files for trend analysis.");
+        return;
+      }
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+      formData.append('api_key', apiKey);
+
+      // UI Feedback
+      btnText.textContent = "Processing...";
+      spinner.classList.remove("d-none");
+      submitBtn.disabled = true;
+      resultContainer.classList.add("d-none");
+      errorContainer.classList.add("d-none");
+
+      try {
+        const response = await fetch("{% url 'process_financial_statements_api' %}", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          resultContainer.classList.remove("d-none");
+          resultOutput.textContent = JSON.stringify(data, null, 2);
+        } else {
+          errorContainer.classList.remove("d-none");
+          errorOutput.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        errorContainer.classList.remove("d-none");
+        errorOutput.textContent = err.message;
+      } finally {
+        btnText.textContent = "Generate Trend Analysis";
+        spinner.classList.add("d-none");
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
