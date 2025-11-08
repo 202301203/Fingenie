@@ -43,6 +43,24 @@ class RatioItem(BaseModel):
 class FinancialRatios(BaseModel):
     financial_ratios: List[RatioItem] = Field(..., description="List of calculated financial ratios")
 
+def detect_file_type(file_path: str) -> str:
+    """Detect if file is PDF or Excel."""
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        return 'pdf'
+    elif ext in ['.xlsx', '.xls', '.csv']:
+        return 'excel'
+    else:
+        raise ValueError(f"Unsupported file format: {ext}")
+
+def load_financial_document(file_path: str) -> List[Document]:
+    """Load financial document from PDF or Excel."""
+    file_type = detect_file_type(file_path)
+    
+    if file_type == 'pdf':
+        return load_pdf_robust(file_path)
+    else:  # excel
+        return load_excel_file(file_path)
 
 def load_excel_file(file_path: str) -> List[Document]:
     """Load Excel file and convert to text format."""
@@ -235,7 +253,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
         print("Extracting financial data with AI...")
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f"✅ Successfully extracted {len(result.financial_items)} financial items")
+        print(f"Successfully extracted {len(result.financial_items)} financial items")
         
         return {
             "company_name": result.company_name,
@@ -252,7 +270,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
         }
         
     except Exception as e:
-        print(f"❌ Extraction failed: {e}")
+        print(f"Extraction failed: {e}")
         # Fallback to manual extraction
         return extract_financial_data_manual(context_text, api_key)
 
@@ -297,7 +315,7 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
         
         # Validate structure
         if isinstance(data, dict) and 'financial_items' in data:
-            print(f"✅ Manual extraction successful: {len(data['financial_items'])} items")
+            print(f"Manual extraction successful: {len(data['financial_items'])} items")
             return {
                 "company_name": data.get('company_name'),
                 "ticker_symbol": data.get('ticker_symbol'),
@@ -308,7 +326,7 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
             return {"error": "Invalid JSON structure in response", "success": False}
             
     except Exception as e:
-        print(f"❌ Manual extraction failed: {e}")
+        print(f"Manual extraction failed: {e}")
         return {"error": f"Extraction failed: {str(e)}", "success": False}
 
 # --- SUMMARY GENERATION ---
@@ -436,41 +454,9 @@ Example:
     - If any data is missing, clearly mention what is needed to complete the calculation.
     - Keep the explanations concise and beginner-friendly.
     - Do not make up data unless explicitly instructed.
+    
+    """
 
-    except Exception as e:
-        print(f" Summary generation failed: {e}")
-        return {"error": f"Summary generation failed: {str(e)}", "success": False}
-
-# --- RATIO CALCULATION ---
-
-RATIO_PROMPT = """
-As a financial analyst, calculate key financial ratios from the provided data and interpret their meaning.
-
-*RATIOS TO CALCULATE:*
-1. Current Ratio = Current Assets / Current Liabilities
-2. Quick Ratio = (Current Assets - Inventory) / Current Liabilities  
-3. Debt to Equity Ratio = Total Debt / Shareholders' Equity
-4. Asset Turnover Ratio = Revenue / Total Assets
-5. Return on Assets (ROA) = Net Income / Total Assets
-6. Return on Equity (ROE) = Net Income / Shareholders' Equity
-
-*FOR EACH RATIO, PROVIDE:*
-- *Formula*: The exact formula used
-- *Calculation*: Step-by-step calculation with actual numbers from the data
-- *Result*: Numeric result (round to 2 decimal places)
-- *Interpretation*: One-line explanation of what the ratio indicates about the company
-
-*CALCULATION RULES:*
-- Use the most recent year's data (current_year)
-- If exact line items aren't available, use the closest reasonable substitutes
-- Clearly state any assumptions made in calculations
-- If data is insufficient, explain what's missing
-
-*FINANCIAL DATA:*
-{financial_data_json}
-
-Generate the ratios and return ONLY the JSON that strictly follows the given format.
-"""
 
 
 def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
@@ -511,6 +497,43 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
     except Exception as e:
         print(f" Ratio calculation failed: {e}")
         return {"error": f"Ratio calculation failed: {str(e)}", "success": False}
+
+
+def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a ratios from the extracted data."""
+    os.environ["GOOGLE_API_KEY"] = api_key
+    
+    # 1. Prepare input JSON string for the summary prompt
+    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+
+    # 2. Setup LLM for structured JSON summary
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", 
+            temperature=0.2,
+            max_retries=3,
+            request_timeout=120,
+            response_mime_type="application/json",
+            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
+        )
+    except Exception as e:
+        print(f"Failed to initialize Gemini model for summary: {e}")
+        return {"error": "Failed to initialize Gemini model for summary."}
+
+    # 3. Format and invoke prompt
+    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+
+    try:
+        print("Sending request to AI for ratio analysis...")
+        response = llm.invoke(formatted_prompt)
+        ratios_json = json.loads(response.content)
+        
+        return {"ratios": ratios_json, "success": True}
+        
+
+    except Exception as e:
+        print(f"ratio generation failed during AI call: {e}")
+        return {"error": f"Summary generation failed: {e}"}
 
 # --- MAIN PROCESSING FUNCTION ---
 
@@ -591,39 +614,3 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
         print(f"Summary generation failed during AI call: {e}")
         return {"error": f"Summary generation failed: {e}"}
 
-
-def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
-    """Generates a ratios from the extracted data."""
-    os.environ["GOOGLE_API_KEY"] = api_key
-    
-    # 1. Prepare input JSON string for the summary prompt
-    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
-
-    # 2. Setup LLM for structured JSON summary
-    try:
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash", 
-            temperature=0.2,
-            max_retries=3,
-            request_timeout=120,
-            response_mime_type="application/json",
-            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
-        )
-    except Exception as e:
-        print(f"Failed to initialize Gemini model for summary: {e}")
-        return {"error": "Failed to initialize Gemini model for summary."}
-
-    # 3. Format and invoke prompt
-    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
-
-    try:
-        print("Sending request to AI for ratio analysis...")
-        response = llm.invoke(formatted_prompt)
-        ratios_json = json.loads(response.content)
-        
-        return {"ratios": ratios_json, "success": True}
-        
-
-    except Exception as e:
-        print(f"ratio generation failed during AI call: {e}")
-        return {"error": f"Summary generation failed: {e}"}
