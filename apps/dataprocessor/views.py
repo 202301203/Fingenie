@@ -99,23 +99,9 @@ def process_financial_statements_api(request):
         if len(context_text.strip()) < 100:
             return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
         
-        # --- STEP 3: EXTRACT RAW FINANCIAL DATA ---
-        raw_data_result = extract_raw_financial_data(context_text, api_key)
-        
-        if not raw_data_result.get('success'):
-            return JsonResponse(raw_data_result, status=500)
-            
-        financial_items = raw_data_result.get('financial_items', [])
-        company_name = raw_data_result.get('company_name')
-        ticker_symbol = raw_data_result.get('ticker_symbol')
-
-        extraction_result['financial_items'] = financial_items
-        extraction_result['company_name'] = company_name
-        extraction_result['ticker_symbol'] = ticker_symbol
-        print(f"📝 Context prepared: {len(context_text)} characters")
-        
+       
         # Step 3: Extract raw financial data
-        print("💾 Step 3: Extracting financial data...")
+        print("Step 3: Extracting financial data...")
         extraction_result = extract_raw_financial_data(context_text, api_key)
         if not extraction_result.get("success"):
             return JsonResponse(extraction_result, status=500)
@@ -167,15 +153,13 @@ def process_financial_statements_api(request):
         # --- STEP 6: RETURN COMBINED RESULTS ---
         return JsonResponse(extraction_result, status=200)
 
-            return JsonResponse({"error": "No financial items could be extracted", "success": False}, status=400)
+            # return JsonResponse({"error": "No financial items could be extracted", "success": False}, status=400)
         
         print(f" Extracted {len(financial_items)} financial items")
         
-        # Step 4: Generate summary (with fallback)
         print(" Step 4: Generating financial summary...")
         summary_result = generate_summary_from_data(financial_items, api_key)
         
-        # Step 5: Calculate ratios (with fallback)
         print(" Step 5: Calculating financial ratios...")
         ratio_result = generate_ratios_from_data(financial_items, api_key)
         
@@ -238,7 +222,6 @@ def process_financial_statements_api(request):
             except:
                 pass  # Ignore cleanup errors
 
-# Alternative simpler API endpoint
 @csrf_exempt
 def extract_data_api(request):
     """
