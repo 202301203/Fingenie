@@ -2,11 +2,9 @@ import os
 import json
 import re
 from typing import List, Optional, Dict, Any, Literal
-import pandas as pd
 
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
-# This is the NEW, CORRECT line
 from langchain_core.documents import Document
 import pdfplumber
 import pytesseract
@@ -28,7 +26,6 @@ class FinancialSummary(BaseModel):
     pros: List[str] = Field(..., description="List of positive financial or business points, using precise terminology and numbers.")
     cons: List[str] = Field(..., description="List of negative financial or business points, using precise terminology and numbers.")
     financial_health_summary: str = Field(..., description="Overall assessment of company's financial health based on the aggregate pros and cons, providing a big-picture view of strengths and concerns.")
-
 class RatioItem(BaseModel):
     ratio_name: Literal[
         "Current Ratio", 
@@ -46,26 +43,6 @@ class RatioItem(BaseModel):
 class FinancialRatios(BaseModel):
     financial_ratios: List[RatioItem] = Field(..., description="List of calculated financial ratios")
 
-# --- FILE DETECTION AND LOADING ---
-
-def detect_file_type(file_path: str) -> str:
-    """Detect if file is PDF or Excel."""
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == '.pdf':
-        return 'pdf'
-    elif ext in ['.xlsx', '.xls', '.csv']:
-        return 'excel'
-    else:
-        raise ValueError(f"Unsupported file format: {ext}")
-
-def load_financial_document(file_path: str) -> List[Document]:
-    """Load financial document from PDF or Excel."""
-    file_type = detect_file_type(file_path)
-    
-    if file_type == 'pdf':
-        return load_pdf_robust(file_path)
-    else:  # excel
-        return load_excel_file(file_path)
 
 def load_excel_file(file_path: str) -> List[Document]:
     """Load Excel file and convert to text format."""
@@ -337,62 +314,131 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
 # --- SUMMARY GENERATION ---
 
 SUMMARY_PROMPT = """
-As a senior financial analyst, analyze the extracted financial data and provide a comprehensive assessment.
+ROLE: You are a world-class financial analyst with deep expertise in interpreting corporate financial statements from the Balance Sheet, Income Statement, and Cash Flow Statement.
 
-*ANALYSIS REQUIREMENTS:*
+PRIMARY TASK: Analyze the provided raw financial data in JSON format. Your analysis must produce two outputs:
+1.A concise, data-driven summary of key strengths (Pros) and weaknesses (Cons).
+2.An overall assessment of the company's financial health.
 
-1. *PROS (Strengths)*: 
-   - Identify positive financial trends and strengths
-   - Include specific numbers, percentages, and comparisons
-   - Focus on revenue growth, profitability, asset quality, liquidity
+ANALYSIS RULES & INSTRUCTIONS
 
-2. *CONS (Weaknesses)*:
-   - Identify concerning financial trends and weaknesses
-   - Include specific numbers, percentages, and comparisons
-   - Focus on declining metrics, high liabilities, cash flow issues
+1. Data Processing:
+    -Extract and analyze the provided financial_items array.
+    -Prioritize significant line items: Revenue, Profit, Total Assets, Total Liabilities, Equity, Borrowings, and Cash Reserves.
+    -Identify and include other items that show major changes.
 
-3. *FINANCIAL HEALTH SUMMARY*:
-   - Provide an overall assessment of the company's financial health
-   - Synthesize the key findings from pros and cons
-   - Mention the most significant strengths and critical concerns
-   - Give a big-picture view of the company's financial positio
-   - Try to give indication of what things actually means instead of just giving numbers
+2. Comparative Analysis:
+    -Perform a year-on-year comparison between current_year and previous_year values.
+    -Calculate the percentage change using the formula: ((Current_Year - Previous_Year) / Previous_Year) * 100.
+    -Highlight both major percentage changes and notable absolute changes (growth or decline).
 
-*ANALYSIS GUIDELINES:*
-- Be specific and quantitative - always include numbers
-- Calculate percentage changes where possible: ((Current - Previous) / Previous) * 100
-- Focus on material items that significantly impact financial health
-- Maintain objective, professional tone
-- Base conclusions strictly on the provided data
+3. Output Style - Pros & Cons:
+    -Each Pro and Con must be a single, factual, and descriptive sentence.
+    -Each sentence must state:
+        1.The specific financial item.
+        2.The metric or change observed.
+        3.The relevant numeric values and/or percentage change.
+    -Avoid generic, non-quantifiable statements (e.g., "The company is doing well" or "Performance was poor").
+    -Base all insights strictly on the provided data; no speculation.
 
-*FINANCIAL DATA:*
+4. Output Style - Financial Health Assessment:
+    -Based on the aggregate of the Pros and Cons, provide a one-paragraph summary of the company's overall financial health.
+    -This statement should synthesize the key data points into a coherent big-picture view, mentioning the primary drivers of strength and the main areas of concern.
+
+TONE: Objective, analytical, and concise.
+
+STRICTLY FOLLOW THIS OUTPUT FORMAT:
+Return ONLY a valid JSON object. Do not add any other text, explanations, or disclaimers.
+
+json
+{{
+  "FinancialAnalysis": {{
+    "Pros": [
+      "Revenue from operations increased by 12.5%, rising from $8.0M to $9.0M.",
+      "Cash and cash equivalents grew by 25%, indicating improved liquidity."
+    ],
+    "Cons": [
+      "Borrowings increased by 18%, raising the debt-to-equity ratio to 1.6x.",
+      "Net profit margin declined from 15% to 10% due to higher operating expenses."
+    ],
+    "FinancialHealthSummary": "The company demonstrates strong revenue growth and robust cash generation, contributing to solid liquidity. However, this is partially offset by a rising debt burden and contracting profit margins, which warrants monitoring for long-term sustainability."
+  }}
+}}
+RAW EXTRACTED FINANCIAL DATA (JSON Format):
 {financial_data_json}
+
+generate summary and Return ONLY a valid JSON strictly following this schema:
 """
 
-def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
-    """Generates a structured Pros/Cons summary using Gemini 2.5 Flash."""
-    try:
-        llm = create_gemini_llm(api_key, "summary")
-        
-        financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
-        formatted_prompt = SUMMARY_PROMPT.format(financial_data_json=financial_data_json)
 
-        print("Generating financial summary with Gemini 2.5 Flash...")
-        
-        structured_llm = llm.with_structured_output(FinancialSummary)
-        result = structured_llm.invoke(formatted_prompt)
-        
-        print(f"✅ Summary generated: {len(result.pros)} pros, {len(result.cons)} cons")
-        
-        return {
-            "pros": result.pros,
-            "cons": result.cons,
-            "financial_health_summary": result.financial_health_summary,
-            "success": True
-        }
+RATIO_PROMPT = """
+Role:
+You are a financial analyst AI assistant specializing in accounting and ratio analysis. You are skilled at interpreting balance sheets and income statements, calculating standard financial ratios, and explaining their meanings in simple terms.
+
+Goal:
+From the provided financial data, calculate key financial ratios and interpret their results.
+
+Input Data:
+(User will provide raw data here — e.g., Current Assets, Current Liabilities, Inventory, Revenue, Total Assets, Total Debt, Net Income, Equity, etc.)
+
+Task Steps:
+
+1. Identify and extract relevant financial data from the given input.
+
+2. Calculate the following ratios using the correct formulas:
+    - Current Ratio = Current Assets / Current Liabilities
+    - Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+    - Debt to Equity Ratio = Total Debt / Shareholders' Equity
+    - Asset Turnover Ratio = Revenue / Total Assets
+    - Return on Assets (ROA) = Net Income / Total Assets
+    - Return on Equity (ROE) = Net Income / Shareholders' Equity
+
+3. For each ratio:
+    - Provide the formula used
+    - Show the calculation step
+    - Provide the numeric result (rounded to two decimals)
+    - Write a one-line interpretation of what the ratio indicates
+
+4. Return your final response strictly as a JSON object in the following structure:
+{{
+  "financial_ratios": [
+    {{
+      "ratio_name": "",
+      "formula": "",
+      "calculation": "",
+      "result": "",
+      "interpretation": ""
+    }}
+  ]
+}}
+
+Example:
+{{
+    "financial_ratios": [
+        {{
+            "ratio_name": "Current Ratio",
+            "formula": "CA / CL",
+            "calculation": "200000 / 100000",
+            "result": 2.0,
+            "interpretation": "Indicates good short-term liquidity."
+        }},
+        {{
+            "ratio_name": "Quick Ratio",
+            "formula": "(CA - Inventory) / CL",
+            "calculation": "(200000 - 50000) / 100000",
+            "result": 1.5,
+            "interpretation": "Shows immediate liquidity position."
+        }}
+    ]
+}}
+
+5. Additional Instructions:
+    - If any data is missing, clearly mention what is needed to complete the calculation.
+    - Keep the explanations concise and beginner-friendly.
+    - Do not make up data unless explicitly instructed.
 
     except Exception as e:
-        print(f"❌ Summary generation failed: {e}")
+        print(f" Summary generation failed: {e}")
         return {"error": f"Summary generation failed: {str(e)}", "success": False}
 
 # --- RATIO CALCULATION ---
@@ -422,10 +468,19 @@ As a financial analyst, calculate key financial ratios from the provided data an
 
 *FINANCIAL DATA:*
 {financial_data_json}
+
+Generate the ratios and return ONLY the JSON that strictly follows the given format.
 """
 
-def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
-    """Generates financial ratios using Gemini 2.5 Flash."""
+
+def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a structured Pros/Cons summary from the extracted data."""
+    os.environ["GOOGLE_API_KEY"] = api_key
+    
+    # 1. Prepare input JSON string for the summary prompt
+    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+
+    # 2. Setup LLM for structured JSON summary
     try:
         llm = create_gemini_llm(api_key, "ratios")
         
@@ -437,7 +492,7 @@ def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: st
         structured_llm = llm.with_structured_output(FinancialRatios)
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f"✅ Ratios calculated: {len(result.financial_ratios)} ratios")
+        print(f" Ratios calculated: {len(result.financial_ratios)} ratios")
         
         return {
             "financial_ratios": [
@@ -454,7 +509,7 @@ def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: st
         }
 
     except Exception as e:
-        print(f"❌ Ratio calculation failed: {e}")
+        print(f" Ratio calculation failed: {e}")
         return {"error": f"Ratio calculation failed: {str(e)}", "success": False}
 
 # --- MAIN PROCESSING FUNCTION ---
@@ -470,42 +525,42 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
     Returns:
         Dictionary containing extracted data, summary, and ratios
     """
-    print(f"🚀 Processing financial statements from: {file_path}")
-    print(f"📊 Using Gemini 2.5 Flash for AI analysis...")
+    print(f" Processing financial statements from: {file_path}")
+    print(f" Using Gemini 2.5 Flash for AI analysis...")
     
     if not os.path.exists(file_path):
         return {"error": f"File not found: {file_path}", "success": False}
     
     try:
         # Step 1: Load document
-        print("📄 Step 1: Loading document...")
+        print(" Step 1: Loading document...")
         documents = load_financial_document(file_path)
         if not documents or not any(doc.page_content.strip() for doc in documents):
             return {"error": "No readable content found in document", "success": False}
         
         # Step 2: Prepare context
-        print("🔍 Step 2: Preparing context...")
+        print(" Step 2: Preparing context...")
         context_text = prepare_context_smart(documents)
         if len(context_text.strip()) < 100:
             return {"error": "Insufficient financial content found", "success": False}
         
-        print(f"📝 Context prepared: {len(context_text)} characters")
+        print(f" Context prepared: {len(context_text)} characters")
         
         # Step 3: Extract raw financial data
-        print("💾 Step 3: Extracting financial data...")
+        print(" Step 3: Extracting financial data...")
         extraction_result = extract_raw_financial_data(context_text, google_api_key)
         if not extraction_result.get("success"):
             return extraction_result
         
         # Step 4: Generate summary
-        print("📈 Step 4: Generating financial summary...")
+        print(" Step 4: Generating financial summary...")
         summary_result = generate_summary_from_data(
             extraction_result["financial_items"], 
             google_api_key
         )
         
         # Step 5: Calculate ratios
-        print("🧮 Step 5: Calculating financial ratios...")
+        print(" Step 5: Calculating financial ratios...")
         ratio_result = generate_ratios_from_data(
             extraction_result["financial_items"],
             google_api_key
@@ -529,11 +584,46 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
             }
         }
         
-        print("✅ Processing completed successfully!")
+        print(" Processing completed successfully!")
         return final_result
         
     except Exception as e:
-        print(f"❌ Processing failed: {e}")
-        return {"error": f"Processing failed: {str(e)}", "success": False}
+        print(f"Summary generation failed during AI call: {e}")
+        return {"error": f"Summary generation failed: {e}"}
 
-# --- ENHANCED USAGE EXAMPLE ---
+
+def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a ratios from the extracted data."""
+    os.environ["GOOGLE_API_KEY"] = api_key
+    
+    # 1. Prepare input JSON string for the summary prompt
+    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+
+    # 2. Setup LLM for structured JSON summary
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", 
+            temperature=0.2,
+            max_retries=3,
+            request_timeout=120,
+            response_mime_type="application/json",
+            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
+        )
+    except Exception as e:
+        print(f"Failed to initialize Gemini model for summary: {e}")
+        return {"error": "Failed to initialize Gemini model for summary."}
+
+    # 3. Format and invoke prompt
+    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+
+    try:
+        print("Sending request to AI for ratio analysis...")
+        response = llm.invoke(formatted_prompt)
+        ratios_json = json.loads(response.content)
+        
+        return {"ratios": ratios_json, "success": True}
+        
+
+    except Exception as e:
+        print(f"ratio generation failed during AI call: {e}")
+        return {"error": f"Summary generation failed: {e}"}

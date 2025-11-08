@@ -16,7 +16,8 @@ from .services import (
     extract_raw_financial_data,
     generate_summary_from_data,
     generate_ratios_from_data,
-    detect_file_type
+    load_pdf_robust,
+    prepare_context_smart
 )
 
 def upload_file_view(request):
@@ -87,13 +88,13 @@ def process_financial_statements_api(request):
                 destination.write(chunk)
 
         # Step 1: Load document
-        print("📄 Step 1: Loading document...")
+        print(" Step 1: Loading document...")
         documents = load_financial_document(file_path)
         if not documents or not any(doc.page_content.strip() for doc in documents):
             return JsonResponse({"error": "No readable content found in document", "success": False}, status=400)
         
         # Step 2: Prepare context
-        print("🔍 Step 2: Preparing context...")
+        print(" Step 2: Preparing context...")
         context_text = prepare_context_smart(documents)
         if len(context_text.strip()) < 100:
             return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
@@ -123,6 +124,20 @@ def process_financial_statements_api(request):
         if not financial_items:
             extraction_result['summary'] = {'pros': ["Extraction successful but no financial tables found."], 'cons': []}
         
+        if not summary_result.get('success'):
+             # If summary fails, return raw data and log the error
+            print(f"Summary failed: {summary_result.get('error')}")
+            extraction_result['summary'] = {'pros': [], 'cons': [f"Summary generation failed: {summary_result.get('error')}"]}
+        else:
+            extraction_result['summary'] = summary_result['summary']
+
+        ratio_result = generate_ratios_from_data(financial_items,api_key)
+
+        if not ratio_result.get('success'):
+            print(f"Ratio calcuulation Failed: {ratio_result.get('error')}")
+        else:
+            extraction_result['ratios'] = ratio_result['ratios']
+        # --- STEP 4: RETURN COMBINED RESULTS ---
         # --- STEP 4: GENERATE SUMMARY FROM EXTRACTED DATA ---
         if financial_items: 
             summary_result = generate_summary_from_data(financial_items, api_key)
@@ -154,14 +169,14 @@ def process_financial_statements_api(request):
 
             return JsonResponse({"error": "No financial items could be extracted", "success": False}, status=400)
         
-        print(f"✅ Extracted {len(financial_items)} financial items")
+        print(f" Extracted {len(financial_items)} financial items")
         
         # Step 4: Generate summary (with fallback)
-        print("📈 Step 4: Generating financial summary...")
+        print(" Step 4: Generating financial summary...")
         summary_result = generate_summary_from_data(financial_items, api_key)
         
         # Step 5: Calculate ratios (with fallback)
-        print("🧮 Step 5: Calculating financial ratios...")
+        print(" Step 5: Calculating financial ratios...")
         ratio_result = generate_ratios_from_data(financial_items, api_key)
         
         # Compile final result
@@ -193,12 +208,12 @@ def process_financial_statements_api(request):
             }
         }
         
-        print("✅ Processing completed successfully!")
+        print(" Processing completed successfully!")
         print(final_result)
         return JsonResponse(final_result, status=200)
         
     except Exception as e:
-        print(f"❌ Processing failed: {e}")
+        print(f" Processing failed: {e}")
         import traceback
         traceback.print_exc()
 
