@@ -4,105 +4,193 @@ from django.conf import settings
 import os
 import uuid
 import json
-import shutil 
 
-from .models import FinancialReport 
-
-# Import core logic functions
-from django.shortcuts import render
+from .models import FinancialReport
 from .services import (
-    load_financial_document,
+    load_pdf_robust,
     prepare_context_smart,
     extract_raw_financial_data,
     generate_summary_from_data,
-    generate_ratios_from_data,
-    load_pdf_robust,
-    prepare_context_smart
+    generate_ratios_from_data
 )
-
-def upload_file_view(request):
-    """Renders the file upload form."""
-    return render(request, 'pdf_app/upload.html')
 
 @csrf_exempt
 def process_financial_statements_api(request):
-    """
-    Handles the file upload, saves to the FinancialReport model,
-    performs extraction, and saves the summary back to the model.
-    Main API view to process financial statements from PDF or Excel files using Gemini.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    if request.method == 'POST':
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
 
-    # Check if file was uploaded
-    if 'file' not in request.FILES:
-        return JsonResponse({'error': 'No file uploaded.'}, status=400)
+        temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_uploads')
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}.pdf")
 
-    uploaded_file = request.FILES['file']
-    
-    # Get API key from request or settings
-    api_key = request.POST.get('api_key') or getattr(settings, 'GENIE_API_KEY', None) or os.environ.get('GENIE_API_KEY')
-    if not api_key:
-        return JsonResponse({'error': 'No API key provided. Provide api_key in the POST or set GENIE_API_KEY in settings or environment.'}, status=400)
+        try:
+            with open(temp_path, 'wb+') as destination:
+                for chunk in uploaded_file.chunks():
+                    destination.write(chunk)
 
-    file_extension = os.path.splitext(uploaded_file.name)[1]
-    if file_extension.lower() not in ['.pdf', '.xlsx', '.xls', '.csv']:
-        return JsonResponse({'error': 'Invalid file type.'}, status=400)
-    
-    new_report = None
-    try:
-        # --- STEP 1: SAVE FILE TO MODEL ---
-        # This saves the file to your 'MEDIA_ROOT/reports/' folder
-        new_report = FinancialReport(file=uploaded_file)
-        new_report.save()
-        
-        # Get the permanent path and database ID
-        pdf_path = new_report.file.path 
-        report_db_id = new_report.id  # This is the ID for the chatbot
+            print(f"Processing file: {uploaded_file.name}, size: {uploaded_file.size}")
 
-        extraction_result = {"financial_items": [], "summary": None}
+            # Ensure we have a Google API key
+            google_api_key = getattr(settings, 'GOOGLE_API_KEY', None) or os.environ.get('GOOGLE_API_KEY')
+            if not google_api_key:
+                return JsonResponse({'error': 'Server misconfigured: GOOGLE_API_KEY not set'}, status=500)
 
-        # --- STEP 2: LOAD AND PREPARE CONTEXT ---
-        # We now use the permanent path from the model
-        documents = load_pdf_robust(pdf_path)
-        if not documents:
-            raise ValueError("Failed to extract any usable text from PDF.")
+            # Step 2: Load and extract financial data
+            documents = load_pdf_robust(temp_path)
+            context = prepare_context_smart(documents)
+            extracted_data = extract_raw_financial_data(context, google_api_key)
 
-        context_text = prepare_context_smart(documents)
-        if len(context_text.strip()) < 100:
-            return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
-        
-       
-        extraction_result = extract_raw_financial_data(context_text, api_key)
-        if not extraction_result.get("success"):
-            raise ValueError(extraction_result.get("error", "Extraction failed."))
+            # Step 3: Generate summary & ratios
+            summary_result = generate_summary_from_data(extracted_data.get('financial_items', []), google_api_key)
+            ratios_result = generate_ratios_from_data(extracted_data.get('financial_items', []), google_api_key)
 
-        financial_items = extraction_result.get("financial_items", [])
-        summary_result = generate_summary_from_data(financial_items, api_key)
-        ratio_result = generate_ratios_from_data(financial_items, api_key)
+            # FIXED: Extract the actual data from the results
+            summary_data = summary_result.get('summary', {}) if isinstance(summary_result, dict) else {}
+            ratios_data = ratios_result.get('financial_ratios', []) if isinstance(ratios_result, dict) else ratios_result
 
-        extraction_result.update({
-            "summary": summary_result.get("summary"),
-            "ratios": ratio_result.get("ratios"),
-            "report_id": report_db_id
-        })
+            # Step 4: Save to DB (FIXED - using TextField approach)
+            report_id = str(uuid.uuid4())
+            try:
+                report = FinancialReport.objects.create(
+                    report_id=report_id,
+                    company_name=extracted_data.get("company_name", "Unknown"),
+                    ticker_symbol=extracted_data.get("ticker_symbol", ""),
+                )
+                # Use the setter methods for TextField
+                report.set_summary(summary_data)
+                report.set_ratios(ratios_data)
+                report.save()
+                print("Report saved to database successfully!")
+            except Exception as e:
+                print(f"Error saving to database: {str(e)}")
+                import traceback
+                print(f"Traceback: {traceback.format_exc()}")
+                return JsonResponse({'error': f'Failed to save report: {str(e)}'}, status=500)
 
-        # Step 5: Save summary to DB
-        summary = extraction_result.get('summary', {})
-        new_report.summary_pros = "\n".join(summary.get('pros', []))
-        new_report.summary_cons = "\n".join(summary.get('cons', []))
-        new_report.save(update_fields=['summary_pros', 'summary_cons'])
+            # Clean up temp file
+            os.remove(temp_path)
 
-        return JsonResponse(extraction_result, status=200)
+            # Respond to frontend
+            return JsonResponse({
+                'success': True,
+                'report_id': report_id,
+                'company_name': extracted_data.get("company_name", "Unknown"),
+                'ticker_symbol': extracted_data.get("ticker_symbol", ""),
+                'summary': summary_data,
+                'ratios': ratios_data,
+                'metadata': {
+                    "file_name": uploaded_file.name,
+                    "size_kb": round(uploaded_file.size / 1024, 2)
+                }
+            })
 
-    except Exception as e:
-        if new_report:
-            new_report.delete()
-        return JsonResponse({'error': str(e)}, status=500)
-        
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# FIX the other view functions to use getter methods:
+
 @csrf_exempt
-def extract_data_api(request):
+def get_report_by_id_api(request, report_id):
+    try:
+        report = FinancialReport.objects.get(report_id=report_id)
+        return JsonResponse({
+            'success': True,
+            'report_id': str(report.report_id),
+            'company_name': report.company_name,
+            'ticker_symbol': report.ticker_symbol,
+            'summary': report.get_summary(),  # Use getter method
+            'ratios': report.get_ratios(),    # Use getter method
+        })
+    except FinancialReport.DoesNotExist:
+        return JsonResponse({'error': 'Report not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+@csrf_exempt
+def get_latest_report_api(request):
+    try:
+        report = FinancialReport.objects.order_by('-created_at').first()
+        if not report:
+            return JsonResponse({'error': 'No reports found'}, status=404)
+
+        return JsonResponse({
+            'success': True,
+            'report_id': str(report.report_id),
+            'company_name': report.company_name,
+            'ticker_symbol': report.ticker_symbol,
+            'summary': report.get_summary(),  # Use getter method
+            'ratios': report.get_ratios(),    # Use getter method
+        })
+    except Exception as e:
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+# ... rest of your views remain the same
+# ----------------------------
+# 4️⃣  STOCK DATA API
+# ----------------------------
+@csrf_exempt
+def get_stock_data_api(request, ticker_symbol, period='1M'):
     """
-    Legacy endpoint - now calls the main processing function
+    Mock stock data endpoint - you'll want to integrate with a real API
     """
-    return process_financial_statements_api(request)
+    try:
+        # This is mock data - replace with actual stock API integration
+        mock_stock_data = {
+            'ticker': ticker_symbol,
+            'period': period,
+            'prices': [
+                {'date': '2024-01-01', 'price': 150.25},
+                {'date': '2024-01-02', 'price': 152.50},
+                {'date': '2024-01-03', 'price': 151.75},
+                {'date': '2024-01-04', 'price': 153.25},
+                {'date': '2024-01-05', 'price': 155.00},
+            ],
+            'current_price': 155.00,
+            'change': 4.75,
+            'change_percent': 3.16
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'stock_data': mock_stock_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Failed to fetch stock data: {str(e)}'}, status=500)
+
+
+# ----------------------------
+# 5️⃣  TEST ENDPOINT (for debugging)
+# ----------------------------
+@csrf_exempt
+def test_process_api(request):
+    """Simple test endpoint to check if basic functionality works"""
+    try:
+        # Test database connection
+        report_count = FinancialReport.objects.count()
+        print(f"Database connection OK. Report count: {report_count}")
+        
+        # Test settings
+        google_api_key = getattr(settings, 'GOOGLE_API_KEY', None) or os.environ.get('GOOGLE_API_KEY')
+        print(f"Google API key: {'Found' if google_api_key else 'Missing'}")
+        
+        return JsonResponse({
+            'status': 'OK',
+            'database_connected': True,
+            'report_count': report_count,
+            'google_api_configured': bool(google_api_key)
+        })
+    except Exception as e:
+        print(f"Test failed: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "../App.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
@@ -67,9 +67,9 @@ const useGoogleAuth = () => {
       
       if (response.ok) {
         if (data.is_new_user) {
-          alert(`🎉 Welcome to Fingenie, ${data.username}! Your account has been created via Google.`);
+          alert(`Welcome to Fingenie, ${data.username}! Your account has been created via Google.`);
         } else {
-          alert(`👋 Welcome back, ${data.username}!`);
+          alert(`Welcome back, ${data.username}!`);
         }
         navigate("/mainpageafterlogin");
       } else {
@@ -106,12 +106,6 @@ const CreateAccount = ({ onSwitch }) => {
   const [popupMessage, setPopupMessage] = useState("");
   const [popupColor, setPopupColor] = useState("#4CAF50");
 
-  const googleBtnProps = useInteractionState(
-    styles.googleButton,
-    styles.googleButtonHover
-  );
-  //const linkProps = useInteractionState(styles.link, styles.linkHover);
-
   // Input focus hooks
   const usernameInput = useInputFocus();
   const emailInput = useInputFocus();
@@ -132,9 +126,9 @@ const CreateAccount = ({ onSwitch }) => {
   const handleCreateAccount = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!username || !email || !password || !contact) {
+    if (!username || !email || !password) {
       setPopupMessage("Please fill out all fields.");
-      setPopupColor("#d6867dff"); // red
+      setPopupColor("#d6867dff");
       setShowPopup(true);
       return;
     }
@@ -153,8 +147,6 @@ const CreateAccount = ({ onSwitch }) => {
     } else {
       setPasswordError("");
     }
-    // All validations passed
-    setShowPopup(true);
 
     setIsLoading(true);
 
@@ -170,48 +162,31 @@ const CreateAccount = ({ onSwitch }) => {
           username, 
           email, 
           password,
-          // Remove contact field as it's not in your backend
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        alert(`✅ Account created successfully for ${data.username}`);
-        navigate("/mainpageafterlogin");
+        setPopupMessage(`Account created successfully for ${data.username}`);
+        setPopupColor("#4CAF50");
+        setShowPopup(true);
+        setTimeout(() => {
+          navigate("/mainpageafterlogin");
+        }, 2000);
       } else {
-        alert(data.error || "Registration failed");
+        setPopupMessage(data.error || "Registration failed");
+        setPopupColor("#d6867dff");
+        setShowPopup(true);
       }
     } catch (err) {
       console.error("Error during registration:", err);
-      alert("Server error. Please try again later.");
+      setPopupMessage("Server error. Please try again later.");
+      setPopupColor("#d6867dff");
+      setShowPopup(true);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleSuccess = (tokenResponse) => {
-    // The ID token (JWT) is in tokenResponse.credential
-    const decodedToken = jwtDecode(tokenResponse.credential);
-
-    console.log("Google Login Success. Decoded Data:", decodedToken);
-    setPopupMessage(
-      `Signed in as ${decodedToken.name} (${decodedToken.email})!`
-    );
-    setPopupColor("#4CAF50"); // green
-    setShowPopup(true);
-
-    //  CRUCIAL NEXT STEP:
-    // Send the ID token (tokenResponse.credential) to your server (e.g., in server.js)
-    // for secure verification and user creation/authentication.
-    // Example: sendTokenToServer(tokenResponse.credential);
-  };
-
-  const handleGoogleError = () => {
-    console.error("Google Sign-In Failed");
-    setPopupMessage("Google Sign-In failed. Please try again.");
-    setPopupColor("#E74C3C"); // red
-    setShowPopup(true);
   };
 
   return (
@@ -221,8 +196,8 @@ const CreateAccount = ({ onSwitch }) => {
           <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
             <h3>
               {popupColor === "#4CAF50"
-                ? "✅ Account Created"
-                : "⚠️ Incomplete Details"}
+                ? "Account Created"
+                : "Error"}
             </h3>
             <p>{popupMessage}</p>
             <button
@@ -238,119 +213,95 @@ const CreateAccount = ({ onSwitch }) => {
           </div>
         </div>
       )}
-    <div>
-      {/* Your Google Login button goes here */}
+      <div style={styles.outerContainer}>
+        <div style={{ ...styles.modal, ...styles.pulse }}>
+          <div style={styles.logo}>
+            <img
+              src={fgLogo}
+              alt="Site logo"
+              style={{ height: "130px", width: "auto" }}
+            />
+          </div>
+          <div style={styles.header}>Create your account</div>
+          <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
+            Already have an account?{" "}
+            <span
+              style={{ textDecoration: "underline", cursor: "pointer" }}
+              onClick={() => onSwitch("login")}
+            >
+              Log in
+            </span>
+          </p>
 
-      {/* ✅ Custom Popup */}
-      {showPopup && (
-        <div style={styles.popupOverlayStyle}>
-          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
-            <h3>
-              {popupColor === "#4CAF50"
-                ? "✅ Google Sign-In Successful"
-                : "❌ Google Sign-In Failed"}
-            </h3>
-            <p>{popupMessage}</p>
-            <button
-              onClick={() => setShowPopup(false)}
-              style={styles.okButtonStyle}
-              onMouseOver={(e) =>
-                (e.target.style.backgroundColor = "#f0f0f0")
-              }
-              onMouseOut={(e) => (e.target.style.backgroundColor = "white")}
-            >
-              OK
-            </button>
-          </div>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onFocus={usernameInput.onFocus}
+            onBlur={usernameInput.onBlur}
+            style={usernameInput.inputStyle}
+          />
+
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onFocus={emailInput.onFocus}
+            onBlur={emailInput.onBlur}
+            style={emailInput.inputStyle}
+          />
+          {emailError && <p style={styles.errorText}>{emailError}</p>}
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={passwordInput.onFocus}
+            onBlur={passwordInput.onBlur}
+            style={passwordInput.inputStyle}
+          />
+          {passwordError && <p style={styles.errorText}>{passwordError}</p>}
+
+          <button
+            onClick={handleCreateAccount}
+            disabled={isLoading}
+            style={{
+              ...createBtnProps.style,
+              ...(isLoading ? styles.buttonDisabled : {})
+            }}
+            onMouseEnter={createBtnProps.onMouseEnter}
+            onMouseLeave={createBtnProps.onMouseLeave}
+          >
+            {isLoading ? "Creating Account..." : "Create an account"}
+          </button>
         </div>
-      )}
-    </div>
-    <div style={styles.outerContainer}>
-      <div style={{ ...styles.modal, ...styles.pulse }}>
-        <div style={styles.logo}>
-          <img
-            src={fgLogo}
-            alt="Site logo"
-            style={{ height: "130px", width: "auto" }}
+
+        <div style={styles.divider}>
+          <span style={styles.dividerLine}></span>
+          <span style={styles.dividerText}>or continue with</span>
+          <span style={styles.dividerLine}></span>
+        </div>
+
+        <div style={styles.googleContainer}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="filled_blue"
+            size="large"
+            text="continue_with"
+            shape="rectangular"
           />
         </div>
-        <div style={styles.header}>Create your account</div>
-        <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
-          Already have an account?{" "}
-          <span
-            style={{ textDecoration: "underline", cursor: "pointer" }}
-            onClick={() => onSwitch("login")}
-          >
-            Log in
-          </span>
-        </p>
-
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          {...usernameInput}
-          style={usernameInput.inputStyle}
-        />
-
-        <input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          {...emailInput}
-          style={emailInput.inputStyle}
-        />
-        {emailError && <p style={styles.errorText}>{emailError}</p>}
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          {...passwordInput}
-          style={passwordInput.inputStyle}
-        />
-        {passwordError && <p style={styles.errorText}>{passwordError}</p>}
-
-        <button
-          onClick={handleCreateAccount}
-          disabled={isLoading}
-          style={{
-            ...createBtnProps.style,
-            ...(isLoading ? styles.buttonDisabled : {})
-          }}
-          onMouseEnter={createBtnProps.onMouseEnter}
-          onMouseLeave={createBtnProps.onMouseLeave}
-        >
-          {isLoading ? "Creating Account..." : "Create an account"}
-        </button>
       </div>
-
-      <div style={styles.divider}>
-        <span style={styles.dividerLine}></span>
-        <span style={styles.dividerText}>or continue with</span>
-        <span style={styles.dividerLine}></span>
-      </div>
-
-      <div style={styles.googleContainer}>
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          useOneTap
-          theme="filled_blue"
-          size="large"
-          text="continue_with"
-          shape="rectangular"
-        />
-      </div>
-    </div>
     </>
   );
 };
 
-// 2. Login Page (keep as is, but add CSRF token)
+// 2. Login Page
 const LoginPage = ({ onSwitch }) => {
   const navigate = useNavigate();
   const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
@@ -409,12 +360,44 @@ const LoginPage = ({ onSwitch }) => {
       setPasswordError("");
     }
 
-    // Login logic placeholder
-    setPopupMessage(`Logging in with ${loginType}: ${identifier}`);
-    setPopupColor("#4CAF50");
-    setShowPopup(true);
+    setIsLoading(true);
 
-    navigate("/mainpageafterlogin");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/accounts/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken(),
+        },
+        credentials: "include",
+        body: JSON.stringify({ 
+          [loginType === "email" ? "email" : "username"]: identifier,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPopupMessage(`Welcome back, ${data.username || identifier}!`);
+        setPopupColor("#4CAF50");
+        setShowPopup(true);
+        setTimeout(() => {
+          navigate("/mainpageafterlogin");
+        }, 1500);
+      } else {
+        setPopupMessage(data.error || "Login failed");
+        setPopupColor("#E74C3C");
+        setShowPopup(true);
+      }
+    } catch (err) {
+      console.error("Error during login:", err);
+      setPopupMessage("Server error. Please try again later.");
+      setPopupColor("#E74C3C");
+      setShowPopup(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleToggle = (type) => {
@@ -425,12 +408,11 @@ const LoginPage = ({ onSwitch }) => {
 
   return (
     <>
-    {/* ✅ Popup */}
       {showPopup && (
         <div style={styles.popupOverlayStyle}>
-          <div style={styles.popupBoxStyle}>
+          <div style={{...styles.popupBoxStyle, backgroundColor: popupColor}}>
             <h3>
-              {popupColor === "#88a089ff" ? "✅ Success" : "❌ Error"}
+              {popupColor === "#4CAF50" ? "Success" : "Error"}
             </h3>
             <p>{popupMessage}</p>
             <button
@@ -446,117 +428,106 @@ const LoginPage = ({ onSwitch }) => {
           </div>
         </div>
       )}
-    <div style={styles.modal}>
-      <div style={styles.logo}>
-        <img
-          src={fgLogo}
-          alt="Site logo"
-          style={{ height: "130px", width: "auto" }}
-        />
-      </div>
-      {/* <div style={styles.header}>Create your account</div> */}
-      <div style={styles.header}>Log in to your account</div>
-      {/* <div style={styles.logo}>OG</div> */}
-
-      <div style={styles.tabContainer}>
-        <div
-          style={{
-            ...styles.tab,
-            ...(loginType === "email" ? styles.tabActive : styles.tabInactive),
-          }}
-          onClick={() => handleToggle("email")}
-        >
-          Email address
-        </div>
-        <div style={styles.header}>Log in to your account</div>
-
-        <div style={styles.tabContainer}>
-          <div
-            style={{
-              ...styles.tab,
-              ...(loginType === "email" ? styles.tabActive : styles.tabInactive),
-            }}
-            onClick={() => handleToggle("email")}
-          >
-            Email address
+      <div style={styles.outerContainer}>
+        <div style={styles.modal}>
+          <div style={styles.logo}>
+            <img
+              src={fgLogo}
+              alt="Site logo"
+              style={{ height: "130px", width: "auto" }}
+            />
           </div>
-          <div
+          <div style={styles.header}>Log in to your account</div>
+
+          <div style={styles.tabContainer}>
+            <div
+              style={{
+                ...styles.tab,
+                ...(loginType === "email" ? styles.tabActive : styles.tabInactive),
+              }}
+              onClick={() => handleToggle("email")}
+            >
+              Email address
+            </div>
+            <div
+              style={{
+                ...styles.tab,
+                ...(loginType === "username"
+                  ? styles.tabActive
+                  : styles.tabInactive),
+              }}
+              onClick={() => handleToggle("username")}
+            >
+              Username
+            </div>
+          </div>
+
+          <input
+            type={loginType === "email" ? "email" : "text"}
+            placeholder={loginType === "email" ? "Email address" : "Username"}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            onFocus={identifierInput.onFocus}
+            onBlur={identifierInput.onBlur}
+            style={identifierInput.inputStyle}
+          />
+          {loginType === "email" && emailError && (
+            <p style={styles.errorText}>{emailError}</p>
+          )}
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={passwordInput.onFocus}
+            onBlur={passwordInput.onBlur}
+            style={passwordInput.inputStyle}
+          />
+          {passwordError && <p style={styles.errorText}>{passwordError}</p>}
+
+          <button
+            onClick={handleLogin}
+            disabled={isLoading}
             style={{
-              ...styles.tab,
-              ...(loginType === "username"
-                ? styles.tabActive
-                : styles.tabInactive),
+              ...loginBtnProps.style,
+              ...(isLoading ? styles.buttonDisabled : {})
             }}
-            onClick={() => handleToggle("username")}
+            onMouseEnter={loginBtnProps.onMouseEnter}
+            onMouseLeave={loginBtnProps.onMouseLeave}
           >
-            Username
+            {isLoading ? "Logging in..." : "Log in"}
+          </button>
+
+          <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
+            Don't have an account?{" "}
+            <span
+              style={{ textDecoration: "underline", cursor: "pointer" }}
+              onClick={() => onSwitch("create")}
+            >
+              Sign up
+            </span>
+          </p>
+
+          <div style={styles.divider}>
+            <span style={styles.dividerLine}></span>
+            <span style={styles.dividerText}>or continue with</span>
+            <span style={styles.dividerLine}></span>
+          </div>
+
+          <div style={styles.googleContainer}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="filled_blue"
+              size="large"
+              text="continue_with"
+              shape="rectangular"
+            />
           </div>
         </div>
-
-        <input
-          type={loginType === "email" ? "email" : "text"}
-          placeholder={loginType === "email" ? "Email address" : "Username"}
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          {...identifierInput}
-          style={identifierInput.inputStyle}
-        />
-        {loginType === "email" && emailError && (
-          <p style={styles.errorText}>{emailError}</p>
-        )}
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          {...passwordInput}
-          style={passwordInput.inputStyle}
-        />
-        {passwordError && <p style={styles.errorText}>{passwordError}</p>}
-
-        <button
-          onClick={handleLogin}
-          disabled={isLoading}
-          style={{
-            ...loginBtnProps.style,
-            ...(isLoading ? styles.buttonDisabled : {})
-          }}
-          onMouseEnter={loginBtnProps.onMouseEnter}
-          onMouseLeave={loginBtnProps.onMouseLeave}
-        >
-          {isLoading ? "Logging in..." : "Log in"}
-        </button>
-
-        <p style={{ fontSize: "15px", color: "#57556a", marginBottom: "20px" }}>
-          Don't have an account?{" "}
-          <span
-            style={{ textDecoration: "underline", cursor: "pointer" }}
-            onClick={() => onSwitch("create")}
-          >
-            Sign up
-          </span>
-        </p>
       </div>
-
-      <div style={styles.divider}>
-        <span style={styles.dividerLine}></span>
-        <span style={styles.dividerText}>or continue with</span>
-        <span style={styles.dividerLine}></span>
-      </div>
-
-      <div style={styles.googleContainer}>
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          useOneTap
-          theme="filled_blue"
-          size="large"
-          text="continue_with"
-          shape="rectangular"
-        />
-      </div>
-    </div>
     </>
   );
 };
@@ -612,29 +583,6 @@ const styles = {
     boxSizing: "border-box",
     outline: "none",
     transition: "border-color 0.3s ease-in-out",
-    fontFamily: "Bricolage Grotesque, sans-serif",
-  },
-  phoneContainer: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    margin: "8px 0",
-  },
-  countryCodeSelect: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #c2c9cc",
-    backgroundColor: "#fff",
-    fontFamily: "Bricolage Grotesque, sans-serif",
-    cursor: "pointer",
-    outline: "none",
-  },
-  errorText: {
-    color: "red",
-    fontSize: "12px",
-    marginTop: "-4px",
-    marginBottom: "8px",
-    textAlign: "left",
     fontFamily: "Bricolage Grotesque, sans-serif",
   },
   inputFocus: {
@@ -709,40 +657,46 @@ const styles = {
     backgroundColor: "transparent",
     color: "#57556a",
   },
-    popupOverlayStyle :{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
-    },
-    
-     popupBoxStyle : {
-      backgroundColor: "#b1cfb2ff",
-      color: "black",
-      padding: "20px",
-      borderRadius: "8px",
-      textAlign: "center",
-      boxShadow: "0 4px 8px rgba(20, 13, 13, 0.3)",
-    },
-    okButtonStyle: {
-      marginTop: "10px",
-      padding: "8px 16px",
-      border: "1px solid black",
-      borderRadius: "10px",
-      backgroundColor: "white",
-      color: "black",
-      cursor: "pointer",
-      transition: "all 0.2s ease-in-out",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-    },
-
-  // Animation utility (using a small, repeated animation for effect)
+  errorText: {
+    color: "red",
+    fontSize: "12px",
+    marginTop: "-4px",
+    marginBottom: "8px",
+    textAlign: "left",
+    fontFamily: "Bricolage Grotesque, sans-serif",
+  },
+  popupOverlayStyle: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  popupBoxStyle: {
+    backgroundColor: "#b1cfb2ff",
+    color: "black",
+    padding: "20px",
+    borderRadius: "8px",
+    textAlign: "center",
+    boxShadow: "0 4px 8px rgba(20, 13, 13, 0.3)",
+    minWidth: "300px",
+  },
+  okButtonStyle: {
+    marginTop: "10px",
+    padding: "8px 16px",
+    border: "1px solid black",
+    borderRadius: "10px",
+    backgroundColor: "white",
+    color: "black",
+    cursor: "pointer",
+    transition: "all 0.2s ease-in-out",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  },
   pulse: {
     animation: "pulse-animation 2s infinite alternate",
   },
@@ -756,10 +710,8 @@ const AuthFlow = () => {
     setCurrentPage(page);
   };
 
-  // ✅ Correct Google Client ID format
   const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
 
-  // Add a check to make sure it's set
   if (!googleClientId) {
     console.error("Google Client ID is not set!");
     return <div>Error: Google authentication not configured</div>;
@@ -775,4 +727,4 @@ const AuthFlow = () => {
   );
 };
 
-export default AuthFlow; // ✅ Use default export
+export default AuthFlow;

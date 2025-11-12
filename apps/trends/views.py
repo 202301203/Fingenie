@@ -15,13 +15,12 @@ from pydantic import BaseModel, Field
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from apps.dataprocessor.views import (
+# FIXED: Import from services instead of views
+from apps.dataprocessor.services import (
     extract_raw_financial_data,
     load_financial_document,
-    prepare_context_smart
-)
-from apps.dataprocessor.services import (
-    create_gemini_llm,
+    prepare_context_smart,
+    create_gemini_llm
 )
 
 # ------------------------------
@@ -41,10 +40,11 @@ class FinancialTrendItem(BaseModel):
 class FinancialTrends(BaseModel):
     financial_trends: List[FinancialTrendItem] = Field(..., description="List of trend analyses")
 
-
 def upload_file_view(request):
     """Renders the file upload form."""
     return render(request, 'pdf_app/upload.html')
+
+# ... rest of your code remains the same ...
 def generate_overall_summary(trends_data: Dict[str, Any], company_name: str = "the company") -> str:
     """
     Generate a comprehensive overall summary based on the financial trends analysis.
@@ -575,7 +575,7 @@ def ensure_complete_critical_metrics(critical_data: Dict, all_items: List[Dict[s
                         'original_metric': f"Conservative estimate",
                         'data_quality': 'poor'
                     }
-                    print(f"   ⚠️ Used conservative estimate for: {config['display_name']}")
+                    print(f" Used conservative estimate for: {config['display_name']}")
     
     return critical_data
 
@@ -839,7 +839,7 @@ def enhanced_manual_trend_analysis(financial_items: List[Dict[str, Any]]) -> Dic
     # Ensure we have exactly 10 trends, sorted by importance
     trends.sort(key=lambda x: x.get("importance_score", 0), reverse=True)
     
-    print(f"🎯 Final selection: {len(trends)} critical financial trends")
+    print(f"Final selection: {len(trends)} critical financial trends")
     for trend in trends:
         quality = trend.get("data_quality", "unknown")
         quality_icon = "🟢" if quality == "excellent" else "🟡" if quality in ["good", "fair"] else "🔴"
@@ -973,14 +973,14 @@ def generate_trends_from_data(financial_items: List[Dict[str, Any]], api_key: st
         # Extract exactly the 10 critical metrics
         critical_items = extract_critical_metrics(financial_items)
         
-        print(f"🎯 Focusing on {len(critical_items)} critical financial metrics")
+        print(f" Focusing on {len(critical_items)} critical financial metrics")
         
         # Debug: Show critical metrics selected
         for item in critical_items:
             years = sorted(item['yearly_values'].keys())
             year_range = f"{min(years)}-{max(years)}" if years else "N/A"
             quality = item.get('data_quality', 'unknown')
-            print(f"   📊 {item['metric']}: {len(years)} years ({year_range}) - Quality: {quality}")
+            print(f"    {item['metric']}: {len(years)} years ({year_range}) - Quality: {quality}")
         
         # Try LLM analysis
         try:
@@ -997,18 +997,18 @@ def generate_trends_from_data(financial_items: List[Dict[str, Any]], api_key: st
             financial_data_json = json.dumps(financial_data_for_llm, indent=2)
             formatted_prompt = TREND_PROMPT.format(financial_data_json=financial_data_json)
 
-            print("📊 Generating critical financial trends with Gemini...")
-            print(f"📤 Sending {len(critical_items)} critical metrics to Gemini")
+            print("Generating critical financial trends with Gemini...")
+            print(f"Sending {len(critical_items)} critical metrics to Gemini")
 
             # Try structured output with timeout and retry
             try:
                 structured_llm = llm.with_structured_output(FinancialTrends)
                 result = structured_llm.invoke(formatted_prompt)
                 
-                print(f"✅ Gemini analysis completed: {len(result.financial_trends)} critical trends generated")
+                print(f"Gemini analysis completed: {len(result.financial_trends)} critical trends generated")
                 
                 if len(result.financial_trends) == 0:
-                    print("⚠️ Gemini returned empty trends, using enhanced manual analysis")
+                    print("Gemini returned empty trends, using enhanced manual analysis")
                     return enhanced_manual_trend_analysis(financial_items)
                 
                 # Validate that indications match trends
@@ -1021,16 +1021,16 @@ def generate_trends_from_data(financial_items: List[Dict[str, Any]], api_key: st
                 }
                 
             except Exception as e:
-                print(f"⚠️ Gemini structured output failed: {e}")
-                print("🔄 Falling back to enhanced manual analysis...")
+                print(f" Gemini structured output failed: {e}")
+                print("Falling back to enhanced manual analysis...")
                 return enhanced_manual_trend_analysis(financial_items)
                 
         except Exception as e:
-            print(f"⚠️ LLM initialization failed: {e}")
+            print(f"LLM initialization failed: {e}")
             return enhanced_manual_trend_analysis(financial_items)
 
     except Exception as e:
-        print(f"❌ Trend analysis failed: {e}")
+        print(f"Trend analysis failed: {e}")
         traceback.print_exc()
         return enhanced_manual_trend_analysis(financial_items)
 
@@ -1115,22 +1115,22 @@ def process_financial_statements_api(request):
                 for chunk in uploaded_file.chunks():
                     dest.write(chunk)
 
-            print(f"📄 Processing {file_name} (detected year: {year}) ...")
+            print(f"Processing {file_name} (detected year: {year}) ...")
 
             # Process document
             documents = load_financial_document(file_path)
             if not documents:
-                print(f"❌ Failed to load document: {file_name}")
+                print(f"Failed to load document: {file_name}")
                 continue
 
             context_text = prepare_context_smart(documents)
             if len(context_text.strip()) < 100:
-                print(f"❌ Insufficient context extracted from: {file_name}")
+                print(f" Insufficient context extracted from: {file_name}")
                 continue
 
             extraction = extract_raw_financial_data(context_text, api_key)
             if not extraction.get("success"):
-                print(f"❌ Data extraction failed for: {file_name}")
+                print(f"Data extraction failed for: {file_name}")
                 continue
 
             # Extract ALL years data
@@ -1206,8 +1206,8 @@ def process_financial_statements_api(request):
             }
         }
 
-        print("✅ 10 Critical financial trends analysis complete!")
-        print(f"📋 Overall Assessment: {brief_summary}")
+        print("10 Critical financial trends analysis complete!")
+        print(f"Overall Assessment: {brief_summary}")
         return JsonResponse(final_result, status=200)
 
     except Exception as e:

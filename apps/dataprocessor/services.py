@@ -9,13 +9,14 @@ from langchain_core.documents import Document
 import pdfplumber
 import pytesseract
 from pydantic import BaseModel, Field
+import pandas as pd
 
 # --- Pydantic Schema for Extracted Data (Step 1) ---
 class FinancialItem(BaseModel):
     particulars: str = Field(..., description="Full descriptive name with category, e.g., 'Assets: Current assets: Cash and cash equivalents'")
     current_year: Optional[float] = Field(None, description="The current year's financial amount as a number, or null")
     previous_year: Optional[float] = Field(None, description="The previous year's financial amount as a number, or null")
-
+    
 class FinancialExtractionResult(BaseModel):
     company_name: Optional[str] = Field(None, description="The full legal name of the company.")
     ticker_symbol: Optional[str] = Field(None, description="The stock market ticker symbol, including the exchange suffix if available (e.g., RELIANCE.NS, MSFT).")
@@ -26,6 +27,7 @@ class FinancialSummary(BaseModel):
     pros: List[str] = Field(..., description="List of positive financial or business points, using precise terminology and numbers.")
     cons: List[str] = Field(..., description="List of negative financial or business points, using precise terminology and numbers.")
     financial_health_summary: str = Field(..., description="Overall assessment of company's financial health based on the aggregate pros and cons, providing a big-picture view of strengths and concerns.")
+
 class RatioItem(BaseModel):
     ratio_name: Literal[
         "Current Ratio", 
@@ -190,10 +192,10 @@ def create_gemini_llm(api_key: str, purpose: str = "extraction"):
     temperature = 0.1 if purpose == "extraction" else 0.2
     
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-1.5-flash",
         google_api_key=api_key,
         temperature=temperature,
-        max_tokens=8192,  # Increased for better responses
+        max_tokens=8192,
         timeout=120,
         max_retries=3
     )
@@ -270,7 +272,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
         }
         
     except Exception as e:
-        print(f"Extraction failed: {e}")
+        print(f"Structured extraction failed: {e}")
         # Fallback to manual extraction
         return extract_financial_data_manual(context_text, api_key)
 
@@ -306,8 +308,8 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
         content = response.content.strip()
         
         # Clean the response
-        content = re.sub(r'^json\s*', '', content)
-        content = re.sub(r'\s*$', '', content)
+        content = re.sub(r'^```json\s*', '', content)
+        content = re.sub(r'\s*```$', '', content)
         content = content.strip()
         
         # Parse JSON
@@ -335,59 +337,120 @@ SUMMARY_PROMPT = """
 ROLE: You are a world-class financial analyst with deep expertise in interpreting corporate financial statements from the Balance Sheet, Income Statement, and Cash Flow Statement.
 
 PRIMARY TASK: Analyze the provided raw financial data in JSON format. Your analysis must produce two outputs:
-1.A concise, data-driven summary of key strengths (Pros) and weaknesses (Cons).
-2.An overall assessment of the company's financial health.
+1. A concise, data-driven summary of key strengths (Pros) and weaknesses (Cons).
+2. An overall assessment of the company's financial health.
 
 ANALYSIS RULES & INSTRUCTIONS
 
 1. Data Processing:
-    -Extract and analyze the provided financial_items array.
-    -Prioritize significant line items: Revenue, Profit, Total Assets, Total Liabilities, Equity, Borrowings, and Cash Reserves.
-    -Identify and include other items that show major changes.
+    - Extract and analyze the provided financial_items array.
+    - Prioritize significant line items: Revenue, Profit, Total Assets, Total Liabilities, Equity, Borrowings, and Cash Reserves.
+    - Identify and include other items that show major changes.
 
 2. Comparative Analysis:
-    -Perform a year-on-year comparison between current_year and previous_year values.
-    -Calculate the percentage change using the formula: ((Current_Year - Previous_Year) / Previous_Year) * 100.
-    -Highlight both major percentage changes and notable absolute changes (growth or decline).
+    - Perform a year-on-year comparison between current_year and previous_year values.
+    - Calculate the percentage change using the formula: ((Current_Year - Previous_Year) / Previous_Year) * 100.
+    - Highlight both major percentage changes and notable absolute changes (growth or decline).
 
 3. Output Style - Pros & Cons:
-    -Each Pro and Con must be a single, factual, and descriptive sentence.
-    -Each sentence must state:
-        1.The specific financial item.
-        2.The metric or change observed.
-        3.The relevant numeric values and/or percentage change.
-    -Avoid generic, non-quantifiable statements (e.g., "The company is doing well" or "Performance was poor").
-    -Base all insights strictly on the provided data; no speculation.
+    - Each Pro and Con must be a single, factual, and descriptive sentence.
+    - Each sentence must state:
+        1. The specific financial item.
+        2. The metric or change observed.
+        3. The relevant numeric values and/or percentage change.
+    - Avoid generic, non-quantifiable statements (e.g., "The company is doing well" or "Performance was poor").
+    - Base all insights strictly on the provided data; no speculation.
 
 4. Output Style - Financial Health Assessment:
-    -Based on the aggregate of the Pros and Cons, provide a one-paragraph summary of the company's overall financial health.
-    -This statement should synthesize the key data points into a coherent big-picture view, mentioning the primary drivers of strength and the main areas of concern.
+    - Based on the aggregate of the Pros and Cons, provide a one-paragraph summary of the company's overall financial health.
+    - This statement should synthesize the key data points into a coherent big-picture view, mentioning the primary drivers of strength and the main areas of concern.
 
 TONE: Objective, analytical, and concise.
 
-STRICTLY FOLLOW THIS OUTPUT FORMAT:
-Return ONLY a valid JSON object. Do not add any other text, explanations, or disclaimers.
-
-json
-{{
-  "FinancialAnalysis": {{
-    "Pros": [
-      "Revenue from operations increased by 12.5%, rising from $8.0M to $9.0M.",
-      "Cash and cash equivalents grew by 25%, indicating improved liquidity."
-    ],
-    "Cons": [
-      "Borrowings increased by 18%, raising the debt-to-equity ratio to 1.6x.",
-      "Net profit margin declined from 15% to 10% due to higher operating expenses."
-    ],
-    "FinancialHealthSummary": "The company demonstrates strong revenue growth and robust cash generation, contributing to solid liquidity. However, this is partially offset by a rising debt burden and contracting profit margins, which warrants monitoring for long-term sustainability."
-  }}
-}}
 RAW EXTRACTED FINANCIAL DATA (JSON Format):
 {financial_data_json}
 
-generate summary and Return ONLY a valid JSON strictly following this schema:
+Return ONLY a valid JSON object that strictly follows this schema:
+{{
+  "pros": ["list of positive points"],
+  "cons": ["list of negative points"], 
+  "financial_health_summary": "overall assessment paragraph"
+}}
 """
 
+def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates a structured Pros/Cons summary from the extracted data."""
+    try:
+        llm = create_gemini_llm(api_key, "summary")
+        
+        # Prepare input JSON string for the summary prompt
+        financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+        formatted_prompt = SUMMARY_PROMPT.format(financial_data_json=financial_data_json)
+
+        print("Generating financial summary with Gemini 2.5 Flash...")
+        
+        # Use structured output for reliable JSON
+        structured_llm = llm.with_structured_output(FinancialSummary)
+        result = structured_llm.invoke(formatted_prompt)
+        
+        print(f"Summary generated: {len(result.pros)} pros, {len(result.cons)} cons")
+        
+        return {
+            "summary": {
+                "pros": result.pros,
+                "cons": result.cons,
+                "financial_health_summary": result.financial_health_summary
+            },
+            "success": True
+        }
+
+    except Exception as e:
+        print(f"Structured summary generation failed: {e}")
+        return generate_summary_manual(financial_items, api_key)
+
+def generate_summary_manual(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Manual summary generation fallback."""
+    try:
+        llm = create_gemini_llm(api_key, "summary")
+        
+        financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+        formatted_prompt = SUMMARY_PROMPT.format(financial_data_json=financial_data_json)
+        
+        print("Using manual summary generation fallback...")
+        response = llm.invoke(formatted_prompt)
+        content = response.content.strip()
+        
+        # Clean the response
+        content = re.sub(r'^```json\s*', '', content)
+        content = re.sub(r'\s*```$', '', content)
+        content = content.strip()
+        
+        # Parse JSON
+        summary_data = json.loads(content)
+        
+        # Normalize different possible shapes
+        pros = summary_data.get("Pros") or summary_data.get("pros") or []
+        cons = summary_data.get("Cons") or summary_data.get("cons") or []
+        fhs = (summary_data.get("FinancialHealthSummary") or 
+               summary_data.get("financial_health_summary") or 
+               summary_data.get("FinancialHealth") or "")
+        
+        print(f"Manual summary generated: {len(pros)} pros, {len(cons)} cons")
+        
+        return {
+            "summary": {
+                "pros": pros,
+                "cons": cons,
+                "financial_health_summary": fhs
+            },
+            "success": True
+        }
+        
+    except Exception as e:
+        print(f"Manual summary generation failed: {e}")
+        return {"error": f"Summary generation failed: {str(e)}", "success": False}
+
+# --- RATIO CALCULATION ---
 
 RATIO_PROMPT = """
 Role:
@@ -396,16 +459,13 @@ You are a financial analyst AI assistant specializing in accounting and ratio an
 Goal:
 From the provided financial data, calculate key financial ratios and interpret their results.
 
-Input Data:
-(User will provide raw data here — e.g., Current Assets, Current Liabilities, Inventory, Revenue, Total Assets, Total Debt, Net Income, Equity, etc.)
-
 Task Steps:
 
 1. Identify and extract relevant financial data from the given input.
 
 2. Calculate the following ratios using the correct formulas:
     - Current Ratio = Current Assets / Current Liabilities
-    - Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+    - Quick Ratio = (Current Assets - Inventory) / Current Liabilities  
     - Debt to Equity Ratio = Total Debt / Shareholders' Equity
     - Asset Turnover Ratio = Revenue / Total Assets
     - Return on Assets (ROA) = Net Income / Total Assets
@@ -417,68 +477,30 @@ Task Steps:
     - Provide the numeric result (rounded to two decimals)
     - Write a one-line interpretation of what the ratio indicates
 
-4. Return your final response strictly as a JSON object in the following structure:
-{{
-  "financial_ratios": [
-    {{
-      "ratio_name": "",
-      "formula": "",
-      "calculation": "",
-      "result": "",
-      "interpretation": ""
-    }}
-  ]
-}}
+4. If any data is missing for a ratio, skip that ratio and continue with others.
 
-Example:
-{{
-    "financial_ratios": [
-        {{
-            "ratio_name": "Current Ratio",
-            "formula": "CA / CL",
-            "calculation": "200000 / 100000",
-            "result": 2.0,
-            "interpretation": "Indicates good short-term liquidity."
-        }},
-        {{
-            "ratio_name": "Quick Ratio",
-            "formula": "(CA - Inventory) / CL",
-            "calculation": "(200000 - 50000) / 100000",
-            "result": 1.5,
-            "interpretation": "Shows immediate liquidity position."
-        }}
-    ]
-}}
+RAW FINANCIAL DATA:
+{financial_data_json}
 
-5. Additional Instructions:
-    - If any data is missing, clearly mention what is needed to complete the calculation.
-    - Keep the explanations concise and beginner-friendly.
-    - Do not make up data unless explicitly instructed.
-    
-    """
+Return ONLY a valid JSON object that strictly follows the required schema.
+"""
 
-
-
-def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
-    """Generates a structured Pros/Cons summary from the extracted data."""
-    os.environ["GOOGLE_API_KEY"] = api_key
-    
-    # 1. Prepare input JSON string for the summary prompt
-    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
-
-    # 2. Setup LLM for structured JSON summary
+def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Generates financial ratios from the extracted data."""
     try:
         llm = create_gemini_llm(api_key, "ratios")
         
+        # Prepare input JSON string for the ratio prompt
         financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
         formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
 
         print("Calculating financial ratios with Gemini 2.5 Flash...")
         
+        # Use structured output for reliable JSON
         structured_llm = llm.with_structured_output(FinancialRatios)
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f" Ratios calculated: {len(result.financial_ratios)} ratios")
+        print(f"Ratios calculated: {len(result.financial_ratios)} ratios")
         
         return {
             "financial_ratios": [
@@ -495,45 +517,39 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
         }
 
     except Exception as e:
-        print(f" Ratio calculation failed: {e}")
-        return {"error": f"Ratio calculation failed: {str(e)}", "success": False}
+        print(f"Structured ratio calculation failed: {e}")
+        return generate_ratios_manual(financial_items, api_key)
 
-
-def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
-    """Generates a ratios from the extracted data."""
-    os.environ["GOOGLE_API_KEY"] = api_key
-    
-    # 1. Prepare input JSON string for the summary prompt
-    financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
-
-    # 2. Setup LLM for structured JSON summary
+def generate_ratios_manual(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
+    """Manual ratio calculation fallback."""
     try:
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash", 
-            temperature=0.2,
-            max_retries=3,
-            request_timeout=120,
-            response_mime_type="application/json",
-            response_schema=FinancialRatios.model_json_schema(), # <-- FIX APPLIED HERE
-        )
-    except Exception as e:
-        print(f"Failed to initialize Gemini model for summary: {e}")
-        return {"error": "Failed to initialize Gemini model for summary."}
-
-    # 3. Format and invoke prompt
-    formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
-
-    try:
-        print("Sending request to AI for ratio analysis...")
+        llm = create_gemini_llm(api_key, "ratios")
+        
+        financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
+        formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+        
+        print("Using manual ratio calculation fallback...")
         response = llm.invoke(formatted_prompt)
-        ratios_json = json.loads(response.content)
+        content = response.content.strip()
         
-        return {"ratios": ratios_json, "success": True}
+        # Clean the response
+        content = re.sub(r'^```json\s*', '', content)
+        content = re.sub(r'\s*```$', '', content)
+        content = content.strip()
         
-
+        # Parse JSON
+        ratios_data = json.loads(content)
+        
+        print(f"Manual ratios calculated: {len(ratios_data.get('financial_ratios', []))} ratios")
+        
+        return {
+            "financial_ratios": ratios_data.get("financial_ratios", []),
+            "success": True
+        }
+        
     except Exception as e:
-        print(f"ratio generation failed during AI call: {e}")
-        return {"error": f"Summary generation failed: {e}"}
+        print(f"Manual ratio calculation failed: {e}")
+        return {"error": f"Ratio calculation failed: {str(e)}", "success": False}
 
 # --- MAIN PROCESSING FUNCTION ---
 
@@ -548,42 +564,42 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
     Returns:
         Dictionary containing extracted data, summary, and ratios
     """
-    print(f" Processing financial statements from: {file_path}")
-    print(f" Using Gemini 2.5 Flash for AI analysis...")
+    print(f"Processing financial statements from: {file_path}")
+    print(f"Using Gemini 2.5 Flash for AI analysis...")
     
     if not os.path.exists(file_path):
         return {"error": f"File not found: {file_path}", "success": False}
     
     try:
         # Step 1: Load document
-        print(" Step 1: Loading document...")
+        print("Step 1: Loading document...")
         documents = load_financial_document(file_path)
         if not documents or not any(doc.page_content.strip() for doc in documents):
             return {"error": "No readable content found in document", "success": False}
         
         # Step 2: Prepare context
-        print(" Step 2: Preparing context...")
+        print("Step 2: Preparing context...")
         context_text = prepare_context_smart(documents)
         if len(context_text.strip()) < 100:
             return {"error": "Insufficient financial content found", "success": False}
         
-        print(f" Context prepared: {len(context_text)} characters")
+        print(f"Context prepared: {len(context_text)} characters")
         
         # Step 3: Extract raw financial data
-        print(" Step 3: Extracting financial data...")
+        print("Step 3: Extracting financial data...")
         extraction_result = extract_raw_financial_data(context_text, google_api_key)
         if not extraction_result.get("success"):
             return extraction_result
         
         # Step 4: Generate summary
-        print(" Step 4: Generating financial summary...")
+        print("Step 4: Generating financial summary...")
         summary_result = generate_summary_from_data(
             extraction_result["financial_items"], 
             google_api_key
         )
         
         # Step 5: Calculate ratios
-        print(" Step 5: Calculating financial ratios...")
+        print("Step 5: Calculating financial ratios...")
         ratio_result = generate_ratios_from_data(
             extraction_result["financial_items"],
             google_api_key
@@ -597,8 +613,8 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
                 "ticker_symbol": extraction_result.get("ticker_symbol")
             },
             "extracted_data": extraction_result,
-            "summary": summary_result,
-            "ratios": ratio_result,
+            "summary": summary_result.get("summary", {}) if summary_result.get("success") else {},
+            "ratios": ratio_result.get("financial_ratios", []) if ratio_result.get("success") else [],
             "metadata": {
                 "file_type": detect_file_type(file_path),
                 "content_length": len(context_text),
@@ -607,10 +623,9 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
             }
         }
         
-        print(" Processing completed successfully!")
+        print("Processing completed successfully!")
         return final_result
         
     except Exception as e:
-        print(f"Summary generation failed during AI call: {e}")
-        return {"error": f"Summary generation failed: {e}"}
-
+        print(f"Processing failed: {e}")
+        return {"error": f"Processing failed: {str(e)}", "success": False}

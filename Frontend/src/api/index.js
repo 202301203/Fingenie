@@ -1,4 +1,5 @@
-const BASE = process.env.REACT_APP_API_URL || '';
+const RAW_BASE = process.env.REACT_APP_API_URL || '';
+const BASE = RAW_BASE.replace(/\/$/, '');
 
 async function handleResponse(res) {
   const text = await res.text().catch(() => '');
@@ -8,31 +9,59 @@ async function handleResponse(res) {
     return json;
   } catch (err) {
     if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-  
+
     return text;
   }
 }
 
-export async function postExtract(formData) {
-  const res = await fetch(`${BASE}/dataprocessor/extract/`, {
-    method: 'POST',
-    body: formData,
-  });
+function buildUrl(path) {
+  if (!path) return BASE || '/';
+  // If path is absolute (starts with http) return as-is
+  if (/^https?:\/\//i.test(path)) return path;
+  // Respect explicit BASE if provided, otherwise use relative path
+  if (BASE) return `${BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+async function request(path, opts = {}) {
+  const url = buildUrl(path);
+  const headers = { Accept: 'application/json', ...(opts.headers || {}) };
+
+  // If body is plain object and not FormData, stringify and set Content-Type
+  let body = opts.body;
+  if (body && !(body instanceof FormData) && typeof body === 'object') {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    body = JSON.stringify(body);
+  }
+
+  const fetchOpts = {
+    credentials: 'include', // include cookies by default (important for Django session/CSRF)
+    ...opts,
+    headers,
+    body,
+  };
+
+  const res = await fetch(url, fetchOpts);
   return handleResponse(res);
 }
 
+export async function postExtract(formData) {
+  return request('/dataprocessor/api/process/', { method: 'POST', body: formData });
+}
+
+// Most components expect the dataprocessor stock-data endpoint
 export async function getStockData(ticker, period = '1M') {
-  const res = await fetch(`${BASE}/stock/graph-data/${encodeURIComponent(ticker)}/${period}/`);
-  return handleResponse(res);
+  return request(`/dataprocessor/api/stock-data/${encodeURIComponent(ticker)}/${period}/`);
 }
 
 export async function getSomeEndpoint() {
-  const res = await fetch(`${BASE}/api/some-endpoint/`);
-  return handleResponse(res);
+  return request('/api/some-endpoint/');
 }
 
 export default {
   postExtract,
   getStockData,
   getSomeEndpoint,
+  request,
+  BASE,
 };
