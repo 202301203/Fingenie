@@ -64,7 +64,7 @@ EXTERNAL_APPS = [
     'apps.learning',
     'apps.sector_overview',
     'apps.trends',
-    'apps.ai_insights'
+    'apps.ai_insights',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
