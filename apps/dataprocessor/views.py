@@ -1,4 +1,4 @@
-/from django.http import JsonResponse
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import os
@@ -73,7 +73,7 @@ def process_financial_statements_api(request):
             return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
         
        
-         extraction_result = extract_raw_financial_data(context_text, api_key)
+        extraction_result = extract_raw_financial_data(context_text, api_key)
         if not extraction_result.get("success"):
             raise ValueError(extraction_result.get("error", "Extraction failed."))
 
