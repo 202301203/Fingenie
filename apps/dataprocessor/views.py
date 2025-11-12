@@ -30,12 +30,24 @@ def process_financial_statements_api(request):
                 for chunk in uploaded_file.chunks():
                     destination.write(chunk)
 
-            print(f"Processing file: {uploaded_file.name}, size: {uploaded_file.size}")
+        context_text = prepare_context_smart(documents)
+        if len(context_text.strip()) < 100:
+            return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
+        
+       
+        extraction_result = extract_raw_financial_data(context_text, api_key)
+        if not extraction_result.get("success"):
+            raise ValueError(extraction_result.get("error", "Extraction failed."))
 
-            # Ensure we have a Google API key
-            google_api_key = getattr(settings, 'GOOGLE_API_KEY', None) or os.environ.get('GOOGLE_API_KEY')
-            if not google_api_key:
-                return JsonResponse({'error': 'Server misconfigured: GOOGLE_API_KEY not set'}, status=500)
+        financial_items = extraction_result.get("financial_items", [])
+        summary_result = generate_summary_from_data(financial_items, api_key)
+        ratio_result = generate_ratios_from_data(financial_items, api_key)
+
+        extraction_result.update({
+            "summary": summary_result.get("summary"),
+            "ratios": ratio_result.get("ratios"),
+            "report_id": report_db_id
+        })
 
             # Step 2: Load and extract financial data
             documents = load_pdf_robust(temp_path)
@@ -135,62 +147,11 @@ def get_latest_report_api(request):
 
 # ... rest of your views remain the same
 # ----------------------------
-# 4️⃣  STOCK DATA API
+# 4️ STOCK DATA API
 # ----------------------------
 @csrf_exempt
 def get_stock_data_api(request, ticker_symbol, period='1M'):
     """
     Mock stock data endpoint - you'll want to integrate with a real API
     """
-    try:
-        # This is mock data - replace with actual stock API integration
-        mock_stock_data = {
-            'ticker': ticker_symbol,
-            'period': period,
-            'prices': [
-                {'date': '2024-01-01', 'price': 150.25},
-                {'date': '2024-01-02', 'price': 152.50},
-                {'date': '2024-01-03', 'price': 151.75},
-                {'date': '2024-01-04', 'price': 153.25},
-                {'date': '2024-01-05', 'price': 155.00},
-            ],
-            'current_price': 155.00,
-            'change': 4.75,
-            'change_percent': 3.16
-        }
-        
-        return JsonResponse({
-            'success': True,
-            'stock_data': mock_stock_data
-        })
-        
-    except Exception as e:
-        return JsonResponse({'error': f'Failed to fetch stock data: {str(e)}'}, status=500)
-
-
-# ----------------------------
-# 5️⃣  TEST ENDPOINT (for debugging)
-# ----------------------------
-@csrf_exempt
-def test_process_api(request):
-    """Simple test endpoint to check if basic functionality works"""
-    try:
-        # Test database connection
-        report_count = FinancialReport.objects.count()
-        print(f"Database connection OK. Report count: {report_count}")
-        
-        # Test settings
-        google_api_key = getattr(settings, 'GOOGLE_API_KEY', None) or os.environ.get('GOOGLE_API_KEY')
-        print(f"Google API key: {'Found' if google_api_key else 'Missing'}")
-        
-        return JsonResponse({
-            'status': 'OK',
-            'database_connected': True,
-            'report_count': report_count,
-            'google_api_configured': bool(google_api_key)
-        })
-    except Exception as e:
-        print(f"Test failed: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        return JsonResponse({'error': str(e)}, status=500)
+    return process_financial_statements_api(request)
