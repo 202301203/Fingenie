@@ -36,8 +36,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "fingenie-sz41.onrender.com",
-    "https://fingenie-2exi.vercel.app/",
+    "fingenie-2exi.vercel.app",
+    "localhost",
+    "127.0.0.1",
 ]
+
 
 
 # Application definition
@@ -80,11 +83,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://fingenie-2exi.vercel.app/",
+    "https://fingenie-2exi.vercel.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://fingenie-sz41.onrender.com",
-    "https://fingenie-eight.vercel.app/",
+    "https://fingenie-eight.vercel.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -150,6 +153,9 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com')
+
+# Google API key for Gemini / Generative AI usage (set in environment)
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', '')
 
 # Logging Configuration
 LOGGING = {
@@ -252,5 +258,5 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
+GOOGLE_API_KEY = 'AIzaSyC5pZMfa-VQtcq2iuQ-KoQVSWbIuVPvVEs'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

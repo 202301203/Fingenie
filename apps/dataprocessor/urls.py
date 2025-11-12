@@ -1,15 +1,18 @@
-# pdf_app/urls.py
 from django.urls import path
 from . import views
 
 urlpatterns = [
-    # This makes your API endpoint available at:
-    # http://localhost:8000/dataprocessor/extract/
-    path('extract/', views.extract_data_api, name='extract_data_api'),
+    # Main processing endpoint
+    path('api/process/', views.process_financial_statements_api, name='process_financial_statements'),
     
-    # This was the simple HTML upload form view you already had
-    path('upload/', views.upload_file_view, name='upload_file'),
+    # Report endpoints
+    path('api/reports/<str:report_id>/', views.get_report_by_id_api, name='get_report_by_id_api'),
+    path('api/latest-report/', views.get_latest_report_api, name='get_latest_report_api'),
     
-    #path('api/analyze-financials/', views.upload_financial_statement, name='analyze_financials'),
+    # Stock data endpoints
+    path('api/stock-data/<str:ticker_symbol>/', views.get_stock_data_api, name='get_stock_data_api'),
+    path('api/stock-data/<str:ticker_symbol>/<str:period>/', views.get_stock_data_api, name='get_stock_data_with_period'),
     
+    # Test endpoint
+    path('api/test/', views.test_process_api, name='test_process_api'),
 ]
