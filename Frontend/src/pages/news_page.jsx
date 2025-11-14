@@ -259,7 +259,7 @@ const NewsPage = () => {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                 ...styles.search,
-                paddingLeft: "35px", // ✅ make space for the icon
+                paddingLeft: "35px", //  make space for the icon
                 }}
             />
             </div>
@@ -296,7 +296,7 @@ const NewsPage = () => {
             </div>
           ))}
         </div>
-
+      </div>
       <footer style={styles.footer}>
   <div style={styles.footerLeft}>
     <p style={styles.copyright}>
@@ -316,8 +316,6 @@ const NewsPage = () => {
     </ul>
   </div>
 </footer>
-
-      </div>
     </>
   );
 };
@@ -531,3 +529,4 @@ const styles = {
 },
 
 };
+
