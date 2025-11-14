@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
+    path('balance-sheet/', include('apps.balance_sheet_comparator.urls')), # Link to balance sheet comparator app URLs
 ]
 
 # Serve media files during development

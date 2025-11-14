@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "generated_at": "2025-11-13T00:07:11.278021",
+    "fiscal_year": "Latest"
+  },
+  "company_a": {
+    "name": "Unknown Company",
+    "ticker": null,
+    "balance_sheet_items": {
+      "current_assets": null,
+      "current_liabilities": null,
+      "inventory": null,
+      "cash": null,
+      "total_assets": null,
+      "total_liabilities": null,
+      "share_capital": null,
+      "reserves_surplus": null,
+      "long_term_debt": null,
+      "fixed_assets": null,
+      "intangible_assets": null,
+      "total_equity": null
+    },
+    "ratios": {
+      "liquidity": {
+        "current_ratio": null,
+        "quick_ratio": null,
+        "cash_ratio": null
+      },
+      "leverage": {
+        "debt_to_equity": null,
+        "debt_ratio": null
+      },
+      "efficiency": {
+        "asset_turnover": null
+      },
+      "capital_structure": {
+        "working_capital": null,
+        "fixed_asset_ratio": null,
+        "intangibles_percent": null
+      },
+      "shareholder": {
+        "book_value_per_share": null
+      }
+    }
+  }
+}
