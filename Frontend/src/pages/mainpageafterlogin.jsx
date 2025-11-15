@@ -29,7 +29,7 @@ const features = [
     icon: PieChart,
     bgColor: '#F6F9F9',
     bordercolor: '#B5D1D1',
-    route: '/trends'
+    route: '/Trends_KPI'
   },
   {
     title: 'Search Public Companies',
@@ -77,7 +77,7 @@ const WaveSVG = ({ color }) => (
   </svg>
 );
 
-const FeatureCard = ({ feature, index }) => {
+const FeatureCard = ({ feature, index, navigate }) => {
   const [isVisible, setIsVisible] = useState(false);
   const Icon = feature.icon;
   
@@ -90,7 +90,7 @@ const FeatureCard = ({ feature, index }) => {
 
   return (
     <div 
-      onClick={() => navigate(feature.route)}   // ⭐ navigation here
+      onClick={() => navigate(feature.route)}
       style={{
         ...styles.featureCard,
         backgroundColor: feature.bgColor,
@@ -98,7 +98,7 @@ const FeatureCard = ({ feature, index }) => {
         transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
         transition: `all 0.5s ease ${index * 0.1}s, transform 0.25s ease, box-shadow 0.25s ease`,
         border: `2px solid ${feature.bordercolor}`,
-        cursor: 'pointer'                        // pointer required
+        cursor: 'pointer'
       }}
       className="feature-card-hover"
     >
@@ -111,7 +111,6 @@ const FeatureCard = ({ feature, index }) => {
         <p style={styles.cardDescription}>{feature.description}</p>
       </div>
     </div>
-
   );
 };
 
@@ -126,7 +125,6 @@ const FinGenieLanding = () => {
 
   return (
     <div style={styles.pageContainer}>
-      {/* <a style={styles.navLink} className="nav-link" href="#home">Home</a> */}
       <style>
         {`
           @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
@@ -324,8 +322,7 @@ const FinGenieLanding = () => {
               </div>
               <div style={styles.dropdownItem}
               onClick={() => {
-                    // (Optional) clear user data or tokens here
-                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                    navigate("/homepage_beforelogin");
                   }}>
                 <LogOut size={16} />
                 <span>Sign out</span>
@@ -338,7 +335,6 @@ const FinGenieLanding = () => {
 
       {/* Hero Section */}
       <section style={styles.heroSection}>
-        {/*<RotatingCircles />*/}
         <div style={styles.heroContent}>
           <h1 style={styles.mainTitle}><img src={mainlogo} style={{ height: "100px", width: "auto" }} /></h1>
           <p style={styles.heroSubtitle} className="hero-subtitle">Your Smart Financial Assistant</p>
@@ -349,7 +345,12 @@ const FinGenieLanding = () => {
       <section style={styles.featuresSection} className="features-section">
         <div style={styles.featuresGrid} className="features-grid">
           {features.map((feature, index) => (
-            <FeatureCard key={index} feature={feature} index={index} />
+            <FeatureCard 
+              key={index} 
+              feature={feature} 
+              index={index} 
+              navigate={navigate}
+            />
           ))}
         </div>
       </section>
@@ -397,8 +398,6 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '1rem 3rem',
-    //backgroundColor: '#ffffff',
-    //boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     position: 'sticky',
     borderRadius: '8px',
     top: 0,
@@ -408,10 +407,9 @@ const styles = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  //padding: '0.5rem',
-  backgroundColor: 'transparent',   // fully transparent
+  backgroundColor: 'transparent',
   border: 'none',
-  borderBottom: '1px solid #000000ff', // thin line like screenshot
+  borderBottom: '1px solid #000000ff',
   position: 'relative',
   top: 0,
   width: '100%',
@@ -500,37 +498,6 @@ const styles = {
     overflow: 'hidden',
     backgroundColor: '#F8F8F8'
   },
-
-  /*circlesContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '600px',
-    height: '600px',
-    pointerEvents: 'none'
-  },
-circleLayer: {
-  position: 'absolute',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  top: '-250px',
-  width: '1520px',
-  height: '695px',
-
-  borderRadius: '50%',
-  border: '5px solid transparent',
-
-  background: `
-    linear-gradient(#f6f6f6, #eeeeee) padding-box,
-    linear-gradient(135deg, #9DAAC6, #1F2634) border-box
-  `,
-  backgroundClip: 'padding-box, border-box',
-  //boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-
-  zIndex: 0,
-},*/
-
   
   heroContent: {
     position: 'relative',

@@ -1,18 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Filter, PenTool, User, ChevronDown, ArrowLeft, 
   Heart, Share2, Bookmark, X, LogOut, History, Settings,
-  Wrench, TrendingUp, Activity, BookOpen, Cpu, GitCompare  // Add these missing icons
+  Wrench, TrendingUp, Activity, BookOpen, Cpu, GitCompare,
+  Loader
 } from 'lucide-react';
-import fglogo_Wbg from './images/fglogo_Wbg.png';
-
-
+import { useNavigate } from 'react-router-dom';
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import { blogService } from '../api/index';
 
 const FinanceBlog = () => {
-  const [activeTab, setActiveTab] = useState('blog');
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentView, setCurrentView] = useState('listing'); // 'listing', 'article', 'create'
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState('listing');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,210 +24,25 @@ const FinanceBlog = () => {
   const [sortBy, setSortBy] = useState('recent');
 
   const [notification, setNotification] = useState(''); 
-  const [showImageUpload, setShowImageUpload] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState(null); 
-  //const navigate = useNavigate();
   const fileInputRef = useRef(null);
-    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
-  const [isNewsActive, setIsNewsActive] = useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
 
- const showNotification = (message) => { 
-    setNotification(message); 
-    setTimeout(() => setNotification(''), 3000); 
-  };
+  // State for blog posts from backend
+  const [blogPosts, setBlogPosts] = useState([]);
   
-  const [blogPosts, setBlogPosts] = useState([
-    {
-      id: 1,
-      title: "Cracking the Code of Stock Market Psychology",
-      image: "https://i.pinimg.com/1200x/18/e7/0a/18e70a31251b63c18a0013cb85ae1cf7.jpg",
-      snippet: "Understanding investor behavior and market sentiment can be the key to making smarter investment decisions. Explore the psychological factors that drive market movements.",
-      author: "Ananya Rao",
-      date: "October 13, 2025",
-      category: "Market Analysis",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>The Fear-Greed Cycle</h2>
-        <p>The stock market is driven by two primary emotions: fear and greed. When markets are rising, greed takes over, causing investors to buy at inflated prices. Conversely, when markets fall, fear dominates, leading to panic selling at the worst possible times.</p>
-        <p>Understanding this cycle is crucial for successful investing. The legendary investor Warren Buffett famously said, "Be fearful when others are greedy, and greedy when others are fearful." This contrarian approach has proven successful time and time again.</p>
-        
-        <h2>The Role of Cognitive Biases</h2>
-        <p>Our brains are wired with numerous cognitive biases that can sabotage our investment decisions:</p>
-        <ul>
-          <li><strong>Confirmation Bias:</strong> We tend to seek information that confirms our existing beliefs while ignoring contradictory evidence.</li>
-          <li><strong>Loss Aversion:</strong> The pain of losing money is psychologically twice as powerful as the pleasure of gaining it.</li>
-          <li><strong>Herd Mentality:</strong> We feel safer following the crowd, even when the crowd is wrong.</li>
-          <li><strong>Recency Bias:</strong> We give too much weight to recent events and assume current trends will continue indefinitely.</li>
-        </ul>
-        
-        <h2>Building a Rational Investor Mindset</h2>
-        <p>To overcome these psychological pitfalls, successful investors develop specific habits and strategies:</p>
-        <p><strong>1. Have a Plan:</strong> Create a written investment strategy that includes your goals, risk tolerance, and criteria for buying and selling. When emotions run high, refer back to your plan.</p>
-        <p><strong>2. Use Systematic Approaches:</strong> Dollar-cost averaging and automatic rebalancing remove emotion from the equation by making investment decisions mechanical.</p>
-        <p><strong>3. Keep a Trading Journal:</strong> Document your investment decisions and the reasoning behind them. This helps you identify patterns in your behavior and learn from mistakes.</p>
-        <p><strong>4. Focus on the Long Term:</strong> Short-term market volatility is noise. What matters is the long-term trajectory of your investments and the fundamental strength of the companies you own.</p>
-        
-        <h2>Conclusion</h2>
-        <p>Mastering stock market psychology isn't about eliminating emotions—it's about understanding them and not letting them control your decisions. The most successful investors are those who can remain rational and disciplined even when markets are at their most chaotic.</p>
-      `,
-      likes: 247,
-      isLiked: false,
-      isBookmarked: false
-    },
-    {
-      id: 2,
-      title: "The Rise of Green Finance: Investing for the Planet",
-      image: "https://i.pinimg.com/1200x/47/3c/70/473c7030371b165e85647d392b977de3.jpg",
-      snippet: "Sustainable investing is no longer a niche market. Discover how ESG criteria are reshaping the investment landscape and creating opportunities for conscious investors.",
-      author: "Marcus Chen",
-      date: "October 18, 2025",
-      category: "Future of Finance",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>What is Green Finance?</h2>
-        <p>Green finance refers to financial investments flowing into sustainable development projects and initiatives that encourage the development of a more sustainable economy. This includes renewable energy, energy efficiency, sustainable agriculture, and climate change adaptation.</p>
-        
-        <h2>The ESG Revolution</h2>
-        <p>Environmental, Social, and Governance (ESG) criteria have become mainstream in investment decision-making. Companies with strong ESG practices often demonstrate better risk management, operational efficiency, and long-term value creation.</p>
-        
-        <h2>Investment Opportunities</h2>
-        <p>The green finance sector offers numerous investment opportunities, from green bonds to renewable energy stocks, sustainable agriculture, and clean technology companies. These investments not only contribute to environmental sustainability but also offer competitive financial returns.</p>
-      `,
-      likes: 189,
-      isLiked: false,
-      isBookmarked: false
-    },
-    {
-      id: 3,
-      title: "How to Build a Smart Budget That Actually Works",
-      image: "https://i.pinimg.com/736x/13/b9/cc/13b9cc9cb1fddf08392c21fb68f85c09.jpg",
-      snippet: "Budgeting doesn't have to be restrictive. Learn practical strategies to manage your finances while still enjoying life's pleasures.",
-      author: "Sarah Johnson",
-      date: "October 20, 2025",
-      category: "Personal Finance",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>The 50/30/20 Rule</h2>
-        <p>A simple and effective budgeting framework: allocate 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment.</p>
-        
-        <h2>Track Your Spending</h2>
-        <p>Understanding where your money goes is the first step to better financial management. Use apps or spreadsheets to monitor your expenses and identify areas for improvement.</p>
-        
-        <h2>Automate Your Savings</h2>
-        <p>Set up automatic transfers to your savings account right after payday. This "pay yourself first" approach ensures you're consistently building wealth.</p>
-      `,
-      likes: 312,
-      isLiked: false,
-      isBookmarked: false
-    },
-    {
-      id: 4,
-      title: "AI Meets Finance: The Future of Algorithmic Trading",
-      image: "https://i.pinimg.com/1200x/47/3c/70/473c7030371b165e85647d392b977de3.jpg",
-      snippet: "Artificial intelligence is revolutionizing how we trade. From pattern recognition to predictive analytics, discover how AI is changing the game for investors.",
-      author: "David Lee",
-      date: "October 25, 2025",
-      category: "Future of Finance",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>Machine Learning in Trading</h2>
-        <p>AI algorithms can analyze vast amounts of market data in milliseconds, identifying patterns and opportunities that human traders might miss. Machine learning models continuously improve their predictions based on new data.</p>
-        
-        <h2>Risk Management</h2>
-        <p>AI-powered systems can assess and manage risk more effectively than traditional methods, helping investors protect their portfolios from unexpected market movements.</p>
-        
-        <h2>The Future is Now</h2>
-        <p>As AI technology continues to advance, its role in finance will only grow. Investors who understand and embrace these tools will have a significant advantage in the markets of tomorrow.</p>
-      `,
-      likes: 421,
-      isLiked: false,
-      isBookmarked: false
-    },
-    {
-      id: 5,
-      title: "Cryptocurrency Regulations: What's Changing in 2025",
-      image: "https://i.pinimg.com/1200x/33/8d/92/338d92cec5fcb758ce0784c463f594e1.jpg",
-      snippet: "New regulatory frameworks are emerging worldwide. Stay informed about the latest crypto regulations and how they impact your digital asset portfolio.",
-      author: "Emily Roberts",
-      date: "October 27, 2025",
-      category: "Investments",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>Global Regulatory Landscape</h2>
-        <p>Governments worldwide are developing comprehensive frameworks to regulate cryptocurrency markets, balancing innovation with consumer protection.</p>
-        
-        <h2>Impact on Investors</h2>
-        <p>New regulations bring clarity and legitimacy to the crypto market, potentially attracting institutional investors and stabilizing prices.</p>
-        
-        <h2>Compliance Requirements</h2>
-        <p>Understanding KYC (Know Your Customer) and AML (Anti-Money Laundering) requirements is essential for crypto investors in 2025.</p>
-      `,
-      likes: 276,
-      isLiked: false,
-      isBookmarked: false
-    },
-    {
-      id: 6,
-      title: "Real Estate Investment Trusts: A Beginner's Guide",
-      image: "https://i.pinimg.com/1200x/33/8d/92/338d92cec5fcb758ce0784c463f594e1.jpg",
-      snippet: "REITs offer a way to invest in real estate without buying property. Learn the fundamentals of REIT investing and how to build a diversified portfolio.",
-      author: "Michael Brown",
-      date: "October 28, 2025",
-      category: "Investments",
-      gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-      content: `
-        <h2>What are REITs?</h2>
-        <p>Real Estate Investment Trusts allow individuals to invest in large-scale, income-producing real estate without having to buy, manage, or finance properties themselves.</p>
-        
-        <h2>Benefits of REIT Investing</h2>
-        <p>REITs provide regular income through dividends, portfolio diversification, and the potential for long-term capital appreciation.</p>
-        
-        <h2>Types of REITs</h2>
-        <p>From equity REITs to mortgage REITs and hybrid REITs, each type offers different risk-return profiles suitable for various investment strategies.</p>
-      `,
-      likes: 198,
-      isLiked: false,
-      isBookmarked: false
-    }
-  ]);
-  
-  //for uploading image
+  // Validation constants
   const MIN_SNIPPET_LENGTH = 50;
   const MIN_CONTENT_LENGTH = 200;
   const [validationError, setValidationError] = useState('');
 
-  const handleImageUpload = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setNewBlog(prevBlog => ({
-                ...prevBlog,
-                imageFile: file,
-                imageFileName: file.name // Store the name for display
-            }));
-        }
-    };
-  const handleCancelImage = () => {
-        // 1. Clear the file and name from the state
-        setNewBlog(prevBlog => ({
-            ...prevBlog,
-            imageFile: null,
-            imageFileName: '',
-        }));
-
-        // 2. Crucially, reset the file input's value so the same file can be uploaded again
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-
   // New blog form state
   const [newBlog, setNewBlog] = useState({
-        title: '',
-        category: 'Investments',
-        snippet: '',
-        content: '',
-        imageFile: null,      // Stores the actual File object
-        imageFileName: '',
+    title: '',
+    category: 'Investments',
+    snippet: '',
+    content: '',
+    imageFile: null,
+    imageFileName: '',
   });
 
   const categories = [
@@ -235,19 +52,83 @@ const FinanceBlog = () => {
     'Market Analysis',
     'Future of Finance'
   ];
+
   const DEFAULT_CATEGORY_IMAGES = {
-  'Investments': "https://i.pinimg.com/736x/13/b9/cc/13b9cc9cb1fddf08392c21fb68f85c09.jpg", // Image for Investments
-  'Personal Finance': "https://i.pinimg.com/1200x/33/8d/92/338d92cec5fcb758ce0784c463f594e1.jpg", // Image for Personal Finance
-  'Market Analysis': "https://i.pinimg.com/1200x/18/e7/0a/18e70a31251b63c18a0013cb85ae1cf7.jpg", // Image for Market Analysis
-  'Future of Finance': "https://i.pinimg.com/1200x/47/3c/70/473c7030371b165e85647d392b977de3.jpg", // Image for Future of Finance
-  
-  // A fallback image for any other category or 'All'
-  'default': "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&h=300&fit=crop", 
-};
-  const handleArticleClick = (article) => {
-    setSelectedArticle(article);
-    setCurrentView('article');
-    window.scrollTo(0, 0);
+    'Investments': "https://i.pinimg.com/736x/13/b9/cc/13b9cc9cb1fddf08392c21fb68f85c09.jpg",
+    'Personal Finance': "https://i.pinimg.com/1200x/33/8d/92/338d92cec5fcb758ce0784c463f594e1.jpg",
+    'Market Analysis': "https://i.pinimg.com/1200x/18/e7/0a/18e70a31251b63c18a0013cb85ae1cf7.jpg",
+    'Future of Finance': "https://i.pinimg.com/1200x/47/3c/70/473c7030371b165e85647d392b977de3.jpg",
+    'default': "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&h=300&fit=crop", 
+  };
+
+  // Fetch blog posts from backend
+  const fetchBlogPosts = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = {};
+      if (searchQuery) params.search = searchQuery;
+      if (selectedCategory !== 'all') params.category = selectedCategory;
+      
+      const response = await blogService.getBlogPosts(params);
+      // Handle both response formats
+      const posts = Array.isArray(response) ? response : (response.data || response.results || []);
+      setBlogPosts(posts);
+    } catch (err) {
+      setError('Failed to fetch blog posts');
+      console.error('Error fetching blog posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load blog posts on component mount and when filters change
+  useEffect(() => {
+    fetchBlogPosts();
+  }, [searchQuery, selectedCategory, sortBy]);
+
+  const showNotification = (message) => { 
+    setNotification(message); 
+    setTimeout(() => setNotification(''), 3000); 
+  };
+
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setNewBlog(prevBlog => ({
+        ...prevBlog,
+        imageFile: file,
+        imageFileName: file.name
+      }));
+    }
+  };
+
+  const handleCancelImage = () => {
+    setNewBlog(prevBlog => ({
+      ...prevBlog,
+      imageFile: null,
+      imageFileName: '',
+    }));
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleArticleClick = async (article) => {
+    setLoading(true);
+    try {
+      const response = await blogService.getBlogPost(article.id);
+      const articleData = response.data || response;
+      setSelectedArticle(articleData);
+      setCurrentView('article');
+      window.scrollTo(0, 0);
+    } catch (err) {
+      setError('Failed to load article');
+      console.error('Error fetching article:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackToListing = () => {
@@ -262,94 +143,107 @@ const FinanceBlog = () => {
       snippet: '',
       category: 'Investments',
       content: '',
-      image: ''
+      imageFile: null,
+      imageFileName: '',
     });
+    setValidationError('');
   };
-  const defaultImage = DEFAULT_CATEGORY_IMAGES[newBlog.category] || DEFAULT_CATEGORY_IMAGES.default;
-  const handleSubmitBlog = () => {
-    if (newBlog.title && newBlog.snippet && newBlog.content) {
-      const blog = {
-        id: blogPosts.length + 1,
-        title: newBlog.title,
-        snippet: newBlog.snippet,
-        category: newBlog.category,
-        content: newBlog.content,
-        image: newBlog.image || defaultImage,
-        author: "You",
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-        gradient: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)",
-        likes: 0,
-        isLiked: false,
-        isBookmarked: false
-      };
-      setBlogPosts([blog, ...blogPosts]);
-      setCurrentView('listing');
-    }
-    setValidationError(''); 
 
-    // Validation Check for Short Description
+  const handleSubmitBlog = async () => {
+    // Validation
+    if (!newBlog.title || !newBlog.snippet || !newBlog.content) {
+      setValidationError('Please fill in all required fields');
+      return;
+    }
+
     if (newBlog.snippet.length < MIN_SNIPPET_LENGTH) {
-        setValidationError(`Short Description must be at least ${MIN_SNIPPET_LENGTH} characters long.`);
-        return;
+      setValidationError(`Short Description must be at least ${MIN_SNIPPET_LENGTH} characters long.`);
+      return;
     }
 
-    // Validation Check for Content
     if (newBlog.content.length < MIN_CONTENT_LENGTH) {
-        setValidationError(`Content must be at least ${MIN_CONTENT_LENGTH} characters long.`);
-        return;
+      setValidationError(`Content must be at least ${MIN_CONTENT_LENGTH} characters long.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await blogService.createBlogPost(newBlog);
+      showNotification('Blog post created successfully!');
+      setCurrentView('listing');
+      // Refresh the blog posts
+      fetchBlogPosts();
+    } catch (err) {
+      setError('Failed to create blog post: ' + err.message);
+      console.error('Error creating blog post:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLike = (id) => {
-    setBlogPosts(blogPosts.map(post => {
-      if (post.id === id) {
-        return {
-          ...post,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          isLiked: !post.isLiked
-        };
+  const handleLike = async (id) => {
+    try {
+      const response = await blogService.toggleLike(id);
+      const responseData = response.data || response;
+      
+      setBlogPosts(blogPosts.map(post => 
+        post.id === id 
+          ? { 
+              ...post, 
+              likes: responseData.likes_count || post.likes,
+              is_liked: responseData.liked 
+            }
+          : post
+      ));
+      
+      if (selectedArticle && selectedArticle.id === id) {
+        setSelectedArticle({
+          ...selectedArticle,
+          likes: responseData.likes_count || selectedArticle.likes,
+          is_liked: responseData.liked
+        });
       }
-      return post;
-    }));
-    if (selectedArticle && selectedArticle.id === id) {
-      setSelectedArticle({
-        ...selectedArticle,
-        likes: selectedArticle.isLiked ? selectedArticle.likes - 1 : selectedArticle.likes + 1,
-        isLiked: !selectedArticle.isLiked
-      });
+    } catch (err) {
+      console.error('Error toggling like:', err);
     }
   };
 
-  const handleBookmark = (id) => {
-    setBlogPosts(blogPosts.map(post => {
-      if (post.id === id) {
-        return { ...post, isBookmarked: !post.isBookmarked };
+  const handleBookmark = async (id) => {
+    try {
+      const response = await blogService.toggleBookmark(id);
+      const responseData = response.data || response;
+      
+      setBlogPosts(blogPosts.map(post => 
+        post.id === id 
+          ? { ...post, is_bookmarked: responseData.bookmarked }
+          : post
+      ));
+      
+      if (selectedArticle && selectedArticle.id === id) {
+        setSelectedArticle({
+          ...selectedArticle,
+          is_bookmarked: responseData.bookmarked
+        });
       }
-      return post;
-    }));
-    if (selectedArticle && selectedArticle.id === id) {
-      setSelectedArticle({
-        ...selectedArticle,
-        isBookmarked: !selectedArticle.isBookmarked
-      });
+    } catch (err) {
+      console.error('Error toggling bookmark:', err);
     }
   };
 
-  // Filter and search logic
+  // Filter and sort posts
   const filteredPosts = blogPosts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.snippet.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         post.snippet?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || 
-                           post.category.toLowerCase() === selectedCategory.toLowerCase();
+                           post.category?.toLowerCase() === selectedCategory.toLowerCase();
     return matchesSearch && matchesCategory;
   });
 
-  // Sort posts
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === 'recent') {
-      return new Date(b.date) - new Date(a.date);
+      return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
     } else if (sortBy === 'popular') {
-      return b.likes - a.likes;
+      return (b.likes || 0) - (a.likes || 0);
     }
     return 0;
   });
@@ -357,9 +251,24 @@ const FinanceBlog = () => {
   const popularPosts = sortedPosts.slice(0, 3);
   const latestPosts = sortedPosts.slice(3, 6);
 
+  // Helper function to format date from backend
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  // Get default image based on category
+  const getDefaultImage = (category) => {
+    return DEFAULT_CATEGORY_IMAGES[category] || DEFAULT_CATEGORY_IMAGES.default;
+  };
+
   return (
     <div style={styles.container}>
-      {/* Header ////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
+      {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.logo}>
@@ -372,84 +281,54 @@ const FinanceBlog = () => {
         </div>
 
         <nav style={styles.nav}>
-          {/* Home */}
-          <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/mainpageafterlogin" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
+          <span style={styles.navLink} onClick={() => navigate("/mainpageafterlogin")}>
             Home
           </span>
 
-          {/* News */}
-          <span
-            style={{
-              ...styles.navLink,
-              borderBottom: isNewsActive ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
+          <span style={styles.navLink} onClick={() => navigate("/NewsPage")}>
             News
           </span>
 
-          {/* About */}
-           <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
+          <span style={styles.navLink} onClick={() => navigate("/AboutUs")}>
             About us
           </span>
 
-            {/* Tools Menu */}
-            <div
+          {/* Tools Menu */}
+          <div
             style={styles.toolsMenu}
             onMouseEnter={() => setShowToolsDropdown(true)}
             onMouseLeave={() => setShowToolsDropdown(false)}
-            >
-            <Wrench size={24} color="black" style={styles.userIcon} /> 
-            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
-
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
             {showToolsDropdown && (
-                <div style={styles.dropdown}>
+              <div style={styles.dropdown}>
                 <div style={styles.dropdownItem}>
-                      <TrendingUp size={16} />
-                    <span>Debt Ratings</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                    <Search size={16} />
-                    <span>Search Companies</span>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
                 </div>
                 <div style={styles.dropdownItem}>
-                    <Activity size={16} />
-                    <span>Charts & KPIs</span>
+                  <Search size={16} />
+                  <span>Search Companies</span>
                 </div>
                 <div style={styles.dropdownItem}>
-                    <BookOpen size={16} />
-                    <span>Blog Page</span>
+                  <Activity size={16} />
+                  <span>Charts & KPIs</span>
                 </div>
-                    <div style={styles.dropdownItem}
-                    onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to dashboard on logout
-                }}
-                    >
-                        <Cpu size={16} />
-                        <span>AI Summary</span>
-                    </div>
-                    <div style={styles.dropdownItem}>
-                        <GitCompare size={16} />
-                        <span>Comparison</span>
-                    </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
                 </div>
+                <div style={styles.dropdownItem} onClick={() => navigate("/FileUploadApp")}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+              </div>
             )}
-            </div>
+          </div>
 
           {/* User Menu */}
           <div
@@ -474,24 +353,39 @@ const FinanceBlog = () => {
                   <span>Settings</span>
                 </div>
 
-               {/* Sign out */}
-                 <div
-                 style={styles.dropdownItem}
-                 onClick={() => {
-                   // (Optional) clear user data or tokens here
-                   navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                 }}
-               >
-                 <LogOut size={16} />
-                 <span>Sign out</span>
-               </div>
+                <div style={styles.dropdownItem} onClick={() => navigate("/homepage_beforelogin")}>
+                  <LogOut size={16} />
+                  <span>Sign out</span>
+                </div>
               </div>
             )}
           </div>
         </nav>
       </header>
 
-      {/* Sub-Header / Filter Bar //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
+      {/* Notification */}
+      {notification && (
+        <div style={styles.notification}>
+          {notification}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div style={styles.errorText}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading Spinner */}
+      {loading && (
+        <div style={styles.loadingOverlay}>
+          <Loader size={32} style={styles.spinner} />
+          <span>Loading...</span>
+        </div>
+      )}
+
+      {/* Sub-Header / Filter Bar */}
       {currentView === 'listing' && (
         <div style={styles.filterBar}>
           <div style={styles.filterContent}>
@@ -583,7 +477,7 @@ const FinanceBlog = () => {
           
           <div style={styles.createForm}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Title</label>
+              <label style={styles.label}>Title *</label>
               <input
                 type="text"
                 style={styles.input}
@@ -594,7 +488,7 @@ const FinanceBlog = () => {
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.label}>Category</label>
+              <label style={styles.label}>Category *</label>
               <select
                 style={styles.select}
                 value={newBlog.category}
@@ -608,79 +502,79 @@ const FinanceBlog = () => {
             </div>
             
             <div style={styles.formGroup}>
-              <label style={styles.label}>Short Description</label>
+              <label style={styles.label}>Short Description *</label>
               <textarea
-                  style={{...styles.input, minHeight: '80px'}}
-                  placeholder={`Brief description of your blog (Min ${MIN_SNIPPET_LENGTH} characters)...`}
-                  value={newBlog.snippet}
-                  onChange={(e) => setNewBlog({...newBlog, snippet: e.target.value})}
+                style={{...styles.input, minHeight: '80px'}}
+                placeholder={`Brief description of your blog (Min ${MIN_SNIPPET_LENGTH} characters)...`}
+                value={newBlog.snippet}
+                onChange={(e) => setNewBlog({...newBlog, snippet: e.target.value})}
               />
               <span style={styles.lengthIndicator}>
-                  {newBlog.snippet.length} / {MIN_SNIPPET_LENGTH} characters
+                {newBlog.snippet.length} / {MIN_SNIPPET_LENGTH} characters
               </span>
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.label}>Content</label>
+              <label style={styles.label}>Content *</label>
               <textarea
-                  style={{...styles.input, minHeight: '300px', fontFamily: 'inherit'}}
-                  placeholder={`Write your blog content here (Min ${MIN_CONTENT_LENGTH} characters)...`}
-                  value={newBlog.content}
-                  onChange={(e) => setNewBlog({...newBlog, content: e.target.value})}
+                style={{...styles.input, minHeight: '300px', fontFamily: 'inherit'}}
+                placeholder={`Write your blog content here (Min ${MIN_CONTENT_LENGTH} characters)...`}
+                value={newBlog.content}
+                onChange={(e) => setNewBlog({...newBlog, content: e.target.value})}
               />
               <span style={styles.lengthIndicator}>
-                  {newBlog.content.length} / {MIN_CONTENT_LENGTH} characters
+                {newBlog.content.length} / {MIN_CONTENT_LENGTH} characters
               </span>
             </div>
 
-            {/* Image URL Field //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
             <div style={styles.formGroup}>
-            {/* 1. HIDDEN NATIVE FILE INPUT */}
-            <input
-                                type="file" 
-                                accept="image/*" 
-                                onChange={handleImageUpload} 
-                                ref={fileInputRef} 
-                                style={{ display: 'none' }}
-                            />
-                            
-                            {/* 2. CONDITIONAL RENDERING (The display) */}
-                            {newBlog.imageFileName ? (
-                                // A. File selected: Show name and cancel button
-                                <div style={styles.uploadedFileContainer}>
-                                    <span style={styles.uploadedFileName}>
-                                        {newBlog.imageFileName}
-                                    </span>
-                                    <button 
-                                        style={styles.cancelImageButton} 
-                                        onClick={handleCancelImage} 
-                                        title="Remove image"
-                                    >
-                                        &times; 
-                                    </button>
-                                </div>
-                            ) : (
-                                // B. No file selected: Show custom "Add Image" button
-                                <div 
-                                    style={styles.customImageButton}
-                                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                                >
-                                    Add Image
-                                </div>
-                            )}
-        </div>
-        {validationError && (
-            <div style={styles.errorText}>
+              <label style={styles.label}>Featured Image</label>
+              <input
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                ref={fileInputRef} 
+                style={{ display: 'none' }}
+              />
+              {newBlog.imageFileName ? (
+                <div style={styles.uploadedFileContainer}>
+                  <span style={styles.uploadedFileName}>
+                    {newBlog.imageFileName}
+                  </span>
+                  <button 
+                    style={styles.cancelImageButton} 
+                    onClick={handleCancelImage} 
+                    title="Remove image"
+                  >
+                    &times; 
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  style={styles.customImageButton}
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                >
+                  Add Image
+                </div>
+              )}
+            </div>
+
+            {validationError && (
+              <div style={styles.errorText}>
                 {validationError}
-            </div>
-        )}
+              </div>
+            )}
 
             <div style={styles.formActions}>
               <button style={styles.cancelButton} onClick={handleBackToListing}>
                 Cancel
               </button>
-              <button style={styles.publishButton} onClick={handleSubmitBlog}>
-                Publish Blog
+              <button 
+                style={styles.publishButton} 
+                onClick={handleSubmitBlog}
+                disabled={loading}
+              >
+                {loading ? 'Publishing...' : 'Publish Blog'}
               </button>
             </div>
           </div>
@@ -693,39 +587,55 @@ const FinanceBlog = () => {
           <div style={styles.articleHeader}>
             <button style={styles.backButton} onClick={handleBackToListing}>
               <ArrowLeft size={20} />
-              <span style={{marginLeft: '8px'}}>{selectedArticle.title}</span>
+              <span style={{marginLeft: '8px'}}>Back to Blogs</span>
             </button>
             <div style={styles.articleMeta}>
-              <span style={styles.articleAuthor}>{selectedArticle.author}</span>
+              <span style={styles.articleAuthor}>
+                {selectedArticle.author_name || selectedArticle.author?.username || 'Unknown Author'}
+              </span>
               <span style={styles.metaSeparator}>•</span>
-              <span style={styles.articleDate}>{selectedArticle.date}</span>
+              <span style={styles.articleDate}>
+                {formatDate(selectedArticle.created_at)}
+              </span>
             </div>
           </div>
 
           <div style={styles.articleContent}>
-            <div style={{...styles.articleImageWrapper, background: selectedArticle.gradient}}>
-              <img src={selectedArticle.image} alt={selectedArticle.title} style={styles.articleImage} />
+            <div style={{...styles.articleImageWrapper, background: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)"}}>
+              <img 
+                src={selectedArticle.image || getDefaultImage(selectedArticle.category)} 
+                alt={selectedArticle.title} 
+                style={styles.articleImage} 
+                onError={(e) => {
+                  e.target.src = getDefaultImage(selectedArticle.category);
+                }}
+              />
             </div>
             
-            <div style={styles.articleBody} dangerouslySetInnerHTML={{__html: selectedArticle.content}} />
+            <div style={styles.articleBody}>
+              <h1 style={{fontSize: '2.5rem', marginBottom: '1rem'}}>{selectedArticle.title}</h1>
+              <div style={{fontSize: '1.1rem', lineHeight: '1.8'}}>
+                {selectedArticle.content}
+              </div>
+            </div>
           </div>
 
           <div style={styles.articleActions}>
             <button 
-              style={{...styles.actionButton, color: selectedArticle.isLiked ? '#e74c3c' : '#6c757d'}}
+              style={{...styles.actionButton, color: selectedArticle.is_liked ? '#e74c3c' : '#6c757d'}}
               onClick={() => handleLike(selectedArticle.id)}
             >
-              <Heart size={20} fill={selectedArticle.isLiked ? '#e74c3c' : 'none'} />
-              <span style={{marginLeft: '6px'}}>{selectedArticle.likes}</span>
+              <Heart size={20} fill={selectedArticle.is_liked ? '#e74c3c' : 'none'} />
+              <span style={{marginLeft: '6px'}}>{selectedArticle.likes || 0}</span>
             </button>
             <button style={styles.actionButton}>
               <Share2 size={20} />
             </button>
             <button 
-              style={{...styles.actionButton, color: selectedArticle.isBookmarked ? '#3498db' : '#6c757d'}}
+              style={{...styles.actionButton, color: selectedArticle.is_bookmarked ? '#3498db' : '#6c757d'}}
               onClick={() => handleBookmark(selectedArticle.id)}
             >
-              <Bookmark size={20} fill={selectedArticle.isBookmarked ? '#3498db' : 'none'} />
+              <Bookmark size={20} fill={selectedArticle.is_bookmarked ? '#3498db' : 'none'} />
             </button>
           </div>
         </div>
@@ -744,7 +654,7 @@ const FinanceBlog = () => {
           <div style={styles.contentGrid}>
             {/* Most Popular Section */}
             <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Most popular</h2>
+              <h2 style={styles.sectionTitle}>Most Popular</h2>
               <div style={styles.cardGrid}>
                 {popularPosts.length > 0 ? popularPosts.map(post => (
                   <article 
@@ -753,29 +663,31 @@ const FinanceBlog = () => {
                     onClick={() => handleArticleClick(post)}
                   >
                     <div style={styles.cardContent}>
-                      {/* 1. Title remains on top */}
-                      <h3 style={styles.cardTitle}>{post.title}</h3> 
-                      
-                      {/* 2. Image is now moved here, right after the title */}
-                      <div style={{...styles.cardImageWrapper, background: post.gradient}}>
-                        <img src={post.image} alt={post.title} style={styles.cardImage} />
+                      <h3 style={styles.cardTitle}>{post.title}</h3>
+                      <div style={{...styles.cardImageWrapper, background: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)"}}>
+                        <img 
+                          src={post.image || getDefaultImage(post.category)} 
+                          alt={post.title} 
+                          style={styles.cardImage} 
+                          onError={(e) => {
+                            e.target.src = getDefaultImage(post.category);
+                          }}
+                        />
                       </div>
-
-                      {/* 3. The rest of the content follows */}
                       <span style={styles.categoryBadge}>{post.category}</span>
                       <p style={styles.cardSnippet}>{post.snippet}</p>
                       <span style={styles.readMore}>Read more...</span>
                       <div style={styles.cardMeta}>
                         <span style={styles.metaLabel}>Author:</span>
-                        <span style={styles.metaValue}>{post.author}</span>
+                        <span style={styles.metaValue}>{post.author_name || post.author?.username || 'Unknown'}</span>
                         <span style={styles.metaSeparator}>|</span>
-                        <span style={styles.metaLabel}>Publish Date:</span>
-                        <span style={styles.metaValue}>{post.date}</span>
+                        <span style={styles.metaLabel}>Date:</span>
+                        <span style={styles.metaValue}>{formatDate(post.created_at)}</span>
                       </div>
                     </div>
                   </article>
                 )) : (
-                  <p style={styles.noResults}>No blogs found</p>
+                  !loading && <p style={styles.noResults}>No blogs found</p>
                 )}
               </div>
             </section>
@@ -792,25 +704,30 @@ const FinanceBlog = () => {
                   >
                     <div style={styles.cardContent}>
                       <h3 style={styles.cardTitle}>{post.title}</h3>
-
-                      <div style={{...styles.cardImageWrapper, background: post.gradient}}>
-                        <img src={post.image} alt={post.title} style={styles.cardImage} />
+                      <div style={{...styles.cardImageWrapper, background: "linear-gradient(135deg, #D1DFDF 0%, #aac2c2ff 100%)"}}>
+                        <img 
+                          src={post.image || getDefaultImage(post.category)} 
+                          alt={post.title} 
+                          style={styles.cardImage} 
+                          onError={(e) => {
+                            e.target.src = getDefaultImage(post.category);
+                          }}
+                        />
                       </div>
-                      
                       <span style={styles.categoryBadge}>{post.category}</span>
                       <p style={styles.cardSnippet}>{post.snippet}</p>
                       <span style={styles.readMore}>Read more...</span>
                       <div style={styles.cardMeta}>
                         <span style={styles.metaLabel}>Author:</span>
-                        <span style={styles.metaValue}>{post.author}</span>
+                        <span style={styles.metaValue}>{post.author_name || post.author?.username || 'Unknown'}</span>
                         <span style={styles.metaSeparator}>|</span>
-                        <span style={styles.metaLabel}>Publish Date:</span>
-                        <span style={styles.metaValue}>{post.date}</span>
+                        <span style={styles.metaLabel}>Date:</span>
+                        <span style={styles.metaValue}>{formatDate(post.created_at)}</span>
                       </div>
                     </div>
                   </article>
                 )) : (
-                  <p style={styles.noResults}>No blogs found</p>
+                  !loading && <p style={styles.noResults}>No blogs found</p>
                 )}
               </div>
             </section>
@@ -851,7 +768,7 @@ const styles = {
     backgroundColor: '#ffffffff',
     fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
-    header: {
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -859,80 +776,18 @@ const styles = {
     backgroundColor: '#ffffffff',
     borderBottom: '1px solid #000000ff',
   },
-    headerLink: {
-    color: '#000000ff',
-    textDecoration: 'none',
-    fontSize: '14px',
-    transition: 'color 0.3s',
-  },
-  headerContent: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '0 32px',
-    display: 'flex',
-    //alignItems: 'right',
-    justifyContent: 'space-between',
-  },
-    dropdown: {
-    position: 'absolute',
-    right: '15px',
-    top: '65px',
-    color: 'black',
-    backgroundColor: '#D9D9D9',
-    borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-    padding: '0.5rem',
-    minWidth: '120px',
-    zIndex: 1000
-  },
-
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '14px'
-  },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '2rem',
   },
-    headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
-  },
-  headerNav: {
-    display: 'flex',
-    gap: '1.5rem',
-  },
-
-
-
-
-
-
-
-  logo: {
-    fontSize: '32px',
-    fontWeight: '700',
-    color: '#2b2d2f',
-    fontFamily: '"Georgia", serif',
-    fontStyle: 'italic',
-    letterSpacing: '-1px',
-  },
-
   nav: {
     display: 'flex',
     gap: '40px',
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-
   navLink: {
     background: 'none',
     border: 'none',
@@ -943,25 +798,38 @@ const styles = {
     fontWeight: '500',
     transition: 'color 0.2s',
   },
-  navLinkActive: {
-    fontWeight: '600',
-    color: '#212529',
-  },
-  userSection: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  userButton: {
-    display: 'flex',
-    alignItems: 'center',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: '20px',
-    padding: '6px',
+  toolsMenu: {
+    position: 'relative',
     cursor: 'pointer',
-    transition: 'opacity 0.2s',
   },
-
+  userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+  },
+  userIcon: {
+    cursor: 'pointer',
+  },
+  dropdown: {
+    position: 'absolute',
+    right: '0',
+    top: '100%',
+    backgroundColor: '#D9D9D9',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+    padding: '0.5rem',
+    minWidth: '160px',
+    zIndex: 1000
+  },
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '14px'
+  },
   filterBar: {
     backgroundColor: '#ffffff',
     borderBottom: '1px solid #dee2e6',
@@ -981,13 +849,15 @@ const styles = {
     gap: '6px',
     border: '1px solid #252525ff',
     borderRadius: '20px',
+    flex: 1,
+    maxWidth: '300px',
   },
   searchInput: {
     border: 'none',
     outline: 'none',
     fontSize: '14px',
     padding: '8px',
-    width: '200px',
+    width: '100%',
     backgroundColor: 'transparent',
   },
   categoriesButton: {
@@ -1026,24 +896,51 @@ const styles = {
     marginLeft: 'auto',
     transition: 'background-color 0.2s',
   },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
+  notification: {
+    position: 'fixed',
+    top: '100px',
+    right: '20px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '4px',
+    zIndex: 1001,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  },
+  errorText: {
+    color: '#dc3545',
+    fontWeight: 'bold',
+    padding: '10px',
+    margin: '10px 0',
+    border: '1px solid #dc3545',
+    borderRadius: '4px',
+    backgroundColor: '#f8d7da',
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'fixed',
+    top: '0',
     left: '0',
-    marginTop: '8px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #dee2e6',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    minWidth: '180px',
+    right: '0',
+    bottom: '0',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 1000,
   },
-  dropdownItem: {
-    padding: '12px 16px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    color: '#3a3f44',
-    transition: 'background-color 0.2s',
+  spinner: {
+    animation: 'spin 1s linear infinite',
+  },
+  '@keyframes spin': {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: 'rotate(360deg)' },
+  },
+  main: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '40px 32px 80px',
   },
   searchInfo: {
     maxWidth: '1400px',
@@ -1051,11 +948,6 @@ const styles = {
     padding: '16px 32px 0',
     fontSize: '14px',
     color: '#6c757d',
-  },
-  main: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '40px 32px 80px',
   },
   contentGrid: {
     display: 'grid',
@@ -1067,8 +959,6 @@ const styles = {
     borderRadius: '20px',
     padding: '32px',
     border: '1px solid #000000ff',
-    width: '96.3%',
-    marginLeft: '-10px',
   },
   sectionTitle: {
     fontSize: '28px',
@@ -1077,13 +967,11 @@ const styles = {
     marginBottom: '28px',
     marginTop: '0',
   },
-  
   cardGrid: {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
   },
-
   card: {
     backgroundColor: '#ffffff',
     borderRadius: '20px',
@@ -1092,20 +980,6 @@ const styles = {
     transition: 'transform 0.2s, box-shadow 0.2s',
     cursor: 'pointer',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-
-  cardImageWrapper: {
-    width: '100%',
-    height: '180px',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    opacity: '0.7',
-    mixBlendMode: 'multiply',
   },
   cardContent: {
     padding: '24px',
@@ -1118,6 +992,20 @@ const styles = {
     marginTop: '0',
     lineHeight: '1.4',
   },
+  cardImageWrapper: {
+    width: '100%',
+    height: '180px',
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: '12px',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    opacity: '0.7',
+    mixBlendMode: 'multiply',
+  },
   categoryBadge: {
     display: 'inline-block',
     fontSize: '11px',
@@ -1127,7 +1015,6 @@ const styles = {
     padding: '4px 12px',
     borderRadius: '12px',
     marginBottom: '12px',
-    marginTop: '12px',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -1289,6 +1176,7 @@ const styles = {
     outline: 'none',
     transition: 'border-color 0.2s',
     fontFamily: 'inherit',
+    resize: 'vertical',
   },
   select: {
     width: '100%',
@@ -1299,6 +1187,49 @@ const styles = {
     outline: 'none',
     backgroundColor: '#ffffff',
     cursor: 'pointer',
+  },
+  lengthIndicator: {
+    display: 'block',
+    marginTop: '5px',
+    fontSize: '12px',
+    color: '#6c757d',
+    textAlign: 'right',
+  },
+  uploadedFileContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px',
+    border: '1px solid #dee2e6',
+    borderRadius: '8px',
+    backgroundColor: '#f8f9fa',
+  },
+  uploadedFileName: {
+    flex: 1,
+    fontSize: '14px',
+    color: '#495057',
+  },
+  cancelImageButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '18px',
+    cursor: 'pointer',
+    color: '#dc3545',
+    padding: '0 5px',
+  },
+  customImageButton: {
+    backgroundColor: '#a5d7b0ff',
+    color: '#3d3d3d',
+    padding: '12px 32px',
+    fontSize: '15px',
+    borderRadius: '15px',
+    fontWeight: '500',
+    textAlign: 'center',
+    cursor: 'pointer',
+    width: 'fit-content',
+    userSelect: 'none',
+    transition: 'background-color 0.2s',
+    border: 'none',
   },
   formActions: {
     display: 'flex',
@@ -1376,40 +1307,21 @@ const styles = {
     textDecoration: 'none',
     transition: 'opacity 0.2s',
   },
-  customImageButton: {
-        // Style to mimic the button in the uploaded image
-        backgroundColor: '#a5d7b0ff', // Light bluish-gray background
-        color: '#3d3d3d',          // Dark text color
-        padding: '12px 32px',
-        fontSize: '15px',
-        borderRadius: '15px',
-        fontWeight: '500',
-        textAlign: 'center',
-        cursor: 'pointer',
-        width: 'fit-content',      // Only take up necessary width
-        userSelect: 'none',        // Prevent text selection on click
-        transition: 'background-color 0.2s',
-        ':hover': { 
-            backgroundColor: '#628679ff',
-        },
-    },
-    lengthIndicator: {
-        display: 'block',
-        marginTop: '5px',
-        fontSize: '12px',
-        color: '#6c757d', // Gray color
-        textAlign: 'right',
-    },
-    errorText: {
-        color: '#dc3545', // Red color
-        fontWeight: 'bold',
-        padding: '10px',
-        marginBottom: '15px',
-        border: '1px solid #dc3545',
-        borderRadius: '4px',
-        backgroundColor: '#f8d7da',
-    },
-  
 };
+
+// Add CSS for spinner animation
+const spinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = spinnerStyles;
+  document.head.appendChild(styleSheet);
+}
 
 export default FinanceBlog;

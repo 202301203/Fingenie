@@ -10,6 +10,7 @@ import SummaryPage from "./pages/summary_page";
 import NewsPage from "./pages/news_page";
 import TrendsPage from "./pages/Trends_KPI";
 import SectorOverviewDashboard from "./pages/sectorOverview";
+import FinanceBlog from "./pages/blogPage";
 function App() {
   return (
     <Routes>
@@ -25,6 +26,7 @@ function App() {
       <Route path="/NewsPage" element={<NewsPage />} />
       <Route path="/Trends_KPI" element={<TrendsPage />} />  
       <Route path="/sectorOverview" element={<SectorOverviewDashboard />} /> 
+      <Route path="/blog" element={<FinanceBlog />} />
     </Routes>
   );
 }
