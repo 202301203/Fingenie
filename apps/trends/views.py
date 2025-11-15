@@ -3,7 +3,9 @@ import json
 import re
 import uuid
 import traceback
+import concurrent.futures
 from typing import List, Optional, Dict, Any
+from functools import partial
 
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -40,253 +42,113 @@ class FinancialTrendItem(BaseModel):
 class FinancialTrends(BaseModel):
     financial_trends: List[FinancialTrendItem] = Field(..., description="List of trend analyses")
 
-def upload_file_view(request):
-    """Renders the file upload form."""
-    return render(request, 'pdf_app/upload.html')
+# ------------------------------
+# 🔹 Parallel Processing Functions
+# ------------------------------
 
-# ... rest of your code remains the same ...
-def generate_overall_summary(trends_data: Dict[str, Any], company_name: str = "the company") -> str:
-    """
-    Generate a comprehensive overall summary based on the financial trends analysis.
-    """
-    trends = trends_data.get("financial_trends", [])
-    
-    if not trends:
-        return f"{company_name} financial data shows limited trends for comprehensive analysis."
-    
-    # Categorize trends by performance
-    strong_positives = []
-    concerns = []
-    stable_metrics = []
-    critical_issues = []
-    
-    for trend in trends:
-        metric = trend.get("metric", "")
-        direction = trend.get("trend_direction", "")
-        growth_rate = trend.get("growth_rate", 0)
-        importance = trend.get("importance_score", 0)
-        
-        # Skip metrics with poor data quality for summary
-        data_quality = trend.get("data_quality", "")
-        if data_quality in ["poor", "estimated"] and importance < 80:
-            continue
-        
-        # Categorize based on direction and magnitude
-        if "strongly increasing" in direction and growth_rate > 15:
-            strong_positives.append((metric, growth_rate))
-        elif "increasing" in direction and growth_rate > 5:
-            strong_positives.append((metric, growth_rate))
-        elif "strongly decreasing" in direction and growth_rate < -20:
-            if importance >= 80:
-                critical_issues.append((metric, growth_rate))
-            else:
-                concerns.append((metric, growth_rate))
-        elif "decreasing" in direction and growth_rate < -5:
-            concerns.append((metric, growth_rate))
-        elif "stable" in direction and -5 <= growth_rate <= 5:
-            stable_metrics.append((metric, growth_rate))
-    
-    # Generate summary components
-    summary_parts = []
-    
-    # 1. Start with overall assessment
-    if len(strong_positives) >= 3 and len(critical_issues) == 0:
-        summary_parts.append(f"Overall, {company_name} demonstrates strong financial performance")
-    elif len(strong_positives) >= 2 and len(critical_issues) <= 1:
-        summary_parts.append(f"Overall, {company_name} shows positive financial momentum")
-    elif len(stable_metrics) >= 4 and len(critical_issues) == 0:
-        summary_parts.append(f"Overall, {company_name} maintains financial stability")
-    else:
-        summary_parts.append(f"Overall, {company_name} presents a mixed financial picture")
-    
-    # 2. Add positive developments
-    positive_developments = []
-    for metric, rate in strong_positives:
-        if "Cash" in metric or "Liquidity" in metric:
-            positive_developments.append("strong liquidity improvements")
-        elif "Revenue" in metric or "Profit" in metric:
-            positive_developments.append("revenue growth")
-        elif "Assets" in metric:
-            positive_developments.append("asset base expansion")
-        elif "Equity" in metric:
-            positive_developments.append("strengthened equity position")
-    
-    # Remove duplicates and limit to top 2
-    positive_developments = list(dict.fromkeys(positive_developments))[:2]
-    if positive_developments:
-        summary_parts.append(f"with {', '.join(positive_developments)}")
-    
-    # 3. Add stable/controlled aspects
-    stable_aspects = []
-    for metric, rate in stable_metrics:
-        if "Liabilities" in metric and rate < 0:
-            stable_aspects.append("controlled liabilities")
-        elif "Profit" in metric and rate > 0:
-            stable_aspects.append("consistent profitability")
-        elif "Revenue" in metric and rate > 0:
-            stable_aspects.append("stable revenue streams")
-    
-    stable_aspects = list(dict.fromkeys(stable_aspects))[:2]
-    if stable_aspects:
-        if positive_developments:
-            summary_parts.append(f"and {', '.join(stable_aspects)}")
-        else:
-            summary_parts.append(f"with {', '.join(stable_aspects)}")
-    
-    # 4. Add concerns and recommendations
-    concerns_list = []
-    for metric, rate in concerns:
-        if "Investment" in metric:
-            concerns_list.append("investment contraction")
-        elif "Reserves" in metric:
-            concerns_list.append("reserve decline")
-        elif "Loans" in metric and rate < 0:
-            concerns_list.append("lending reduction")
-    
-    critical_concerns = []
-    for metric, rate in critical_issues:
-        if "Investment" in metric:
-            critical_concerns.append("significant investment portfolio reduction")
-        elif "Reserves" in metric:
-            critical_concerns.append("substantial reserve depletion")
-        elif "Liabilities" in metric and rate < -50:
-            critical_concerns.append("drastic liability reduction")
-    
-    # Combine concerns
-    all_concerns = critical_concerns + concerns_list
-    all_concerns = list(dict.fromkeys(all_concerns))[:2]
-    
-    if all_concerns:
-        if positive_developments or stable_aspects:
-            summary_parts.append(f"while {', '.join(all_concerns)} warrant{'s' if len(all_concerns) == 1 else ''} strategic review")
-        else:
-            summary_parts.append(f"with {', '.join(all_concerns)} requiring immediate attention")
-    
-    # 5. Add data quality note if significant
-    excellent_count = sum(1 for trend in trends if trend.get("data_quality") == "excellent")
-    poor_count = sum(1 for trend in trends if trend.get("data_quality") in ["poor", "estimated"])
-    
-    if poor_count >= 4 and excellent_count <= 2:
-        summary_parts.append("(analysis limited by data availability)")
-    
-    # Construct final summary
-    summary = ". ".join(summary_parts) + "."
-    
-    # Ensure proper capitalization and flow
-    summary = summary[0].upper() + summary[1:]
-    
-    # Clean up any double periods or awkward phrasing
-    summary = re.sub(r'\.\.', '.', summary)
-    summary = re.sub(r'\.\s*\.', '. ', summary)
-    
-    return summary
+def process_single_file(uploaded_file, api_key, media_root):
+    """Process a single file independently - designed for parallel execution."""
+    try:
+        unique_name = str(uuid.uuid4())
+        ext = os.path.splitext(uploaded_file.name)[1].lower()
+        file_name = uploaded_file.name
 
-def generate_detailed_executive_summary(trends_data: Dict[str, Any], company_name: str = "the company") -> Dict[str, Any]:
-    """
-    Generate a comprehensive executive summary with key insights.
-    """
-    trends = trends_data.get("financial_trends", [])
-    
-    summary = {
-        "overall_assessment": "",
-        "key_strengths": [],
-        "major_concerns": [],
-        "strategic_recommendations": [],  # Fixed: was "strategic_recommendments"
-        "outlook": ""
-    }
-    
-    if not trends:
-        summary["overall_assessment"] = f"Insufficient data for comprehensive analysis of {company_name}."
-        return summary
-    
-    # Analyze trends
-    strength_metrics = []
-    concern_metrics = []
-    critical_metrics = []
-    
-    for trend in trends:
-        metric = trend.get("metric", "")
-        direction = trend.get("trend_direction", "")
-        growth_rate = trend.get("growth_rate", 0)
-        importance = trend.get("importance_score", 0)
-        data_quality = trend.get("data_quality", "")
-        
-        # Focus on high-quality, important metrics
-        if data_quality in ["poor"] and importance < 80:
-            continue
-            
-        if "strongly increasing" in direction and growth_rate > 10:
-            strength_metrics.append((metric, growth_rate, data_quality))
-        elif "increasing" in direction and growth_rate > 5:
-            strength_metrics.append((metric, growth_rate, data_quality))
-        elif "strongly decreasing" in direction and growth_rate < -20:
-            if importance >= 80:
-                critical_metrics.append((metric, growth_rate, data_quality))
-            else:
-                concern_metrics.append((metric, growth_rate, data_quality))
-        elif "decreasing" in direction and growth_rate < -5:
-            concern_metrics.append((metric, growth_rate, data_quality))
-    
-    # Generate overall assessment
-    if critical_metrics:
-        summary["overall_assessment"] = f"{company_name} faces significant financial challenges requiring immediate attention."
-    elif strength_metrics and not concern_metrics:
-        summary["overall_assessment"] = f"{company_name} demonstrates robust financial health and positive momentum."
-    elif strength_metrics and concern_metrics:
-        summary["overall_assessment"] = f"{company_name} shows mixed financial performance with both strengths and areas for improvement."
-    else:
-        summary["overall_assessment"] = f"{company_name} maintains stable financial operations."
-    
-    # Key strengths
-    for metric, rate, quality in strength_metrics[:3]:
-        if "Cash" in metric:
-            summary["key_strengths"].append(f"Strong liquidity position ({rate}% growth)")
-        elif "Revenue" in metric:
-            summary["key_strengths"].append(f"Revenue growth momentum ({rate}% annually)")
-        elif "Profit" in metric:
-            summary["key_strengths"].append(f"Profitability improvement ({rate}% increase)")
-        elif "Assets" in metric:
-            summary["key_strengths"].append(f"Asset base expansion ({rate}% growth)")
-    
-    # Major concerns
-    for metric, rate, quality in critical_metrics[:3]:
-        if "Investment" in metric:
-            summary["major_concerns"].append(f"Critical investment portfolio decline ({rate}% decrease)")
-        elif "Reserves" in metric:
-            summary["major_concerns"].append(f"Substantial reserve depletion ({rate}% reduction)")
-        elif "Liabilities" in metric and rate < -50:
-            summary["major_concerns"].append(f"Drastic liability reduction ({rate}% change)")
-    
-    for metric, rate, quality in concern_metrics[:2]:
-        if "Investment" in metric and metric not in [m[0] for m in critical_metrics]:
-            summary["major_concerns"].append(f"Investment contraction ({rate}% decrease)")
-        elif "Reserves" in metric and metric not in [m[0] for m in critical_metrics]:
-            summary["major_concerns"].append(f"Reserve decline ({rate}% reduction)")
-    
-    # Strategic recommendations - FIXED: Changed from "strategic_recommendments" to "strategic_recommendations"
-    if any("Investment" in metric for metric, _, _ in critical_metrics + concern_metrics):
-        summary["strategic_recommendations"].append("Review investment strategy and portfolio allocation")
-    
-    if any("Reserves" in metric for metric, _, _ in critical_metrics + concern_metrics):
-        summary["strategic_recommendations"].append("Assess reserve adequacy and utilization strategy")
-    
-    if strength_metrics and any("Cash" in metric for metric, _, _ in strength_metrics):
-        summary["strategic_recommendations"].append("Leverage strong liquidity for strategic investments")
-    
-    # FIXED: Changed from "strategic_recommendments" to "strategic_recommendations"
-    if not summary["strategic_recommendations"]:
-        summary["strategic_recommendations"].append("Maintain current financial strategy with continued monitoring")
-    
-    # Outlook
-    if critical_metrics:
-        summary["outlook"] = "Challenging outlook requiring strategic intervention"
-    elif strength_metrics and not concern_metrics:
-        summary["outlook"] = "Positive outlook with continued growth potential"
-    else:
-        summary["outlook"] = "Stable outlook with opportunities for improvement"
-    
-    return summary
+        if ext not in ['.pdf', '.xlsx', '.xls']:
+            return None
 
+        # Extract year from filename
+        year_match = re.search(r'(20\d{2})', file_name)
+        year = year_match.group(1) if year_match else f"Year_{uuid.uuid4().hex[:4]}"
+
+        file_path = os.path.join(media_root, f"{unique_name}{ext}")
+        
+        # Save file
+        with open(file_path, 'wb+') as dest:
+            for chunk in uploaded_file.chunks():
+                dest.write(chunk)
+
+        print(f"Processing {file_name} (year: {year}) in parallel...")
+
+        # Process document
+        documents = load_financial_document(file_path)
+        if not documents:
+            print(f"Failed to load document: {file_name}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return None
+
+        context_text = prepare_context_smart(documents)
+        if len(context_text.strip()) < 100:
+            print(f"Insufficient context extracted from: {file_name}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return None
+
+        extraction = extract_raw_financial_data(context_text, api_key)
+        if not extraction.get("success"):
+            print(f"Data extraction failed for: {file_name}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return None
+
+        # Extract ALL years data
+        yearly_data = extract_all_years_data(extraction, year)
+        
+        result = {
+            "filename": file_name,
+            "year": year,
+            "company_name": extraction.get("company_name"),
+            "ticker_symbol": extraction.get("ticker_symbol"),
+            "items_extracted": len(extraction.get("financial_items", [])),
+            "years_found": len(yearly_data),
+            "yearly_data": yearly_data
+        }
+
+        # Cleanup
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        print(f"Successfully processed {file_name}")
+        return result
+
+    except Exception as e:
+        print(f"Error processing {uploaded_file.name}: {str(e)}")
+        # Cleanup on error
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+        return None
+
+def process_files_parallel(uploaded_files, api_key, media_root, max_workers=None):
+    """Process multiple files in parallel using ThreadPoolExecutor."""
+    if max_workers is None:
+        # Use optimal number of workers based on file count and CPU cores
+        max_workers = min(len(uploaded_files), os.cpu_count() or 4, 8)  # Cap at 8 workers
+    
+    print(f"Starting parallel processing of {len(uploaded_files)} files with {max_workers} workers...")
+    
+    # Create partial function with fixed parameters
+    process_func = partial(process_single_file, api_key=api_key, media_root=media_root)
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_file = {
+            executor.submit(process_func, uploaded_file): uploaded_file 
+            for uploaded_file in uploaded_files
+        }
+        
+        # Collect results as they complete
+        results = []
+        for future in concurrent.futures.as_completed(future_to_file):
+            uploaded_file = future_to_file[future]
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except Exception as exc:
+                print(f'{uploaded_file.name} generated an exception: {exc}')
+    
+    print(f"Parallel processing complete: {len(results)} files processed successfully")
+    return results
 
 # ------------------------------
 # 🔹 CRITICAL FINANCIAL METRICS DEFINITION
@@ -355,95 +217,46 @@ CRITICAL_METRICS = {
     }
 }
 
-def detect_file_type(file_path):
-    """Detect file type based on extension"""
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == '.pdf':
-        return 'PDF'
-    elif ext in ['.xlsx', '.xls']:
-        return 'Excel'
-    else:
-        return 'Unknown'
-
-def upload_file_view(request):
-    """Renders the file upload form."""
-    return render(request, 'trends/upload.html')
-
-TREND_PROMPT = """
-
-SYSTEM ROLE:
-
-You are a Senior Financial Analyst with deep expertise in financial statement interpretation and business intelligence.
-You must analyze ONLY the 10 most critical financial trends that drive strategic decision-making.
-You must respond strictly in valid JSON.
-
-USER PROMPT:
-
-You are given multi-year financial data for a company.
-
-Focus ONLY on these 10 critical financial metrics:
-1. Total Assets
-2. Total Liabilities  
-3. Total Revenue/Income
-4. Net Profit
-5. Shareholders Equity
-6. Cash & Equivalents
-7. Total Investments
-8. Loans Portfolio
-9. Reserves & Surplus
-10. Current Ratio
-
-DATA PROVIDED:
-{financial_data_json}
-
-YOUR TASK:
-
-For each of the 10 critical metrics:
-1. Identify the overall trend across years.
-2. Compute the CAGR (Compound Annual Growth Rate):
-
-   CAGR = [(Last Year / First Year)^(1 / (Years - 1)) - 1] * 100
-3. Determine the trend direction — one of: "strongly increasing", "increasing", "stable", "decreasing", "strongly decreasing".
-4. Assign the predefined importance_score (provided in data).
-5. Write:
-   - `interpretation`: Describe the numerical pattern and magnitude with specific values
-   - `indication`: Provide 2-3 lines of SPECIFIC, metric-focused analysis that MATCHES the actual trend direction
-
-CRITICAL: The indication MUST align with the actual growth/decline pattern. If the metric is growing, the indication should reflect positive implications. If declining, reflect concerns.
-
-REQUIRED OUTPUT FORMAT:
-
-Return only valid JSON like this:
-
-{{
-  "financial_trends": [
-    {{
-      "metric": "Total Assets",
-      "yearly_values": {{"2021": 100000, "2022": 120000, "2023": 140000}},
-      "growth_rate": 18.3,
-      "trend_direction": "increasing",
-      "interpretation": "Total assets grew from $100K to $140K over 3 years, representing 18.3% annual growth",
-      "indication": "This indicates business expansion and improved asset base. The growth supports operational scale and enhances borrowing capacity. Management should ensure asset utilization efficiency matches this growth trajectory.",
-      "importance_score": 100,
-      "data_quality": "excellent"
-    }}
-  ]
-}}
-
-OUTPUT RULES:
-
-- Include EXACTLY 10 metrics with the exact metric names listed above
-- JSON only — no Markdown, extra text, or explanations
-- Round growth_rate to one decimal place
-- Provide SPECIFIC indications that MATCH the actual trend direction
-- Use professional, analytical tone
-
-CRITICAL: Ensure indications align with growth/decline patterns. Growing metrics should have positive implications, declining metrics should have concerning implications.
-"""
-
 # ------------------------------
-# 🔹 ENHANCED CRITICAL METRIC EXTRACTION
+# 🔹 Enhanced Data Extraction Functions
 # ------------------------------
+
+def extract_all_years_data(extraction: Dict[str, Any], year: str) -> Dict[str, Dict[str, float]]:
+    """
+    Extract data for ALL years from the extraction result, not just current year.
+    """
+    yearly_data = {}
+    
+    for item in extraction.get("financial_items", []):
+        metric = item.get("particulars", "").strip()
+        if not metric:
+            continue
+            
+        # Extract current year value
+        current_val = item.get("current_year")
+        if isinstance(current_val, (int, float)):
+            yearly_data.setdefault(metric, {})[year] = current_val
+        
+        # Extract previous year value if available
+        previous_val = item.get("previous_year")
+        if isinstance(previous_val, (int, float)):
+            # Calculate previous year (current year - 1)
+            try:
+                prev_year = str(int(year) - 1)
+                yearly_data.setdefault(metric, {})[prev_year] = previous_val
+            except (ValueError, TypeError):
+                pass
+                
+        # Extract any additional year data that might be present
+        for key, value in item.items():
+            if key not in ['particulars', 'current_year', 'previous_year'] and isinstance(value, (int, float)):
+                # Try to extract year from key name
+                year_match = re.search(r'(20\d{2})', key)
+                if year_match:
+                    found_year = year_match.group(1)
+                    yearly_data.setdefault(metric, {})[found_year] = value
+    
+    return yearly_data
 
 def extract_critical_metrics(financial_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Extract and map exactly the 10 critical financial metrics."""
@@ -475,11 +288,11 @@ def extract_critical_metrics(financial_items: List[Dict[str, Any]]) -> List[Dict
     result = list(critical_data.values())
     result.sort(key=lambda x: x['importance_score'], reverse=True)
     
-    print(f"🎯 Extracted {len(result)} critical metrics:")
+    print(f" Extracted {len(result)} critical metrics:")
     for item in result:
         years = sorted(item['yearly_values'].keys())
         quality = item.get('data_quality', 'unknown')
-        print(f"   📊 {item['metric']}: {len(years)} years ({min(years)}-{max(years)}) - Quality: {quality}")
+        print(f"    {item['metric']}: {len(years)} years ({min(years)}-{max(years)}) - Quality: {quality}")
     
     return result[:10]  # Ensure exactly 10
 
@@ -563,7 +376,7 @@ def ensure_complete_critical_metrics(critical_data: Dict, all_items: List[Dict[s
                     'original_metric': f"Estimated from related data",
                     'data_quality': 'estimated'
                 }
-                print(f"   🔧 Estimated missing metric: {config['display_name']}")
+                print(f"   Estimated missing metric: {config['display_name']}")
             else:
                 # Create conservative estimate
                 conservative_estimate = create_conservative_estimate(critical_id, sorted_years)
@@ -739,49 +552,7 @@ def create_conservative_estimate(critical_id: str, years: List[str]) -> Dict[str
     return values
 
 # ------------------------------
-# 🔹 FIXED: Enhanced Data Extraction to Capture All Years
-# ------------------------------
-
-def extract_all_years_data(extraction: Dict[str, Any], year: str) -> Dict[str, Dict[str, float]]:
-    """
-    Extract data for ALL years from the extraction result, not just current year.
-    This is the key fix for the 2-year data problem.
-    """
-    yearly_data = {}
-    
-    for item in extraction.get("financial_items", []):
-        metric = item.get("particulars", "").strip()
-        if not metric:
-            continue
-            
-        # Extract current year value
-        current_val = item.get("current_year")
-        if isinstance(current_val, (int, float)):
-            yearly_data.setdefault(metric, {})[year] = current_val
-        
-        # Extract previous year value if available
-        previous_val = item.get("previous_year")
-        if isinstance(previous_val, (int, float)):
-            # Calculate previous year (current year - 1)
-            try:
-                prev_year = str(int(year) - 1)
-                yearly_data.setdefault(metric, {})[prev_year] = previous_val
-            except (ValueError, TypeError):
-                pass
-                
-        # Extract any additional year data that might be present
-        for key, value in item.items():
-            if key not in ['particulars', 'current_year', 'previous_year'] and isinstance(value, (int, float)):
-                # Try to extract year from key name
-                year_match = re.search(r'(20\d{2})', key)
-                if year_match:
-                    found_year = year_match.group(1)
-                    yearly_data.setdefault(metric, {})[found_year] = value
-    
-    return yearly_data
-
-# ------------------------------
-# 🔹 ENHANCED: Comprehensive Manual Trend Analysis with FIXED Logic
+# 🔹 Trend Analysis Functions
 # ------------------------------
 
 def enhanced_manual_trend_analysis(financial_items: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -790,7 +561,7 @@ def enhanced_manual_trend_analysis(financial_items: List[Dict[str, Any]]) -> Dic
     critical_items = extract_critical_metrics(financial_items)
     trends = []
     
-    print(f"📊 Analyzing {len(critical_items)} critical metrics out of {len(financial_items)} total")
+    print(f"Analyzing {len(critical_items)} critical metrics out of {len(financial_items)} total")
     
     for item in critical_items:
         metric = item.get("metric", "")
@@ -964,8 +735,80 @@ def generate_correct_indication(metric: str, trend_direction: str, growth_rate: 
     return f"This trend provides balanced insights into the company's financial position. {magnitude.capitalize()} {trend_direction} pattern requires appropriate strategic consideration aligned with business objectives."
 
 # ------------------------------
-# 🔹 Improved Trend Generation with Critical Metric Focus
+# 🔹 LLM Trend Generation
 # ------------------------------
+
+TREND_PROMPT = """
+
+SYSTEM ROLE:
+
+You are a Senior Financial Analyst with deep expertise in financial statement interpretation and business intelligence.
+You must analyze ONLY the 10 most critical financial trends that drive strategic decision-making.
+You must respond strictly in valid JSON.
+
+USER PROMPT:
+
+You are given multi-year financial data for a company.
+
+Focus ONLY on these 10 critical financial metrics:
+1. Total Assets
+2. Total Liabilities  
+3. Total Revenue/Income
+4. Net Profit
+5. Shareholders Equity
+6. Cash & Equivalents
+7. Total Investments
+8. Loans Portfolio
+9. Reserves & Surplus
+10. Current Ratio
+
+DATA PROVIDED:
+{financial_data_json}
+
+YOUR TASK:
+
+For each of the 10 critical metrics:
+1. Identify the overall trend across years.
+2. Compute the CAGR (Compound Annual Growth Rate):
+
+   CAGR = [(Last Year / First Year)^(1 / (Years - 1)) - 1] * 100
+3. Determine the trend direction — one of: "strongly increasing", "increasing", "stable", "decreasing", "strongly decreasing".
+4. Assign the predefined importance_score (provided in data).
+5. Write:
+   - `interpretation`: Describe the numerical pattern and magnitude with specific values
+   - `indication`: Provide 2-3 lines of SPECIFIC, metric-focused analysis that MATCHES the actual trend direction
+
+CRITICAL: The indication MUST align with the actual growth/decline pattern. If the metric is growing, the indication should reflect positive implications. If declining, reflect concerns.
+
+REQUIRED OUTPUT FORMAT:
+
+Return only valid JSON like this:
+
+{{
+  "financial_trends": [
+    {{
+      "metric": "Total Assets",
+      "yearly_values": {{"2021": 100000, "2022": 120000, "2023": 140000}},
+      "growth_rate": 18.3,
+      "trend_direction": "increasing",
+      "interpretation": "Total assets grew from $100K to $140K over 3 years, representing 18.3% annual growth",
+      "indication": "This indicates business expansion and improved asset base. The growth supports operational scale and enhances borrowing capacity. Management should ensure asset utilization efficiency matches this growth trajectory.",
+      "importance_score": 100,
+      "data_quality": "excellent"
+    }}
+  ]
+}}
+
+OUTPUT RULES:
+
+- Include EXACTLY 10 metrics with the exact metric names listed above
+- JSON only — no Markdown, extra text, or explanations
+- Round growth_rate to one decimal place
+- Provide SPECIFIC indications that MATCH the actual trend direction
+- Use professional, analytical tone
+
+CRITICAL: Ensure indications align with growth/decline patterns. Growing metrics should have positive implications, declining metrics should have concerning implications.
+"""
 
 def generate_trends_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
     """Generates multi-year trend analysis focusing ONLY on the 10 critical financial metrics."""
@@ -1066,12 +909,257 @@ def validate_trend_consistency(trends: List[Any]) -> List[Dict[str, Any]]:
     return validated
 
 # ------------------------------
-# 🔹 FIXED: Main API Endpoint - Focused on 10 Critical Trends
+# 🔹 Summary Generation Functions
+# ------------------------------
+
+def generate_overall_summary(trends_data: Dict[str, Any], company_name: str = "the company") -> str:
+    """
+    Generate a comprehensive overall summary based on the financial trends analysis.
+    """
+    trends = trends_data.get("financial_trends", [])
+    
+    if not trends:
+        return f"{company_name} financial data shows limited trends for comprehensive analysis."
+    
+    # Categorize trends by performance
+    strong_positives = []
+    concerns = []
+    stable_metrics = []
+    critical_issues = []
+    
+    for trend in trends:
+        metric = trend.get("metric", "")
+        direction = trend.get("trend_direction", "")
+        growth_rate = trend.get("growth_rate", 0)
+        importance = trend.get("importance_score", 0)
+        
+        # Skip metrics with poor data quality for summary
+        data_quality = trend.get("data_quality", "")
+        if data_quality in ["poor", "estimated"] and importance < 80:
+            continue
+        
+        # Categorize based on direction and magnitude
+        if "strongly increasing" in direction and growth_rate > 15:
+            strong_positives.append((metric, growth_rate))
+        elif "increasing" in direction and growth_rate > 5:
+            strong_positives.append((metric, growth_rate))
+        elif "strongly decreasing" in direction and growth_rate < -20:
+            if importance >= 80:
+                critical_issues.append((metric, growth_rate))
+            else:
+                concerns.append((metric, growth_rate))
+        elif "decreasing" in direction and growth_rate < -5:
+            concerns.append((metric, growth_rate))
+        elif "stable" in direction and -5 <= growth_rate <= 5:
+            stable_metrics.append((metric, growth_rate))
+    
+    # Generate summary components
+    summary_parts = []
+    
+    # 1. Start with overall assessment
+    if len(strong_positives) >= 3 and len(critical_issues) == 0:
+        summary_parts.append(f"Overall, {company_name} demonstrates strong financial performance")
+    elif len(strong_positives) >= 2 and len(critical_issues) <= 1:
+        summary_parts.append(f"Overall, {company_name} shows positive financial momentum")
+    elif len(stable_metrics) >= 4 and len(critical_issues) == 0:
+        summary_parts.append(f"Overall, {company_name} maintains financial stability")
+    else:
+        summary_parts.append(f"Overall, {company_name} presents a mixed financial picture")
+    
+    # 2. Add positive developments
+    positive_developments = []
+    for metric, rate in strong_positives:
+        if "Cash" in metric or "Liquidity" in metric:
+            positive_developments.append("strong liquidity improvements")
+        elif "Revenue" in metric or "Profit" in metric:
+            positive_developments.append("revenue growth")
+        elif "Assets" in metric:
+            positive_developments.append("asset base expansion")
+        elif "Equity" in metric:
+            positive_developments.append("strengthened equity position")
+    
+    # Remove duplicates and limit to top 2
+    positive_developments = list(dict.fromkeys(positive_developments))[:2]
+    if positive_developments:
+        summary_parts.append(f"with {', '.join(positive_developments)}")
+    
+    # 3. Add stable/controlled aspects
+    stable_aspects = []
+    for metric, rate in stable_metrics:
+        if "Liabilities" in metric and rate < 0:
+            stable_aspects.append("controlled liabilities")
+        elif "Profit" in metric and rate > 0:
+            stable_aspects.append("consistent profitability")
+        elif "Revenue" in metric and rate > 0:
+            stable_aspects.append("stable revenue streams")
+    
+    stable_aspects = list(dict.fromkeys(stable_aspects))[:2]
+    if stable_aspects:
+        if positive_developments:
+            summary_parts.append(f"and {', '.join(stable_aspects)}")
+        else:
+            summary_parts.append(f"with {', '.join(stable_aspects)}")
+    
+    # 4. Add concerns and recommendations
+    concerns_list = []
+    for metric, rate in concerns:
+        if "Investment" in metric:
+            concerns_list.append("investment contraction")
+        elif "Reserves" in metric:
+            concerns_list.append("reserve decline")
+        elif "Loans" in metric and rate < 0:
+            concerns_list.append("lending reduction")
+    
+    critical_concerns = []
+    for metric, rate in critical_issues:
+        if "Investment" in metric:
+            critical_concerns.append("significant investment portfolio reduction")
+        elif "Reserves" in metric:
+            critical_concerns.append("substantial reserve depletion")
+        elif "Liabilities" in metric and rate < -50:
+            critical_concerns.append("drastic liability reduction")
+    
+    # Combine concerns
+    all_concerns = critical_concerns + concerns_list
+    all_concerns = list(dict.fromkeys(all_concerns))[:2]
+    
+    if all_concerns:
+        if positive_developments or stable_aspects:
+            summary_parts.append(f"while {', '.join(all_concerns)} warrant{'s' if len(all_concerns) == 1 else ''} strategic review")
+        else:
+            summary_parts.append(f"with {', '.join(all_concerns)} requiring immediate attention")
+    
+    # 5. Add data quality note if significant
+    excellent_count = sum(1 for trend in trends if trend.get("data_quality") == "excellent")
+    poor_count = sum(1 for trend in trends if trend.get("data_quality") in ["poor", "estimated"])
+    
+    if poor_count >= 4 and excellent_count <= 2:
+        summary_parts.append("(analysis limited by data availability)")
+    
+    # Construct final summary
+    summary = ". ".join(summary_parts) + "."
+    
+    # Ensure proper capitalization and flow
+    summary = summary[0].upper() + summary[1:]
+    
+    # Clean up any double periods or awkward phrasing
+    summary = re.sub(r'\.\.', '.', summary)
+    summary = re.sub(r'\.\s*\.', '. ', summary)
+    
+    return summary
+
+def generate_detailed_executive_summary(trends_data: Dict[str, Any], company_name: str = "the company") -> Dict[str, Any]:
+    """
+    Generate a comprehensive executive summary with key insights.
+    """
+    trends = trends_data.get("financial_trends", [])
+    
+    summary = {
+        "overall_assessment": "",
+        "key_strengths": [],
+        "major_concerns": [],
+        "strategic_recommendations": [],
+        "outlook": ""
+    }
+    
+    if not trends:
+        summary["overall_assessment"] = f"Insufficient data for comprehensive analysis of {company_name}."
+        return summary
+    
+    # Analyze trends
+    strength_metrics = []
+    concern_metrics = []
+    critical_metrics = []
+    
+    for trend in trends:
+        metric = trend.get("metric", "")
+        direction = trend.get("trend_direction", "")
+        growth_rate = trend.get("growth_rate", 0)
+        importance = trend.get("importance_score", 0)
+        data_quality = trend.get("data_quality", "")
+        
+        # Focus on high-quality, important metrics
+        if data_quality in ["poor"] and importance < 80:
+            continue
+            
+        if "strongly increasing" in direction and growth_rate > 10:
+            strength_metrics.append((metric, growth_rate, data_quality))
+        elif "increasing" in direction and growth_rate > 5:
+            strength_metrics.append((metric, growth_rate, data_quality))
+        elif "strongly decreasing" in direction and growth_rate < -20:
+            if importance >= 80:
+                critical_metrics.append((metric, growth_rate, data_quality))
+            else:
+                concern_metrics.append((metric, growth_rate, data_quality))
+        elif "decreasing" in direction and growth_rate < -5:
+            concern_metrics.append((metric, growth_rate, data_quality))
+    
+    # Generate overall assessment
+    if critical_metrics:
+        summary["overall_assessment"] = f"{company_name} faces significant financial challenges requiring immediate attention."
+    elif strength_metrics and not concern_metrics:
+        summary["overall_assessment"] = f"{company_name} demonstrates robust financial health and positive momentum."
+    elif strength_metrics and concern_metrics:
+        summary["overall_assessment"] = f"{company_name} shows mixed financial performance with both strengths and areas for improvement."
+    else:
+        summary["overall_assessment"] = f"{company_name} maintains stable financial operations."
+    
+    # Key strengths
+    for metric, rate, quality in strength_metrics[:3]:
+        if "Cash" in metric:
+            summary["key_strengths"].append(f"Strong liquidity position ({rate}% growth)")
+        elif "Revenue" in metric:
+            summary["key_strengths"].append(f"Revenue growth momentum ({rate}% annually)")
+        elif "Profit" in metric:
+            summary["key_strengths"].append(f"Profitability improvement ({rate}% increase)")
+        elif "Assets" in metric:
+            summary["key_strengths"].append(f"Asset base expansion ({rate}% growth)")
+    
+    # Major concerns
+    for metric, rate, quality in critical_metrics[:3]:
+        if "Investment" in metric:
+            summary["major_concerns"].append(f"Critical investment portfolio decline ({rate}% decrease)")
+        elif "Reserves" in metric:
+            summary["major_concerns"].append(f"Substantial reserve depletion ({rate}% reduction)")
+        elif "Liabilities" in metric and rate < -50:
+            summary["major_concerns"].append(f"Drastic liability reduction ({rate}% change)")
+    
+    for metric, rate, quality in concern_metrics[:2]:
+        if "Investment" in metric and metric not in [m[0] for m in critical_metrics]:
+            summary["major_concerns"].append(f"Investment contraction ({rate}% decrease)")
+        elif "Reserves" in metric and metric not in [m[0] for m in critical_metrics]:
+            summary["major_concerns"].append(f"Reserve decline ({rate}% reduction)")
+    
+    # Strategic recommendations
+    if any("Investment" in metric for metric, _, _ in critical_metrics + concern_metrics):
+        summary["strategic_recommendations"].append("Review investment strategy and portfolio allocation")
+    
+    if any("Reserves" in metric for metric, _, _ in critical_metrics + concern_metrics):
+        summary["strategic_recommendations"].append("Assess reserve adequacy and utilization strategy")
+    
+    if strength_metrics and any("Cash" in metric for metric, _, _ in strength_metrics):
+        summary["strategic_recommendations"].append("Leverage strong liquidity for strategic investments")
+    
+    if not summary["strategic_recommendations"]:
+        summary["strategic_recommendations"].append("Maintain current financial strategy with continued monitoring")
+    
+    # Outlook
+    if critical_metrics:
+        summary["outlook"] = "Challenging outlook requiring strategic intervention"
+    elif strength_metrics and not concern_metrics:
+        summary["outlook"] = "Positive outlook with continued growth potential"
+    else:
+        summary["outlook"] = "Stable outlook with opportunities for improvement"
+    
+    return summary
+
+# ------------------------------
+# 🔹 Main Parallel API Endpoint
 # ------------------------------
 
 @csrf_exempt
 def process_financial_statements_api(request):
-    """API endpoint to process 3+ years of financial statements - focused on 10 critical trends."""
+    """API endpoint to process 3+ years of financial statements - PARALLEL VERSION."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
@@ -1094,79 +1182,44 @@ def process_financial_statements_api(request):
         return JsonResponse({'error': 'No API key provided. Please provide GENIE_API_KEY or GOOGLE_API_KEY.'}, status=400)
 
     os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-    combined_data = {}
-    file_metadata = []
 
     try:
-        for uploaded_file in uploaded_files:
-            unique_name = str(uuid.uuid4())
-            ext = os.path.splitext(uploaded_file.name)[1].lower()
-            file_name = uploaded_file.name
+        # 🔥 PARALLEL PROCESSING: Process all files concurrently
+        file_results = process_files_parallel(uploaded_files, api_key, settings.MEDIA_ROOT)
+        
+        if not file_results:
+            return JsonResponse({"error": "No data extracted from files."}, status=400)
 
-            if ext not in ['.pdf', '.xlsx', '.xls']:
-                continue
-
-            # Extract year from filename
-            year_match = re.search(r'(20\d{2})', file_name)
-            year = year_match.group(1) if year_match else f"Year_{len(file_metadata)+1}"
-
-            file_path = os.path.join(settings.MEDIA_ROOT, f"{unique_name}{ext}")
-            with open(file_path, 'wb+') as dest:
-                for chunk in uploaded_file.chunks():
-                    dest.write(chunk)
-
-            print(f"Processing {file_name} (detected year: {year}) ...")
-
-            # Process document
-            documents = load_financial_document(file_path)
-            if not documents:
-                print(f"Failed to load document: {file_name}")
-                continue
-
-            context_text = prepare_context_smart(documents)
-            if len(context_text.strip()) < 100:
-                print(f" Insufficient context extracted from: {file_name}")
-                continue
-
-            extraction = extract_raw_financial_data(context_text, api_key)
-            if not extraction.get("success"):
-                print(f"Data extraction failed for: {file_name}")
-                continue
-
-            # Extract ALL years data
-            yearly_data = extract_all_years_data(extraction, year)
+        # Combine data from all processed files
+        combined_data = {}
+        file_metadata = []
+        
+        for result in file_results:
+            file_metadata.append({
+                "filename": result["filename"],
+                "year": result["year"],
+                "company_name": result.get("company_name"),
+                "ticker_symbol": result.get("ticker_symbol"),
+                "items_extracted": result["items_extracted"],
+                "years_found": result["years_found"]
+            })
             
-            # Merge the extracted data into combined_data
-            for metric, year_values in yearly_data.items():
+            # Merge yearly data
+            for metric, year_values in result["yearly_data"].items():
                 if metric not in combined_data:
                     combined_data[metric] = {}
                 combined_data[metric].update(year_values)
 
-            file_metadata.append({
-                "filename": file_name,
-                "year": year,
-                "company_name": extraction.get("company_name"),
-                "ticker_symbol": extraction.get("ticker_symbol"),
-                "items_extracted": len(extraction.get("financial_items", [])),
-                "years_found": len(yearly_data)
-            })
+        print(f" Combined data from {len(file_results)} files: {len(combined_data)} metrics")
 
-            # Cleanup
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-        if not combined_data:
-            return JsonResponse({"error": "No data extracted from files."}, status=400)
-
-        print(f"📊 Combined data: {len(combined_data)} metrics across multiple years")
-        
         # Format data for trend analysis
         formatted_items = [
             {"metric": metric, "yearly_values": yearly_vals}
             for metric, yearly_vals in combined_data.items()
         ]
 
-        print(f"📈 Analyzing 10 CRITICAL financial trends from {len(formatted_items)} total metrics...")
+        # Generate trends (this part is already optimized)
+        print(f"Analyzing 10 CRITICAL financial trends from {len(formatted_items)} total metrics...")
         trend_result = generate_trends_from_data(formatted_items, api_key)
 
         # Calculate data quality summary
@@ -1195,7 +1248,9 @@ def process_financial_statements_api(request):
                 "data_quality_summary": quality_counts,
                 "focus": "10_critical_financial_trends",
                 "overall_assessment": brief_summary,
-                "executive_summary": executive_summary
+                "executive_summary": executive_summary,
+                "processing_method": "parallel_threading",
+                "performance_note": f"Processed {len(uploaded_files)} files in parallel for faster results"
             },
             "trends": trend_result,
             "metadata": {
@@ -1206,8 +1261,8 @@ def process_financial_statements_api(request):
             }
         }
 
-        print("10 Critical financial trends analysis complete!")
-        print(f"Overall Assessment: {brief_summary}")
+        print(" 10 Critical financial trends analysis complete with parallel processing!")
+        print(f" Overall Assessment: {brief_summary}")
         return JsonResponse(final_result, status=200)
 
     except Exception as e:
@@ -1216,3 +1271,21 @@ def process_financial_statements_api(request):
             "error": f"Processing failed: {str(e)}",
             "success": False
         }, status=500)
+
+# ------------------------------
+# 🔹 Views
+# ------------------------------
+
+def upload_file_view(request):
+    """Renders the file upload form."""
+    return render(request, 'trends/upload.html')
+
+def detect_file_type(file_path):
+    """Detect file type based on extension"""
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        return 'PDF'
+    elif ext in ['.xlsx', '.xls']:
+        return 'Excel'
+    else:
+        return 'Unknown'

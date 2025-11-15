@@ -1,287 +1,326 @@
-import yfinance as yf
-import pandas as pd
-from typing import Dict, List, Optional
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 import json
+import pandas as pd
+import yfinance as yf
 from django.core.cache import cache
 import concurrent.futures
+import threading
+import time
+import logging
+from datetime import datetime
 
-# Enhanced Indian sectors with more representative stocks
+logger = logging.getLogger(__name__)
+
+# Use simpler, more reliable stock symbols (without .NS for better compatibility)
 SECTORS = {
-    "Technology": [
-        "TCS.NS", "INFY.NS", "WIPRO.NS", "HCLTECH.NS", "LT.NS",
-        "TECHM.NS", "MINDTREE.NS", "MPHASIS.NS", "COFORGE.NS", "PERSISTENT.NS",
-        "HEXAWARE.NS", "NIITTECH.NS", "CYIENT.NS", "MINDTREE.NS", "LTTS.NS",
-        "OFSS.NS", "REDINGTON.NS", "SONATSOFTW.NS", "ZENSARTECH.NS", "KPITTECH.NS"
-    ],
-    "Banking": [
-        "HDFCBANK.NS", "ICICIBANK.NS", "KOTAKBANK.NS", "AXISBANK.NS", "SBIN.NS",
-        "INDUSINDBK.NS", "BANDHANBNK.NS", "FEDERALBNK.NS", "IDFCFIRSTB.NS", "AUBANK.NS",
-        "RBLBANK.NS", "YESBANK.NS", "PNB.NS", "BANKBARODA.NS", "CANBK.NS",
-        "UNIONBANK.NS", "IOB.NS", "UCOBANK.NS", "CENTRALBK.NS", "MAHABANK.NS"
-    ],
-    "Pharma": [
-        "DRREDDY.NS", "SUNPHARMA.NS", "CIPLA.NS", "DIVISLAB.NS", "BIOCON.NS",
-        "LUPIN.NS", "CADILAHC.NS", "AUROPHARMA.NS", "TORNTPHARM.NS", "ALKEM.NS",
-        "GLENMARK.NS", "LALPATHLAB.NS", "FORTIS.NS", "APOLLOHOSP.NS", "NATCOPHARM.NS",
-        "GRANULES.NS", "LAURUSLABS.NS", "AJANTPHARM.NS", "STAR.NS", "JBCHEPHARM.NS"
-    ],
-    "Energy": [
-        "RELIANCE.NS", "IOC.NS", "ONGC.NS", "NTPC.NS", "POWERGRID.NS",
-        "TATAPOWER.NS", "ADANIGREEN.NS", "ADANITRANS.NS", "TATAPOWER.NS", "GAIL.NS",
-        "BPCL.NS", "HPCL.NS", "PETRONET.NS", "IGL.NS", "MGL.NS",
-        "GUJGASLTD.NS", "TORNTPOWER.NS", "JSWENERGY.NS", "NHPC.NS", "SJVN.NS"
-    ],
-    "Consumer Goods": [
-        "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "BRITANNIA.NS", "TITAN.NS",
-        "DABUR.NS", "GODREJCP.NS", "MARICO.NS", "COLPAL.NS", "EMAMILTD.NS",
-        "BAJAJCON.NS", "VBL.NS", "MCDOWELL-N.NS", "RADICO.NS", "UNITEDSPIRIT.NS",
-        "JUBLFOOD.NS", "WESTLIFE.NS", "BATAINDIA.NS", "V-MART.NS", "TRENT.NS"
-    ],
-    "Automobile": [
-        "MARUTI.NS", "TATAMOTORS.NS", "M&M.NS", "BAJAJ-AUTO.NS", "HEROMOTOCO.NS",
-        "EICHERMOT.NS", "ASHOKLEY.NS", "TVSMOTOR.NS", "BALKRISIND.NS", "EXIDEIND.NS",
-        "AMARAJABAT.NS", "MOTHERSON.NS", "BHARATFORG.NS", "BOSCHLTD.NS", "MRF.NS",
-        "APOLLOTYRE.NS", "CEATLTD.NS", "MAHINDRA.NS", "FORCEMOT.NS", "SONACOMS.NS"
-    ],
-    "Infrastructure": [
-        "LARSEN.NS", "ADANIPORTS.NS", "ADANIENT.NS", "ULTRACEMCO.NS", "ACC.NS",
-        "AMBUJACEM.NS", "SHREECEM.NS", "RAMCOCEM.NS", "JKCEMENT.NS", "GRASIM.NS",
-        "JSWSTEEL.NS", "TATASTEEL.NS", "SAIL.NS", "HINDALCO.NS", "VEDL.NS",
-        "NATIONALUM.NS", "HINDZINC.NS", "APLAPOLLO.NS", "KALYANKJIL.NS", "ASTRAZEN.NS"
-    ],
-    "Financial Services": [
-        "HDFC.NS", "ICICIPRULI.NS", "SBILIFE.NS", "HDFCLIFE.NS", "BAJFINANCE.NS",
-        "BAJAJFINSV.NS", "CHOLAFIN.NS", "SRTRANSFIN.NS", "MUTHOOTFIN.NS", "MANAPPURAM.NS",
-        "RECLTD.NS", "PFC.NS", "HUDCO.NS", "IRFC.NS", "SBICARD.NS",
-        "ICICIGI.NS", "NIACL.NS", "GICRE.NS", "BERGEPAINT.NS", "ASIANPAINT.NS"
-    ],
-    "Real Estate": [
-        "DLF.NS", "PRESTIGE.NS", "SOBHA.NS", "BRIGADE.NS", "GODREJPROP.NS",
-        "OBEROIRLTY.NS", "PHOENIXLTD.NS", "MOTHERSON.NS", "INDIGO.NS", "SPICEJET.NS"
-    ],
-    "Telecom": [
-        "BHARTIARTL.NS", "RELIANCE.NS", "IDEA.NS", "MTNL.NS", "TATACOMM.NS"
-    ],
-    "Metals & Mining": [
-        "TATASTEEL.NS", "HINDALCO.NS", "VEDL.NS", "JSWSTEEL.NS", "NATIONALUM.NS",
-        "HINDZINC.NS", "MOIL.NS", "NMDC.NS", "COALINDIA.NS", "SAIL.NS"
-    ],
-    "Chemicals": [
-        "PIDILITIND.NS", "BASF.NS", "PIIND.NS", "SRF.NS", "TATACHEM.NS",
-        "UPL.NS", "COROMANDEL.NS", "RALLIS.NS", "DEEPAKNTR.NS", "GSFC.NS"
-    ]
+    "Technology": ["TCS", "INFY", "WIPRO", "HCLTECH"],
+    "Banking": ["HDFCBANK", "ICICIBANK", "KOTAKBANK", "AXISBANK"],
+    "Pharma": ["DRREDDY", "SUNPHARMA", "CIPLA", "DIVISLAB"],
+    "Energy": ["RELIANCE", "ONGC", "NTPC", "TATAPOWER"],
 }
-def safe_get(data, key, default=0):
-    """Safely get value from financial data with fallback."""
-    try:
-        if key in data.index:
-            return data.loc[key].iloc[0] if not data.loc[key].empty else default
-        return default
-    except (KeyError, IndexError, AttributeError):
-        return default
 
-def calculate_company_ratios(ticker: str) -> Optional[Dict]:
-    """Calculate financial ratios for a single company."""
-    try:
-        company = yf.Ticker(ticker)
-        
-        # Get financial data with error handling
-        bs = company.balance_sheet
-        isheet = company.financials
-        
-        # Check if data is available
-        if bs.empty or isheet.empty:
-            print(f"No financial data for {ticker}")
-            return None
+# Global variable to track data fetching status
+data_fetching_status = {
+    'is_fetching': False,
+    'last_fetch_time': None,
+    'cached_data': None,
+    'error_count': 0
+}
+
+def get_ticker_symbol(ticker):
+    """Convert ticker to proper format for yfinance"""
+    # Try with .NS suffix first, then without
+    return f"{ticker}.NS"
+
+def fetch_stock_data_simple(ticker):
+    """Simplified stock data fetching with robust error handling"""
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            # Try with .NS suffix
+            ticker_symbol = get_ticker_symbol(ticker)
+            stock = yf.Ticker(ticker_symbol)
             
-        # Use safe extraction with fallbacks
-        current_assets = safe_get(bs, 'Current Assets', 
-                        safe_get(bs, 'Total Current Assets', 1))
-        inventory = safe_get(bs, 'Inventory', 0)
-        current_liabilities = safe_get(bs, 'Current Liabilities', 
-                             safe_get(bs, 'Total Current Liabilities', 1))
-        long_term_debt = safe_get(bs, 'Long Term Debt', 0)
-        short_term_debt = safe_get(bs, 'Short Long Term Debt', 
-                         safe_get(bs, 'Short Term Debt', 0))
-        total_debt = long_term_debt + short_term_debt
-        equity = safe_get(bs, 'Total Stockholder Equity', 1)
-        total_assets = safe_get(bs, 'Total Assets', 1)
-        revenue = safe_get(isheet, 'Total Revenue', 1)
-        net_income = safe_get(isheet, 'Net Income', 0)
+            # Get basic info quickly
+            info = stock.info
+            hist = stock.history(period="1d", interval="1m")
+            
+            if hist.empty:
+                # Try without .NS suffix as fallback
+                if attempt == 0 and ticker_symbol.endswith('.NS'):
+                    ticker_symbol = ticker
+                    stock = yf.Ticker(ticker_symbol)
+                    info = stock.info
+                    hist = stock.history(period="1d", interval="1m")
+                
+                if hist.empty:
+                    logger.warning(f"No price data found for {ticker_symbol}")
+                    return None
+            
+            current_price = hist['Close'].iloc[-1]
+            prev_close = info.get('previousClose', current_price)
+            
+            # Calculate percentage change safely
+            if prev_close and prev_close > 0:
+                change_percent = ((current_price - prev_close) / prev_close) * 100
+            else:
+                change_percent = 0
+            
+            return {
+                "symbol": ticker,
+                "change_pct": round(change_percent, 2),
+                "price": round(current_price, 2)
+            }
+            
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} failed for {ticker}: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(1)  # Wait before retry
+                continue
+            logger.error(f"Failed to fetch data for {ticker} after {max_retries} attempts: {str(e)}")
+            return None
 
-        # Calculate ratios with safety checks
-        ratios = {
-            "current_ratio": current_assets / current_liabilities if current_liabilities else None,
-            "quick_ratio": (current_assets - inventory) / current_liabilities if current_liabilities else None,
-            "de_ratio": total_debt / equity if equity else None,
-            "asset_turnover": revenue / total_assets if total_assets else None,
-            "roa": net_income / total_assets if total_assets else None,
-            "roe": net_income / equity if equity else None,
-        }
+def fetch_all_sector_data():
+    """Fetch all sector data with comprehensive error handling"""
+    global data_fetching_status
+    
+    logger.info("Starting sector data fetch...")
+    data_fetching_status['is_fetching'] = True
+    data_fetching_status['error_count'] = 0
+    
+    try:
+        sector_data = {}
+        start_time = time.time()
+        successful_fetches = 0
+        total_stocks = sum(len(tickers) for tickers in SECTORS.values())
         
-        # Filter out None values
-        ratios = {k: round(v, 3) if v is not None else None for k, v in ratios.items()}
-        return ratios
+        # Process sectors sequentially to avoid overwhelming the API
+        for sector_name, tickers in SECTORS.items():
+            logger.info(f"Processing sector: {sector_name}")
+            stocks_data = []
+            sector_prices = []
+            sector_changes = []
+            
+            # Process stocks in parallel but with limited workers
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                future_to_ticker = {
+                    executor.submit(fetch_stock_data_simple, ticker): ticker 
+                    for ticker in tickers
+                }
+                
+                for future in concurrent.futures.as_completed(future_to_ticker):
+                    ticker = future_to_ticker[future]
+                    try:
+                        stock_data = future.result(timeout=15)  # 15 second timeout per stock
+                        if stock_data:
+                            stocks_data.append(stock_data)
+                            sector_prices.append(stock_data['price'])
+                            sector_changes.append(stock_data['change_pct'])
+                            successful_fetches += 1
+                            logger.info(f"✓ Successfully fetched {ticker}")
+                        else:
+                            data_fetching_status['error_count'] += 1
+                            logger.warning(f"✗ Failed to fetch {ticker}")
+                    except concurrent.futures.TimeoutError:
+                        data_fetching_status['error_count'] += 1
+                        logger.warning(f"✗ Timeout fetching {ticker}")
+                    except Exception as e:
+                        data_fetching_status['error_count'] += 1
+                        logger.error(f"✗ Error processing {ticker}: {str(e)}")
+            
+            # Calculate sector averages if we have data
+            if stocks_data:
+                avg_price = sum(sector_prices) / len(sector_prices)
+                avg_change = sum(sector_changes) / len(sector_changes)
+                
+                sector_data[sector_name] = {
+                    "avg_price": round(avg_price, 2),
+                    "avg_change_pct": round(avg_change, 2),
+                    "stocks": stocks_data,
+                    "companies_count": len(stocks_data)
+                }
+            else:
+                # Create empty sector data
+                sector_data[sector_name] = {
+                    "avg_price": 0,
+                    "avg_change_pct": 0,
+                    "stocks": [],
+                    "companies_count": 0
+                }
+        
+        # Cache the result for 5 minutes
+        cache.set("sector_overview_data", sector_data, 300)
+        data_fetching_status['cached_data'] = sector_data
+        data_fetching_status['is_fetching'] = False
+        data_fetching_status['last_fetch_time'] = time.time()
+        
+        elapsed_time = time.time() - start_time
+        success_rate = (successful_fetches / total_stocks) * 100
+        
+        logger.info(f"Sector data fetch completed in {elapsed_time:.2f} seconds")
+        logger.info(f"Success rate: {success_rate:.1f}% ({successful_fetches}/{total_stocks} stocks)")
+        
+        return sector_data
         
     except Exception as e:
-        print(f"Error processing {ticker}: {e}")
-        return None
-
-def get_sector_avg_ratios(sector: str) -> Dict:
-    """Get average financial ratios for a sector with robust error handling."""
-    cache_key = f"sector_ratios_{sector}"
-    cached_data = cache.get(cache_key)
-    
-    if cached_data:
-        return cached_data
-    
-    tickers = SECTORS.get(sector, [])
-    ratios_list = []
-    
-    # Process up to 10 companies in parallel for performance
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        results = executor.map(calculate_company_ratios, tickers[:10])
-        
-        for ratio in results:
-            if ratio is not None:
-                ratios_list.append(ratio)
-    
-    if not ratios_list:
+        logger.error(f"Critical error in fetch_all_sector_data: {str(e)}")
+        data_fetching_status['is_fetching'] = False
+        data_fetching_status['error_count'] += 1
         return {}
+
+def start_data_fetch_if_needed():
+    """Start data fetch if not already in progress"""
+    global data_fetching_status
+    
+    # Return cached data if available and recent (less than 5 minutes old)
+    cached_data = cache.get("sector_overview_data")
+    if cached_data and data_fetching_status['last_fetch_time']:
+        time_since_last_fetch = time.time() - data_fetching_status['last_fetch_time']
+        if time_since_last_fetch < 300:  # 5 minutes
+            data_fetching_status['cached_data'] = cached_data
+            return cached_data
+    
+    # Start new fetch if not already fetching
+    if not data_fetching_status['is_fetching']:
+        thread = threading.Thread(target=fetch_all_sector_data)
+        thread.daemon = True
+        thread.start()
+    
+    return None
+
+# CORS decorator
+def cors_allow_all(view_func):
+    def wrapped_view(request, *args, **kwargs):
+        if request.method == "OPTIONS":
+            response = JsonResponse({"status": "ok"})
+        else:
+            response = view_func(request, *args, **kwargs)
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
+    return wrapped_view
+
+@csrf_exempt
+@cors_allow_all
+@require_http_methods(["GET", "OPTIONS"])
+def sector_overview_api(request):
+    """
+    Main sector overview API
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({"status": "ok"})
+    
+    try:
+        # Check if we have recent cached data
+        cached_data = start_data_fetch_if_needed()
         
-    # Create DataFrame and calculate averages, ignoring NaN values
-    df = pd.DataFrame(ratios_list)
-    sector_avg = df.mean().to_dict()
-    
-    # Round the values for better presentation
-    sector_avg = {k: round(v, 3) if v is not None else None for k, v in sector_avg.items()}
-    
-    # Cache for 1 hour
-    cache.set(cache_key, sector_avg, 3600)
-    return sector_avg
-
-def compare_with_sector(user_ratios: Dict, sector_avg: Dict) -> Dict:
-    """Compare user ratios with sector averages."""
-    comparison = {}
-    for key, user_val in user_ratios.items():
-        avg_val = sector_avg.get(key)
-        if avg_val and not pd.isna(avg_val):
-            if key in ['de_ratio']:  # lower is better
-                if user_val <= avg_val:
-                    comparison[key] = f"Better than sector average ({user_val:.2f} vs {avg_val:.2f})"
-                else:
-                    comparison[key] = f"Worse than sector average ({user_val:.2f} vs {avg_val:.2f})"
-            else:  # higher is better
-                if user_val >= avg_val:
-                    comparison[key] = f"Better than sector average ({user_val:.2f} vs {avg_val:.2f})"
-                else:
-                    comparison[key] = f"Worse than sector average ({user_val:.2f} vs {avg_val:.2f})"
-        else:
-            comparison[key] = "Sector data not available"
-    return comparison
-
-def interpret_ratios(user_ratios: Dict, sector_avg: Dict) -> Dict:
-    """Provide detailed, professional interpretations for ratio comparisons."""
-    interpretation = {}
-    
-    for key, user_val in user_ratios.items():
-        avg_val = sector_avg.get(key)
+        if cached_data:
+            return JsonResponse(cached_data)
         
-        if avg_val is None or pd.isna(avg_val):
-            interpretation[key] = "Insufficient sector data for meaningful comparison"
-            continue
-
-        # Calculate percentage difference
-        if avg_val != 0:
-            pct_diff = ((user_val - avg_val) / avg_val) * 100
-        else:
-            pct_diff = 0
-
-        if key == "current_ratio":
-            if user_val >= avg_val * 1.2:
-                interpretation[key] = f"Excellent liquidity position ({user_val:.2f}) - significantly stronger than sector average ({avg_val:.2f}). Company has ample short-term assets to cover obligations."
-            elif user_val >= avg_val:
-                interpretation[key] = f"Solid liquidity ({user_val:.2f}) - slightly better than sector ({avg_val:.2f}). Company maintains healthy working capital management."
-            elif user_val >= avg_val * 0.8:
-                interpretation[key] = f"Adequate liquidity ({user_val:.2f}) - slightly below sector ({avg_val:.2f}). Monitor short-term obligations carefully."
-            else:
-                interpretation[key] = f"Potential liquidity concern ({user_val:.2f}) - significantly below sector ({avg_val:.2f}). May face challenges meeting short-term liabilities."
-
-        elif key == "quick_ratio":
-            if user_val >= avg_val * 1.2:
-                interpretation[key] = f"Strong immediate liquidity ({user_val:.2f}) - well above sector ({avg_val:.2f}). Company can easily meet urgent obligations without selling inventory."
-            elif user_val >= avg_val:
-                interpretation[key] = f"Good acid-test position ({user_val:.2f}) - matches sector standards ({avg_val:.2f}). Healthy balance of liquid assets to liabilities."
-            elif user_val >= avg_val * 0.8:
-                interpretation[key] = f"Moderate quick liquidity ({user_val:.2f}) - below sector ({avg_val:.2f}). Relies more on inventory conversion for liquidity."
-            else:
-                interpretation[key] = f"Quick liquidity risk ({user_val:.2f}) - substantially below sector ({avg_val:.2f}). High dependency on inventory sales to meet immediate obligations."
-
-        elif key == "de_ratio":
-            if user_val <= avg_val * 0.8:
-                interpretation[key] = f"Conservative capital structure ({user_val:.2f}) - significantly lower leverage than sector ({avg_val:.2f}). Lower financial risk and interest burden."
-            elif user_val <= avg_val:
-                interpretation[key] = f"Prudent debt management ({user_val:.2f}) - slightly better than sector ({avg_val:.2f}). Balanced use of debt financing."
-            elif user_val <= avg_val * 1.2:
-                interpretation[key] = f"Moderate leverage ({user_val:.2f}) - higher than sector ({avg_val:.2f}). Acceptable risk level but monitor interest coverage."
-            else:
-                interpretation[key] = f"High financial leverage ({user_val:.2f}) - substantially above sector ({avg_val:.2f}). Elevated bankruptcy risk and financial stress potential."
-
-        elif key == "asset_turnover":
-            if user_val >= avg_val * 1.2:
-                interpretation[key] = f"Exceptional asset efficiency ({user_val:.2f}) - significantly outperforms sector ({avg_val:.2f}). Company generates strong revenue from its asset base."
-            elif user_val >= avg_val:
-                interpretation[key] = f"Effective asset utilization ({user_val:.2f}) - above sector average ({avg_val:.2f}). Good operational efficiency in generating sales."
-            elif user_val >= avg_val * 0.8:
-                interpretation[key] = f"Moderate asset efficiency ({user_val:.2f}) - below sector norm ({avg_val:.2f}). Potential for better asset management or industry positioning."
-            else:
-                interpretation[key] = f"Poor asset utilization ({user_val:.2f}) - significantly trails sector ({avg_val:.2f}). Assets may be underutilized or business model less efficient."
-
-        elif key == "roa":
-            if user_val >= avg_val * 1.2:
-                interpretation[key] = f"Outstanding asset profitability ({user_val:.1f}%) - well above sector ({avg_val:.1f}%). Excellent management of assets to generate profits."
-            elif user_val >= avg_val:
-                interpretation[key] = f"Strong return on assets ({user_val:.1f}%) - exceeds sector ({avg_val:.1f}%). Efficient conversion of assets into earnings."
-            elif user_val >= avg_val * 0.8:
-                interpretation[key] = f"Moderate asset returns ({user_val:.1f}%) - below sector ({avg_val:.1f}%). Room for improvement in asset profitability."
-            else:
-                interpretation[key] = f"Concerning ROA ({user_val:.1f}%) - significantly lags sector ({avg_val:.1f}%). Assets are not generating adequate returns."
-
-        elif key == "roe":
-            if user_val >= avg_val * 1.2:
-                interpretation[key] = f"Exceptional shareholder returns ({user_val:.1f}%) - substantially above sector ({avg_val:.1f}%). Highly effective at generating profits from equity."
-            elif user_val >= avg_val:
-                interpretation[key] = f"Strong equity efficiency ({user_val:.1f}%) - outperforms sector ({avg_val:.1f}%). Good returns for shareholders' investment."
-            elif user_val >= avg_val * 0.8:
-                interpretation[key] = f"Moderate equity returns ({user_val:.1f}%) - below sector expectations ({avg_val:.1f}%). Could improve profitability relative to equity base."
-            else:
-                interpretation[key] = f"Weak ROE performance ({user_val:.1f}%) - significantly trails sector ({avg_val:.1f}%). Poor utilization of shareholder capital."
-
-        else:
-            interpretation[key] = "Ratio analysis not available"
+        # If data is being fetched, wait for it
+        max_wait_time = 45  # 45 seconds max
+        poll_interval = 3   # Check every 3 seconds
+        
+        for i in range(max_wait_time // poll_interval):
+            time.sleep(poll_interval)
             
-    return interpretation
+            # Check if data is now available
+            if (data_fetching_status['cached_data'] and 
+                not data_fetching_status['is_fetching']):
+                return JsonResponse(data_fetching_status['cached_data'])
+            
+            # Check if fetching failed
+            if (not data_fetching_status['is_fetching'] and 
+                not data_fetching_status['cached_data']):
+                break
+        
+        # Return whatever we have or empty data
+        final_data = data_fetching_status['cached_data'] or {}
+        return JsonResponse(final_data)
+        
+    except Exception as e:
+        logger.error(f"Error in sector_overview_api: {str(e)}")
+        return JsonResponse({
+            "error": "Unable to fetch sector data at this time",
+            "sectors": {}
+        }, status=500)
 
-def get_overall_assessment(comparison: Dict, interpretation: Dict) -> str:
-    """Provide an overall financial health assessment."""
-    positive_count = 0
-    total_count = 0
+@csrf_exempt
+@cors_allow_all
+@require_http_methods(["GET", "OPTIONS"])
+def sector_status_api(request):
+    """API to check current data fetching status"""
+    global data_fetching_status
     
-    for key, comp_text in comparison.items():
-        if "Better" in comp_text or "strong" in interpretation[key].lower() or "excellent" in interpretation[key].lower():
-            positive_count += 1
-        total_count += 1
+    cached_data = cache.get("sector_overview_data")
+    has_cached_data = cached_data is not None and bool(cached_data)
     
-    if total_count == 0:
-        return "Insufficient data for overall assessment"
+    # Calculate progress
+    total_stocks = sum(len(tickers) for tickers in SECTORS.values())
+    fetched_stocks = 0
+    if data_fetching_status['cached_data']:
+        for sector_data in data_fetching_status['cached_data'].values():
+            fetched_stocks += len(sector_data.get('stocks', []))
     
-    positive_ratio = positive_count / total_count
+    progress = (fetched_stocks / total_stocks * 100) if total_stocks > 0 else 0
     
-    if positive_ratio >= 0.7:
-        return "Overall: STRONG financial health - Company outperforms sector peers in most metrics"
-    elif positive_ratio >= 0.5:
-        return "Overall: GOOD financial health - Company meets or exceeds sector standards"
-    elif positive_ratio >= 0.3:
-        return "Overall: MIXED financial health - Some strengths but areas need improvement"
-    else:
-        return "Overall: WEAK financial health - Significant underperformance vs sector peers"
+    return JsonResponse({
+        "is_fetching": data_fetching_status['is_fetching'],
+        "has_cached_data": has_cached_data,
+        "progress": round(progress),
+        "fetched_stocks": fetched_stocks,
+        "total_stocks": total_stocks,
+        "error_count": data_fetching_status['error_count'],
+        "sectors_ready": list(data_fetching_status['cached_data'].keys()) if data_fetching_status['cached_data'] else [],
+        "timestamp": datetime.now().isoformat()
+    })
+
+@csrf_exempt
+@cors_allow_all
+@require_http_methods(["GET", "OPTIONS"])
+def available_sectors_api(request):
+    """API endpoint to get list of available sectors"""
+    return JsonResponse({
+        "success": True,
+        "sectors": list(SECTORS.keys()),
+        "total_stocks": sum(len(tickers) for tickers in SECTORS.values()),
+        "timestamp": datetime.now().isoformat()
+    })
+
+@csrf_exempt
+@cors_allow_all
+@require_http_methods(["GET", "OPTIONS"])
+def health_check(request):
+    """Health check endpoint"""
+    return JsonResponse({
+        "status": "healthy", 
+        "message": "Backend is running",
+        "sectors_configured": len(SECTORS),
+        "timestamp": datetime.now().isoformat()
+    })
+
+@csrf_exempt
+@cors_allow_all
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def force_refresh_api(request):
+    """Force refresh of sector data"""
+    global data_fetching_status
+    
+    # Clear cache and start new fetch
+    cache.delete("sector_overview_data")
+    data_fetching_status['is_fetching'] = False
+    data_fetching_status['cached_data'] = None
+    data_fetching_status['error_count'] = 0
+    
+    # Start new fetch
+    start_data_fetch_if_needed()
+    
+    return JsonResponse({
+        "status": "refresh_started",
+        "message": "Data refresh initiated",
+        "timestamp": datetime.now().isoformat()
+    })

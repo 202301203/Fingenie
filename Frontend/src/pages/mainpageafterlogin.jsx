@@ -16,6 +16,7 @@ import {
   BookOpen,
   Cpu,
   GitCompare,
+  Building2, // Added for Sector Overview icon
 } from "lucide-react";
 import CustomTiltCard from "../components/ui/CustomTiltCard";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -99,7 +100,6 @@ export default function FinGenieLanding() {
             onMouseLeave={() => setShowToolsDropdown(false)}
           >
             <Wrench size={24} color="black" style={styles.userIcon} />
-            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
 
             {showToolsDropdown && (
               <div style={styles.dropdown}>
@@ -121,8 +121,7 @@ export default function FinGenieLanding() {
                 </div>
                 <div style={styles.dropdownItem}
                 onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to dashboard on logout
+                  navigate("/FileUploadApp");
                 }}
                 >
                   <Cpu size={16} />
@@ -160,11 +159,10 @@ export default function FinGenieLanding() {
                 </div>
 
                 {/* Sign out */}
-                   <div
+                <div
                   style={styles.dropdownItem}
                   onClick={() => {
-                    // (Optional) clear user data or tokens here
-                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                    navigate("/homepage_beforelogin");
                   }}
                 >
                   <LogOut size={16} />
@@ -198,8 +196,7 @@ export default function FinGenieLanding() {
               <div
                 style={styles.aiBlock}
                 onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to AI Summary
+                  navigate("/FileUploadApp");
                 }}
               >
                 <h1 style={styles.blockTitle}>AI Summary Generator</h1>
@@ -242,8 +239,7 @@ export default function FinGenieLanding() {
             <CustomTiltCard rotateAmplitude={15}>
               <div style={styles.chartsBlock}
                onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/Trends_KPI"); // Redirect to Trends and KPI page 
+                  navigate("/Trends_KPI");
                 }}  
               >
                 <div style={styles.iconBackground}>
@@ -259,7 +255,25 @@ export default function FinGenieLanding() {
             </CustomTiltCard>
           </div>
 
-          <div style={styles.bottomRow}>
+          {/* NEW: Sector Overview Row */}
+          <div style={styles.sectorRow}>
+            <CustomTiltCard rotateAmplitude={15}>
+              <div 
+                style={styles.sectorBlock}
+                onClick={() => {
+                  navigate("/sectorOverview");
+                }}
+              >
+                <div style={styles.iconBackground}>
+                  <Building2 size={280} color="#4A6572" />
+                </div>
+                <h3 style={styles.blockTitle}>Sector Overview</h3>
+                <p style={styles.blockText}>
+                  Analyze market sectors with real-time performance data and company comparisons.
+                </p>
+              </div>
+            </CustomTiltCard>
+
             <CustomTiltCard rotateAmplitude={15}>
               <div style={styles.searchBlock}>
                 <div style={styles.iconBackground}>
@@ -277,25 +291,26 @@ export default function FinGenieLanding() {
         </div>
       </div>
 
-       <footer style={styles.footer}>
-  <div style={styles.footerLeft}>
-    <p style={styles.copyright}>
+      <footer style={styles.footer}>
+        <div style={styles.footerLeft}>
+          <p style={styles.copyright}>
             © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
           </p>
-  </div>
+        </div>
 
-  <div style={styles.footerRight}>
-    <h4 style={styles.functionsTitle}>Functions</h4>
-    <ul style={styles.functionsList}>
-      <li style={styles.functionsItem}>AI summary</li>
-      <li style={styles.functionsItem}>stock graphs</li>
-      <li style={styles.functionsItem}>Debt ratings</li>
-      <li style={styles.functionsItem}>search companies</li>
-      <li style={styles.functionsItem}>Blog Page</li>
-      <li style={styles.functionsItem}>Charts & KPIs</li>
-    </ul>
-  </div>
-</footer>
+        <div style={styles.footerRight}>
+          <h4 style={styles.functionsTitle}>Functions</h4>
+          <ul style={styles.functionsList}>
+            <li style={styles.functionsItem}>AI summary</li>
+            <li style={styles.functionsItem}>stock graphs</li>
+            <li style={styles.functionsItem}>Debt ratings</li>
+            <li style={styles.functionsItem}>search companies</li>
+            <li style={styles.functionsItem}>Blog Page</li>
+            <li style={styles.functionsItem}>Charts & KPIs</li>
+            <li style={styles.functionsItem}>Sector Overview</li> {/* Added */}
+          </ul>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -311,12 +326,12 @@ const styles = {
 
   arcTop: {
     position: "absolute",
-    left: "-400px", // move a bit more to the left
+    left: "-400px",
     top: "-200px",
-    width: "1106px", // make bigger
+    width: "1106px",
     height: "900px",
     borderRadius: "50%",
-    border: "5px solid transparent", // thicker border, but transparent
+    border: "5px solid transparent",
     background: `
       linear-gradient(#f6f6f6, #eeeeee) padding-box, 
       linear-gradient(135deg, #9DAAC6, #1F2634) border-box
@@ -333,12 +348,12 @@ const styles = {
     padding: "2rem 4rem",
     position: "relative",
     zIndex: 10,
-    background: "rgba(255, 255, 255, 0.2)", // Semi-transparent white
-    backdropFilter: "blur(10px)", // Blur background
-    WebkitBackdropFilter: "blur(10px)", // Safari support
+    background: "rgba(255, 255, 255, 0.2)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
     borderRadius: "15px",
-    border: "1px solid rgba(255, 255, 255, 0.3)", // Subtle border
-    boxShadow: "0 8px 32px 0 rgba(255, 255, 255, 0.1)", // Soft glow shadow
+    border: "1px solid rgba(255, 255, 255, 0.3)",
+    boxShadow: "0 8px 32px 0 rgba(255, 255, 255, 0.1)",
     borderBottom: "2px solid black",
     color: "white",
   },
@@ -443,9 +458,10 @@ const styles = {
     gap: "1.5rem",
   },
 
-  bottomRow: {
+  // NEW: Sector Overview Row
+  sectorRow: {
     display: "grid",
-    gridTemplateColumns: "1fr",
+    gridTemplateColumns: "1fr 1fr",
     gap: "1.5rem",
   },
 
@@ -454,8 +470,8 @@ const styles = {
     top: "50%",
     left: "100px",
     transform: "translateY(-50%)",
-    opacity: 0.5, // soft transparency
-    zIndex: 1, // stays above background, below text
+    opacity: 0.5,
+    zIndex: 1,
     pointerEvents: "none",
   },
 
@@ -473,6 +489,7 @@ const styles = {
     overflow: "hidden",
     backgroundColor: "#4D5C61",
     backgroundImage: "linear-gradient(135deg, #4D5C61 0%, #5a6b72 100%)",
+    cursor: "pointer",
   },
 
   debtBlock: {
@@ -522,6 +539,28 @@ const styles = {
     overflow: "hidden",
     backgroundColor: "#D1DFDF",
     backgroundImage: "linear-gradient(135deg, #D1DFDF 0%, #e1ecec 100%)",
+    cursor: "pointer",
+  },
+
+  // NEW: Sector Overview Block
+  sectorBlock: {
+    padding: "2rem",
+    borderRadius: "16px",
+    minHeight: "200px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+    transition: "transform 0.3s, box-shadow 0.3s",
+    position: "relative",
+    overflow: "hidden",
+    backgroundColor: "#556B82",
+    backgroundImage: "linear-gradient(135deg, #556B82 0%, #6A7F94 100%)",
+    cursor: "pointer",
+    '&:hover': {
+      transform: "translateY(-2px)",
+      boxShadow: "0 8px 20px rgba(0, 0, 0, 0.12)",
+    },
   },
 
   searchBlock: {
@@ -613,7 +652,7 @@ const styles = {
     padding: 0,
     display: "grid",
     gridTemplateColumns: "3.5fr 1fr",
-    textAlign: "right", // ✅ right text alignment
+    textAlign: "right",
     gap: "6px 0px",
   },
 
@@ -662,8 +701,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     cursor: "pointer",
-    marginLeft: "1rem", // spacing between menus
+    marginLeft: "1rem",
     color: "Black",
   },
 };
-

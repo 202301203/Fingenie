@@ -20,8 +20,6 @@ import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import jsPDF from 'jspdf';
 
-// ... other imports remain the same
-
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
   const [selectedRatio, setSelectedRatio] = useState(1);
@@ -61,9 +59,9 @@ export default function FinGenieApp() {
         // Check if we have data from location state (from upload)
         const locationData = location.state;
         
+        let response;
         if (locationData && locationData.report_id) {
-          // If we have report_id from upload, fetch the full report
-          const response = await fetch(`http://127.0.0.1:8000/dataprocessor/api/reports/${locationData.report_id}/`, {
+          response = await fetch(`http://127.0.0.1:8000/dataprocessor/api/reports/${locationData.report_id}/`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -71,18 +69,8 @@ export default function FinGenieApp() {
             },
             credentials: 'include',
           });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-
-          const reportData = await response.json();
-          setCompanyData(reportData);
-          setFinancialRatios(reportData.ratios || []);
         } else {
-          // Fetch latest report
-          const response = await fetch('http://127.0.0.1:8000/dataprocessor/api/latest-report/', {
+          response = await fetch('http://127.0.0.1:8000/dataprocessor/api/latest-report/', {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -90,16 +78,18 @@ export default function FinGenieApp() {
             },
             credentials: 'include',
           });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-
-          const data = await response.json();
-          setCompanyData(data);
-          setFinancialRatios(data.ratios || []);
         }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('API Response:', data); // Debug log
+        
+        setCompanyData(data);
+        setFinancialRatios(data.ratios || []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message || 'Failed to load company data');
@@ -259,20 +249,21 @@ export default function FinGenieApp() {
           
           pdf.setFontSize(12);
           pdf.setTextColor(0, 0, 128);
-          pdf.text(`${index + 1}. ${ratio.name}`, 40, yPosition);
+          pdf.text(`${index + 1}. ${ratio.ratio_name || `Ratio ${index + 1}`}`, 40, yPosition);
           yPosition += 20;
           
           pdf.setFontSize(10);
           pdf.setTextColor(0, 0, 0);
-          pdf.text(`Formula: ${ratio.formula}`, 50, yPosition);
+          pdf.text(`Formula: ${ratio.formula || 'N/A'}`, 50, yPosition);
           yPosition += 15;
-          pdf.text(`Calculation: ${ratio.calculation}`, 50, yPosition);
+          pdf.text(`Calculation: ${ratio.calculation || 'N/A'}`, 50, yPosition);
           yPosition += 15;
-          pdf.text(`Result: ${ratio.result}`, 50, yPosition);
+          pdf.text(`Result: ${ratio.result || 'N/A'}`, 50, yPosition);
           yPosition += 15;
           
           // Split interpretation text
-          const interpretationLines = pdf.splitTextToSize(`Interpretation: ${ratio.interpretation}`, 500);
+          const interpretation = ratio.interpretation || 'No interpretation available';
+          const interpretationLines = pdf.splitTextToSize(`Interpretation: ${interpretation}`, 500);
           interpretationLines.forEach(line => {
             if (yPosition > 700) {
               pdf.addPage();
@@ -294,24 +285,172 @@ export default function FinGenieApp() {
     }
   };
 
-  // Header Component (unchanged)
+  // Header Component
   const Header = () => (
     <header style={styles.header}>
-      {/* ... header code remains the same ... */}
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+          <img
+            src={fglogo_Wbg}
+            style={{ height: "80px", width: "auto" }}
+            alt="logo"
+          />
+        </div>
+      </div>
+
+      <nav style={styles.nav}>
+        {/* Home */}
+        <span
+          style={styles.navLink}
+          onClick={() => navigate("/mainpageafterlogin")}
+        >
+          Home
+        </span>
+
+        {/* News */}
+        <span
+          style={styles.navLink}
+          onClick={() => navigate("/NewsPage")}
+        >
+          News
+        </span>
+
+        {/* About */}
+        <span
+          style={styles.navLink}
+          onClick={() => navigate("/AboutUs")}
+        >
+          About us
+        </span>
+
+        {/* Tools Menu */}
+        <div
+          style={styles.toolsMenu}
+          onMouseEnter={() => setShowToolsDropdown(true)}
+          onMouseLeave={() => setShowToolsDropdown(false)}
+        >
+          <Wrench size={24} color="black" style={styles.userIcon} />
+
+          {showToolsDropdown && (
+            <div style={styles.dropdown}>
+              <div style={styles.dropdownItem}>
+                <TrendingUp size={16} />
+                <span>Debt Ratings</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Search size={16} />
+                <span>Search Companies</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Activity size={16} />
+                <span>Charts & KPIs</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <BookOpen size={16} />
+                <span>Blog Page</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Cpu size={16} />
+                <span>AI Summary</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <GitCompare size={16} />
+                <span>Comparison</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Menu */}
+        <div
+          style={styles.userMenu}
+          onMouseEnter={() => setShowDropdown(true)}
+          onMouseLeave={() => setShowDropdown(false)}
+        >
+          <User size={24} color="black" style={styles.userIcon} />
+
+          {showDropdown && (
+            <div style={styles.dropdown}>
+              <div style={styles.dropdownItem}>
+                <User size={16} />
+                <span>Profile</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+
+              <div
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/homepage_beforelogin");
+                }}
+              >
+                <LogOut size={16} />
+                <span>Sign out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
     </header>
   );
 
-  // Navigation Component (unchanged)
+  // Navigation Component
   const Navigation = () => (
     <div style={styles.navigation}>
-      {/* ... navigation code remains the same ... */}
+      <div style={styles.navButtons}>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'summary' ? styles.navButtonActive : {})
+          }}
+          onClick={() => setCurrentPage('summary')}
+        >
+          Summary
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'ratios' ? styles.navButtonActive : {})
+          }}
+          onClick={() => setCurrentPage('ratios')}
+        >
+          Ratios
+        </button>
+      </div>
+
+      {/* Download Button */}
+      <button style={styles.downloadButton} onClick={downloadPDF}>
+        Download <Download size={18} />
+      </button>
     </div>
   );
 
-  // Footer Component (unchanged)
+  // Footer Component
   const Footer = () => (
     <footer style={styles.footer}>
-      {/* ... footer code remains the same ... */}
+      <div style={styles.footerLeft}>
+        <p style={styles.copyright}>
+          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+        </p>
+      </div>
+
+      <div style={styles.footerRight}>
+        <h4 style={styles.functionsTitle}>Functions</h4>
+        <ul style={styles.functionsList}>
+          <li style={styles.functionsItem}>AI summary</li>
+          <li style={styles.functionsItem}>stock graphs</li>
+          <li style={styles.functionsItem}>Debt ratings</li>
+          <li style={styles.functionsItem}>search companies</li>
+          <li style={styles.functionsItem}>Blog Page</li>
+          <li style={styles.functionsItem}>Charts & KPIs</li>
+        </ul>
+      </div>
     </footer>
   );
 
@@ -322,11 +461,17 @@ export default function FinGenieApp() {
     'Consumer Goods', 'Metals & Mining', 'Chemicals'
   ];
 
-  // Summary Page (FIXED data structure)
+  // Summary Page
   const SummaryPage = () => {
     if (loading) return <div style={styles.loading}>Loading company data...</div>;
     if (error) return <div style={styles.error}>{error}</div>;
     if (!companyData) return <div style={styles.error}>No company data available</div>;
+
+    // Safely access the data with fallbacks
+    const summary = companyData.summary || {};
+    const pros = summary.pros || [];
+    const cons = summary.cons || [];
+    const financialHealthSummary = summary.financial_health_summary || 'No financial health summary available.';
 
     return (
       <>
@@ -361,8 +506,8 @@ export default function FinGenieApp() {
             <div style={styles.prosSection}>
               <h3 style={styles.prosTitle}>→ Pros</h3>
               <ul style={styles.prosList}>
-                {companyData.summary?.pros && companyData.summary.pros.length > 0 ? (
-                  companyData.summary.pros.map((pro, i) => (
+                {pros.length > 0 ? (
+                  pros.map((pro, i) => (
                     <li key={i}>{pro}</li>
                   ))
                 ) : (
@@ -373,8 +518,8 @@ export default function FinGenieApp() {
             <div style={styles.consSection}>
               <h3 style={styles.prosTitle}>→ Cons</h3>
               <ul style={styles.prosList}>
-                {companyData.summary?.cons && companyData.summary.cons.length > 0 ? (
-                  companyData.summary.cons.map((con, i) => (
+                {cons.length > 0 ? (
+                  cons.map((con, i) => (
                     <li key={i}>{con}</li>
                   ))
                 ) : (
@@ -387,7 +532,7 @@ export default function FinGenieApp() {
           <div style={styles.financialHealthSummarySec}>
             <h3 style={styles.prosTitle}>→ Financial Health Summary</h3>
             <h4 style={{ color: '#3d3d3dff' }}> Overview </h4>
-            <p>{companyData.summary?.financial_health_summary || 'No financial health summary available.'}</p>
+            <p>{financialHealthSummary}</p>
           </div>
 
           {/* Stock Chart Section */}
@@ -406,10 +551,13 @@ export default function FinGenieApp() {
     );
   };
 
-  // Ratios Page (unchanged)
+  // Ratios Page
   const RatiosPage = () => {
     if (loading) return <div style={styles.loading}>Loading ratios...</div>;
     if (error) return <div style={styles.error}>{error}</div>;
+
+    // Safely access ratios data
+    const ratios = Array.isArray(companyData?.ratios) ? companyData.ratios : [];
 
     return (
       <>
@@ -419,21 +567,21 @@ export default function FinGenieApp() {
         )}
 
         <div style={{ ...styles.contentBox, minHeight: '400px', paddingBottom: '1rem', marginBottom: '1rem' }}>
-          {financialRatios.length > 0 ? (
-            financialRatios.map((ratio, index) => (
+          {ratios.length > 0 ? (
+            ratios.map((ratio, index) => (
               <div key={index} style={styles.ratioRow}>
                 <button style={styles.ratioButton} onClick={() => setShowDetailedRatios(true)}>
-                  {ratio.name}
+                  {ratio.ratio_name || `Ratio ${index + 1}`}
                 </button>
                 <div style={{ display: 'flex' }}>
                   <div style={styles.ratioDot} />
                 </div>
                 <div style={styles.ratioDescription}>
                   <div style={styles.ratioDescText}>
-                    <strong>Formula:</strong> {ratio.formula} <br />
-                    <strong>Calculation:</strong> {ratio.calculation} <br />
-                    <strong>Result:</strong> {ratio.result} <br />
-                    <strong>Interpretation:</strong> {ratio.interpretation}
+                    <strong>Formula:</strong> {ratio.formula || 'N/A'} <br />
+                    <strong>Calculation:</strong> {ratio.calculation || 'N/A'} <br />
+                    <strong>Result:</strong> {ratio.result || 'N/A'} <br />
+                    <strong>Interpretation:</strong> {ratio.interpretation || 'No interpretation available'}
                   </div>
                 </div>
               </div>
@@ -443,17 +591,19 @@ export default function FinGenieApp() {
           )}
         </div>
         
-        <button
-          style={styles.knowMoreButtonOutside}
-          onClick={() => setShowDetailedRatios(true)}
-        >
-          know about your ratios.
-        </button>
+        {ratios.length > 0 && (
+          <button
+            style={styles.knowMoreButtonOutside}
+            onClick={() => setShowDetailedRatios(true)}
+          >
+            know about your ratios.
+          </button>
+        )}
       </>
     );
   };
 
-  // Detailed Ratios Modal (unchanged)
+  // Detailed Ratios Modal
   const DetailedRatiosModal = () => (
     <div style={styles.modalOverlay}>
       <div style={styles.modalContent}>
@@ -475,10 +625,10 @@ export default function FinGenieApp() {
               }}
             >
               <h3 style={index >= 4 ? styles.ratioCardTitleDark : styles.ratioCardTitle}>
-                {ratio.name}
+                {ratio.ratio_name || `Ratio ${index + 1}`}
               </h3>
               <p style={index >= 4 ? styles.ratioCardTextDark : styles.ratioCardText}>
-                {ratio.interpretation}
+                {ratio.interpretation || 'No detailed interpretation available.'}
               </p>
             </div>
           ))}
@@ -511,8 +661,6 @@ export default function FinGenieApp() {
   );
 }
 
-
-
 const styles = {
   container: {
     minHeight: '100vh',
@@ -528,7 +676,6 @@ const styles = {
     marginBottom: '1rem',
     fontStyle: 'italic',
   },
-
   loading: {
     textAlign: 'center',
     padding: '2rem',
@@ -545,55 +692,83 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-        padding: '2rem 4rem',
+    padding: '2rem 4rem',
     position: 'relative',
     zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
-    backdropFilter: 'blur(10px)',         // Blur background
-    WebkitBackdropFilter: 'blur(10px)',     // Safari support
+    background: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
     borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)',
     borderBottom: '2px solid black',
-
     color: 'white',
-    
   },
-
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '2rem',
   },
-    headerRight: {
+  headerRight: {
     display: 'flex',
     alignItems: 'center',
     gap: '2rem',
   },
-
-
-
-   logo: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '8px',
+  logo: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  userProfile: {
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1.5rem",
+  },
+  navLink: {
+    cursor: "pointer",
+    color: "#000000",
+    textDecoration: "none",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "opacity 0.3s",
+  },
+  toolsMenu: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    marginLeft: "1rem",
+    color: "Black",
+  },
+  userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    color: 'Black'
+  },
+  userIcon: {
+    transition: 'color 0.2s'
+  },
+  dropdown: {
+    position: 'absolute',
+    right: '0',
+    top: '32px',
+    backgroundColor: '#D9D9D9',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
+    padding: '0.5rem',
+    minWidth: '120px',
+    zIndex: 1000
+  },
+  dropdownItem: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    cursor: 'pointer',
     padding: '0.5rem',
-    borderRadius: '50%',
-    transition: 'background-color 0.3s',
-    backgroundColor: 'white',
-    border: '1px solid black',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '14px'
   },
-
   navigation: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -601,17 +776,14 @@ const styles = {
     padding: '1.5rem 3rem',
     backgroundColor: '#ffffffff',
   },
-
   navButtons: {
     display: 'flex',
     gap: '1rem',
   },
-
   navButton: {
     padding: '0.75rem 2rem',
     backgroundColor: '#ffffffff',
     color: 'black',
-    // border: 'none', // Removed duplicate key
     border: '1px solid black',
     borderRadius: '15px',
     cursor: 'pointer',
@@ -619,12 +791,10 @@ const styles = {
     fontWeight: '500',
     transition: 'background-color 0.3s',
   },
-
   navButtonActive: {
     backgroundColor: '#515266',
     color: 'white',
   },
-
   downloadButton: {
     padding: '0.75rem 1.5rem',
     backgroundColor: '#0A2540',
@@ -639,14 +809,12 @@ const styles = {
     gap: '0.5rem',
     transition: 'background-color 0.3s',
   },
-
   CompareSectorHeaderContainer: {
-    display: 'flex',              /* 1. Enable Flexbox */
-    justifyContent: 'space-between', /* 2. Push elements to opposite sides (left/right) */
-    alignItems: 'center',         /* 3. Vertically center the elements */
-    width: '100%',                /* Ensure the container spans the full width */
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
-
   compareSectorButton: {
     padding: '0.5rem 1.5rem',
     backgroundColor: '#F8FAF1',
@@ -667,7 +835,6 @@ const styles = {
     flex: 1,
     padding: '0.5rem 3rem',
   },
-
   contentBox: {
     backgroundColor: '#ffffffff',
     border: '2px solid #444',
@@ -675,7 +842,6 @@ const styles = {
     padding: '2rem',
     minHeight: '500px',
   },
-
   companyName: {
     fontSize: '28px',
     fontWeight: 'bold',
@@ -687,7 +853,6 @@ const styles = {
     gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '40px',
   },
-
   prosSection: {
     backgroundColor: '#D1DFDF',
     padding: '2rem',
@@ -700,7 +865,6 @@ const styles = {
     borderRadius: '20px',
     minHeight: '300px'
   },
-
   financialHealthSummarySec: {
     backgroundColor: '#d1d5dfff',
     padding: '2rem',
@@ -708,38 +872,17 @@ const styles = {
     minHeight: '300px',
     marginTop: '2rem',
   },
-
   prosTitle: {
     fontSize: '20px',
     fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: '1rem',
   },
-
-  subHeading: {
-    color: '#0b1220',
-    fontSize: '16px',
-    margin: '0.5rem 0',
-    fontWeight: 700,
+  prosList: {
+    color: '#1a1a1a',
+    lineHeight: '1.8',
+    paddingLeft: '1.5rem',
   },
-
-  proItem: {
-    color: '#0b1220',
-    marginBottom: '0.5rem',
-    fontFamily: 'Inter, Arial, sans-serif'
-  },
-
-  conItem: {
-    color: '#3b1220',
-    marginBottom: '0.5rem',
-    fontFamily: 'Inter, Arial, sans-serif'
-  },
-
-  chartWrap: {
-    display: 'flex',
-    justifyContent: 'center',
-  },
-
   chartContainer: {
     width: '50%',
     minWidth: 320,
@@ -749,26 +892,21 @@ const styles = {
     padding: '0.5rem',
     borderRadius: 12,
   },
-
-  prosList: {
-    color: '#1a1a1a',
-    lineHeight: '1.8',
-    paddingLeft: '1.5rem',
-  },
-
-  ratiosLayout: {
+  ratioRow: { 
     display: 'grid',
-    gridTemplateColumns: '250px 1fr',
-    gap: '2rem',
+    gridTemplateColumns: '150px 30px 1fr', 
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '10px',
   },
-
-  ratiosList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-    paddingRight: '2rem'
+  ratioDot: {
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    backgroundColor: '#555',
+    marginTop: '-2.9rem',
+    marginLeft: '0.2rem',
   },
-
   ratioButton: {
     padding: '1rem',
     backgroundColor: '#515266',
@@ -781,28 +919,20 @@ const styles = {
     textAlign: 'left',
     transition: 'background-color 0.3s',
     width: '100%',
-    //marginBottom: '1rem',
     marginTop: '-5rem',
   },
-
-  ratioButtonActive: {
-    backgroundColor: '#383838',
+  ratioDescription: {
+    backgroundColor: '#D1DFDF',
+    padding: '2rem',
+    borderRadius: '25px',
+    position: 'relative',
+    marginBottom: '2rem',
   },
-
-  tooltip: {
-    position: 'absolute',
-    left: '190px',
-    top: '0',
-    backgroundColor: 'rgba(168, 168, 168, 0.3)',
-    color: 'black',
-    padding: '0.75rem',
-    borderRadius: '15px',
-    fontSize: '12px',
-    maxWidth: '200px',
-    zIndex: 100,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+  ratioDescText: {
+    fontSize: '14px',
+    lineHeight: '1.8',
+    color: '#202020ff',
   },
-
   knowMoreButtonOutside: {
     padding: '1rem',
     backgroundColor: '#ECF0D4',
@@ -815,38 +945,6 @@ const styles = {
     marginLeft: '3rem',
     marginTop: '1rem',
   },
-
-  ratioDescription: {
-    backgroundColor: '#D1DFDF',
-    padding: '2rem',
-    borderRadius: '25px',
-    position: 'relative',
-    marginBottom: '2rem',
-  },
-
-  indicatorDot: {
-    position: 'absolute',
-    left: '-40px',
-    width: '20px',
-    height: '20px',
-    backgroundColor: '#4D5C61',
-    borderRadius: '50%',
-    transition: 'top 0.3s ease',
-  },
-
-  ratioDescTitle: {
-    fontSize: '22px',
-    fontWeight: 'bold',
-    marginBottom: '1rem',
-    color: 'white',
-  },
-
-  ratioDescText: {
-    fontSize: '14px',
-    lineHeight: '1.8',
-    color: '#202020ff',
-  },
-
   modalOverlay: {
     position: 'fixed',
     top: 0,
@@ -859,7 +957,6 @@ const styles = {
     justifyContent: 'center',
     zIndex: 1000,
   },
-
   modalContent: {
     backgroundColor: '#2a2a2a',
     padding: '3rem',
@@ -870,7 +967,6 @@ const styles = {
     overflow: 'auto',
     position: 'relative',
   },
-
   closeButton: {
     position: 'absolute',
     top: '1rem',
@@ -881,107 +977,50 @@ const styles = {
     cursor: 'pointer',
     padding: '0.5rem',
   },
-
   modalTitle: {
     fontSize: '28px',
     fontWeight: 'bold',
     marginBottom: '2rem',
     color: 'white',
   },
-
   ratiosGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '1.5rem',
   },
-
   ratioCard: {
     backgroundColor: '#4D5C61',
     padding: '2rem',
     borderRadius: '8px',
   },
-
   ratioCardDark: {
     backgroundColor: '#383838',
   },
-
   ratioCardLight: {
     backgroundColor: '#EEF4CE',
   },
-
   ratioCardTitle: {
     fontSize: '18px',
     fontWeight: 'bold',
     marginBottom: '1rem',
     color: 'white',
   },
-
   ratioCardTitleDark: {
     fontSize: '18px',
     fontWeight: 'bold',
     marginBottom: '1rem',
     color: '#1a1a1a',
   },
-
   ratioCardText: {
     fontSize: '14px',
     lineHeight: '1.8',
     color: '#ddd',
   },
-
   ratioCardTextDark: {
     fontSize: '14px',
     lineHeight: '1.8',
     color: '#1a1a1a',
   },
-
-  graphLayout: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '2rem',
-  },
-
-  graphContainer: {
-    position: 'relative',
-  },
-
-  graphSvg: {
-    backgroundColor: '#1a1a1a',
-    // borderRadius: '8px', // Removed duplicate key
-    padding: '1rem',
-    borderRadius: '20px',
-  },
-
-  resetZoomButton: {
-    marginTop: '1rem',
-    padding: '0.5rem 1rem',
-    backgroundColor: '#515266',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '12px',
-  },
-
-  graphDescription: {
-    backgroundColor: '#4D5C61',
-    padding: '2rem',
-    borderRadius: '20px',
-  },
-
-  graphDescTitle: {
-    fontSize: '22px',
-    fontWeight: 'bold',
-    marginBottom: '1rem',
-    color: 'white',
-  },
-
-  graphDescText: {
-    fontSize: '14px',
-    lineHeight: '1.8',
-    color: '#ddd',
-  },
-
   footer: {
     backgroundColor: '#4D5C61',
     color: '#FFFFFF',
@@ -993,172 +1032,69 @@ const styles = {
     position: 'relative',
     zIndex: 5,
   },
-
   footerLeft: {
     flex: 1,
     alignItems: 'center',
   },
-
   copyright: {
     fontSize: '13px',
     marginBottom: 0,
     lineHeight: 1.8,
   },
-
   footerLink: {
     color: '#FFFFFF',
     textDecoration: 'none',
     transition: 'opacity 0.3s',
   },
-
   footerRight: {
     textAlign: 'right',
     flex: 1,
   },
-
   functionsTitle: {
     fontSize: '14px',
     fontWeight: '700',
     marginRight: '10rem',
   },
-
   functionsList: {
     listStyle: 'none',
-  margin: 0,
-  padding: 0,
-  display: 'grid',
-  gridTemplateColumns: '3.5fr 1fr',
-  textAlign: 'right', 
-  gap: '6px 0px',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right', 
+    gap: '6px 0px',
   },
-
   functionsItem: {
     fontSize: '13px',
     margin: 0,
     textTransform: "capitalize",
     whiteSpace: 'nowrap'
   },
-
-  dropdown: {
-    position: 'absolute',
-    right: '0',
-    top: '32px',
-    backgroundColor: '#D9D9D9',
-    borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-    padding: '0.5rem',
-    minWidth: '120px',
-    zIndex: 1000
-  },
-
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '14px'
-  },
-
-   ratioRow: { 
-        display: 'grid',
-        // Sets 3 explicit columns: 150px | 30px | 1fr
-        gridTemplateColumns: '150px 30px 1fr', 
-        alignItems: 'center', // Vertically align all items in the row
-        gap: '10px', // Small gap between columns
-        marginBottom: '10px', // Vertical spacing between ratio rows
-    },
-    ratioDot: {
-        width: '20px',
-        height: '20px',
-        borderRadius: '50%',
-        backgroundColor: '#555', // Dark dot
-        //border: '2px solid #ddd',
-        marginTop: '-2.9rem',
-        marginLeft: '0.2rem',
-    },
-    toolsMenu: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    marginLeft: "1rem", // spacing between menus
-    color: "Black",
-  },
-
-  nav: {
-    display: "flex",
-    gap: "1.5rem",
-    marginTop: "10px",
-  },
-
-  navLink: {
-    cursor: "pointer",
-    color: "#000000",
-    textDecoration: "none",
-    fontSize: "14px",
-    fontWeight: "500",
-    transition: "opacity 0.3s",
-  },
-  
-  userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    color: 'Black'
-  },
-
-  userIcon: {
-    transition: 'color 0.2s'
-  },
-
-dropdownContainer: {
+  dropdownContainer: {
     position: 'absolute', 
-    
-    // Position vertically below the button with a consistent gap
-    // Assuming the button wrapper is the relative parent
-    marginTop: '0.5rem', // Adds a flexible 8px gap (0.5rem)
-
-    // Positioning horizontally: Align to the right edge
-    // Use a small padding/margin for offset from the screen edge if needed
+    marginTop: '0.5rem',
     right: 0, 
-
-    // Use relative/flexible width properties:
-    minWidth: '180px', // Minimum readable size
-    maxWidth: '80vw',  // Ensures it doesn't exceed 80% of the viewport width
-
-    // Visuals
+    minWidth: '180px',
+    maxWidth: '80vw',
     backgroundColor: '#DCDCDC', 
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
     borderRadius: '8px',
     zIndex: 10,
-    padding: '0.5rem 0', // Reduced vertical padding for flexibility
-},
-
+    padding: '0.5rem 0',
+  },
   sectorHeader: {
     fontSize: '14px',
     fontWeight: 'normal',
-    color: '#444444', // Dark gray text
+    color: '#444444',
     padding: '5px 15px',
     textAlign: 'center',
-    //marginBottom: '5px',
-    borderBottom: '1px solid #C0C0C0', // Separator line for the header
+    borderBottom: '1px solid #C0C0C0',
   },
-
   sectorItem: {
-    // Styling for each selectable sector
     padding: '8px 15px',
-    fontSize: '18px', // Larger font size as seen in the image
-    color: '#333333', // Dark text color
+    fontSize: '18px',
+    color: '#333333',
     textAlign: 'center',
     cursor: 'pointer',
-    
-    // Hover effect for user interaction
-    ':hover': { 
-      backgroundColor: '#C5C5C5', // Slightly darker hover color
-    },
   },
 };
-
-

@@ -1,5 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import React, { useLayoutEffect, useRef, useState, useCallback } from 'react';  // ✅ ADD React
 import { useNavigate } from "react-router-dom"; 
 import PixelBlast from '../components/PixelBlast';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';

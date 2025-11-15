@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Wrench, User, ChevronDown, Plus, X, TrendingUp, Activity, BookOpen, Cpu, GitCompare, History, Settings, LogOut } from 'lucide-react';
-import fglogo_Wbg from './images/fglogo_Wbg.png';
+import { Search, Wrench, User, ChevronDown, Plus, X, TrendingUp, Activity, BookOpen, Cpu, GitCompare, History, Settings, LogOut, RefreshCw } from 'lucide-react';
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -21,168 +22,151 @@ ChartJS.register(
   Legend
 );
 
+// Define Header component at the top level, before SectorOverviewDashboard
+const Header = ({ showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
+  <header style={styles.header}>
+    <div style={styles.headerLeft}>
+      <div style={styles.logo}>
+        <img
+          src={fglogo_Wbg}
+          style={{ height: "80px", width: "auto" }}
+          alt="logo"
+        />
+      </div>
+    </div>
+    <nav style={styles.nav}>
+      <span style={styles.navLink}>Home</span>
+      <span style={styles.navLink}>News</span>
+      <span style={styles.navLink}>About us</span>
+      
+      <div
+        style={styles.toolsMenu}
+        onMouseEnter={() => setShowToolsDropdown(true)}
+        onMouseLeave={() => setShowToolsDropdown(false)}
+      >
+        <Wrench size={24} color="black" style={styles.userIcon} />
+        {showToolsDropdown && (
+          <div style={styles.HFdropdown}>
+            <div style={styles.dropdownItem}>
+              <TrendingUp size={16} />
+              <span>Debt Ratings</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Search size={16} />
+              <span>Search Companies</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Activity size={16} />
+              <span>Charts & KPIs</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <BookOpen size={16} />
+              <span>Blog Page</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Cpu size={16} />
+              <span>AI Summary</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <GitCompare size={16} />
+              <span>Comparison</span>
+            </div>
+          </div>
+        )}
+      </div>
 
-const initialSectors = [
-  {
-    name: "Telecom",
-    avgPrice: 185.50,
-    avgChange: -0.8,
-    companies: [
-      { ticker: "BHARTIARTL.NS", name: "Bharti Airtel", change: -0.5 },
-      { ticker: "IDEA.NS", name: "Vodafone Idea", change: -2.3 },
-      { ticker: "TATACOMM.NS", name: "Tata Communications", change: 0.2 }
-    ]
-  },
-  {
-    name: "Technology",
-    avgPrice: 2070.67,
-    avgChange: 0.3,
-    companies: [
-  { ticker: "TCS.NS", name: "Tata Consultancy Services", change: 1.3 },
-  { ticker: "INFY.NS", name: "Infosys", change: -0.5 },
-  { ticker: "WIPRO.NS", name: "Wipro", change: 0.8 },
-  { ticker: "HCLTECH.NS", name: "HCL Technologies", change: -0.2 },
-  { ticker: "LT.NS", name: "Larsen & Toubro", change: 0.6 },
-  { ticker: "TECHM.NS", name: "Tech Mahindra", change: 1.1 },
-  { ticker: "MINDTREE.NS", name: "Mindtree", change: -0.9 },
-  { ticker: "MPHASIS.NS", name: "Mphasis", change: 0.3 },
-  { ticker: "COFORGE.NS", name: "Coforge", change: 1.9 },
-  { ticker: "PERSISTENT.NS", name: "Persistent Systems", change: 2.4 },
-  { ticker: "HEXAWARE.NS", name: "Hexaware Technologies", change: -0.7 },
-  { ticker: "NIITTECH.NS", name: "NIIT Technologies", change: 1.0 },
-  { ticker: "CYIENT.NS", name: "Cyient", change: -1.4 },
-  { ticker: "LTTS.NS", name: "L&T Technology Services", change: 0.5 },
-  { ticker: "OFSS.NS", name: "Oracle Financial Services Software", change: -0.3 },
-  { ticker: "REDINGTON.NS", name: "Redington", change: 2.1 },
-  { ticker: "SONATSOFTW.NS", name: "Sonata Software", change: 0.9 },
-  { ticker: "ZENSARTECH.NS", name: "Zensar Technologies", change: -0.8 },
-  { ticker: "KPITTECH.NS", name: "KPIT Technologies", change: 1.7 }
-]
+      <div
+        style={styles.userMenu}
+        onMouseEnter={() => setShowDropdown(true)}
+        onMouseLeave={() => setShowDropdown(false)}
+      >
+        <User size={24} color="black" style={styles.userIcon} />
+        {showDropdown && (
+          <div style={styles.HFdropdown}>
+            <div style={styles.dropdownItem}>
+              <User size={16} />
+              <span>Profile</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <History size={16} />
+              <span>History</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Settings size={16} />
+              <span>Settings</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <LogOut size={16} />
+              <span>Sign out</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
+  </header>
+);
 
-  },
-  {
-    name: "Financial Services",
-    avgPrice: 1450.25,
-    avgChange: 1.2,
-    companies: [
-      { ticker: "BAJFINANCE.NS", name: "Bajaj Finance", change: 2.1 },
-      { ticker: "BAJAJFINSV.NS", name: "Bajaj Finserv", change: 1.5 },
-      { ticker: "HDFCLIFE.NS", name: "HDFC Life Insurance", change: 0.9 },
-      { ticker: "SBILIFE.NS", name: "SBI Life Insurance", change: 0.3 }
-    ]
-  },
-  {
-    name: "Real Estate",
-    avgPrice: 580.40,
-    avgChange: -1.5,
-    companies: [
-      { ticker: "DLF.NS", name: "DLF", change: -1.2 },
-      { ticker: "GODREJPROP.NS", name: "Godrej Properties", change: -2.5 },
-      { ticker: "OBEROIRLTY.NS", name: "Oberoi Realty", change: -0.8 }
-    ]
-  },
-  {
-    name: "Banking",
-    avgPrice: 890.75,
-    avgChange: 0.7,
-    companies: [
-      { ticker: "HDFCBANK.NS", name: "HDFC Bank", change: 1.1 },
-      { ticker: "ICICIBANK.NS", name: "ICICI Bank", change: 0.9 },
-      { ticker: "SBIN.NS", name: "State Bank of India", change: 0.5 },
-      { ticker: "AXISBANK.NS", name: "Axis Bank", change: 0.3 },
-      { ticker: "KOTAKBANK.NS", name: "Kotak Mahindra Bank", change: 0.6 }
-    ]
-  },
-  {
-    name: "Infrastructure",
-    avgPrice: 320.90,
-    avgChange: 2.1,
-    companies: [
-      { ticker: "LT.NS", name: "Larsen & Toubro", change: 2.5 },
-      { ticker: "ADANIENT.NS", name: "Adani Enterprises", change: 3.2 },
-      { ticker: "GAIL.NS", name: "GAIL India", change: 0.8 }
-    ]
-  },
-  {
-    name: "Pharma",
-    avgPrice: 1250.30,
-    avgChange: -0.4,
-    companies: [
-      { ticker: "SUNPHARMA.NS", name: "Sun Pharma", change: 0.2 },
-      { ticker: "DRREDDY.NS", name: "Dr. Reddy's Lab", change: -1.2 },
-      { ticker: "CIPLA.NS", name: "Cipla", change: -0.5 },
-      { ticker: "DIVISLAB.NS", name: "Divi's Lab", change: -0.1 }
-    ]
-  },
-  {
-    name: "Automobile",
-    avgPrice: 2340.60,
-    avgChange: 1.8,
-    companies: [
-      { ticker: "MARUTI.NS", name: "Maruti Suzuki", change: 2.3 },
-      { ticker: "TATAMOTORS.NS", name: "Tata Motors", change: 1.5 },
-      { ticker: "M&M.NS", name: "Mahindra & Mahindra", change: 1.9 },
-      { ticker: "BAJAJ-AUTO.NS", name: "Bajaj Auto", change: 1.5 }
-    ]
-  },
-  {
-    name: "Energy",
-    avgPrice: 450.20,
-    avgChange: 0.5,
-    companies: [
-      { ticker: "RELIANCE.NS", name: "Reliance Industries", change: 0.7 },
-      { ticker: "ONGC.NS", name: "ONGC", change: 0.3 },
-      { ticker: "POWERGRID.NS", name: "Power Grid Corp", change: 0.5 },
-      { ticker: "NTPC.NS", name: "NTPC", change: 0.4 }
-    ]
-  },
-  {
-    name: "Consumer Goods",
-    avgPrice: 1890.45,
-    avgChange: -0.6,
-    companies: [
-      { ticker: "HINDUNILVR.NS", name: "Hindustan Unilever", change: -0.3 },
-      { ticker: "ITC.NS", name: "ITC", change: -0.8 },
-      { ticker: "NESTLEIND.NS", name: "Nestle India", change: -0.7 },
-      { ticker: "BRITANNIA.NS", name: "Britannia Industries", change: -0.6 }
-    ]
-  },
-  {
-    name: "Metals & Mining",
-    avgPrice: 680.75,
-    avgChange: 3.2,
-    companies: [
-      { ticker: "TATASTEEL.NS", name: "Tata Steel", change: 4.1 },
-      { ticker: "HINDALCO.NS", name: "Hindalco Industries", change: 3.5 },
-      { ticker: "JSWSTEEL.NS", name: "JSW Steel", change: 2.8 },
-      { ticker: "COALINDIA.NS", name: "Coal India", change: 2.4 }
-    ]
-  },
-  {
-    name: "Chemicals",
-    avgPrice: 920.15,
-    avgChange: 1.1,
-    companies: [
-      { ticker: "UPL.NS", name: "UPL", change: 1.5 },
-      { ticker: "PIDILITIND.NS", name: "Pidilite Industries", change: 0.9 },
-      { ticker: "SRF.NS", name: "SRF", change: 1.2 },
-      { ticker: "ATUL.NS", name: "Atul Ltd", change: 0.8 }
-    ]
-  }
-];
+// Define Footer component
+const Footer = ({ lastUpdated }) => (
+  <footer style={styles.footer}>
+    <div style={styles.footerLeft}>
+      <p style={styles.copyright}>
+        © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+      </p>
+      {lastUpdated && (
+        <p style={styles.lastUpdated}>
+          Last updated: {lastUpdated}
+        </p>
+      )}
+    </div>
+    <div style={styles.footerRight}>
+      <h4 style={styles.functionsTitle}>Functions</h4>
+      <ul style={styles.functionsList}>
+        <li style={styles.functionsItem}>AI summary</li>
+        <li style={styles.functionsItem}>stock graphs</li>
+        <li style={styles.functionsItem}>Debt ratings</li>
+        <li style={styles.functionsItem}>search companies</li>
+        <li style={styles.functionsItem}>Blog Page</li>
+        <li style={styles.functionsItem}>Charts & KPIs</li>
+      </ul>
+    </div>
+  </footer>
+);
 
 const SectorChart = ({ companies }) => {
+  // Check if we have valid data
+  if (!companies || companies.length === 0) {
+    return (
+      <div style={styles.noData}>
+        <p>No company data available for chart</p>
+      </div>
+    );
+  }
+
+  // Validate that we have the required properties
+  const validCompanies = companies.filter(company => 
+    company && company.symbol && typeof company.change_pct !== 'undefined'
+  );
+
+  if (validCompanies.length === 0) {
+    return (
+      <div style={styles.noData}>
+        <p>No valid data for chart</p>
+      </div>
+    );
+  }
+
   const chartData = {
-    labels: companies.map(c => c.ticker),
+    labels: validCompanies.map(c => c.symbol),
     datasets: [
       {
         label: '% Change',
-        data: companies.map(c => c.change),
-        backgroundColor: companies.map(c => 
-          c.change >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+        data: validCompanies.map(c => c.change_pct),
+        backgroundColor: validCompanies.map(c => 
+          c.change_pct >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'
         ),
-        borderColor: companies.map(c => 
-          c.change >= 0 ? 'rgba(12, 218, 149, 1)' : 'rgba(239, 68, 68, 1)'
+        borderColor: validCompanies.map(c => 
+          c.change_pct >= 0 ? 'rgba(12, 218, 149, 1)' : 'rgba(239, 68, 68, 1)'
         ),
         borderWidth: 1,
         borderRadius: 6
@@ -190,6 +174,7 @@ const SectorChart = ({ companies }) => {
     ]
   };
 
+  // Optimized for more companies
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -197,7 +182,6 @@ const SectorChart = ({ companies }) => {
       legend: {
         display: false
       },
-      ///////add current and previous price here//////////////////////////////////////////////////////////////////////////////////////////////////////
       tooltip: {
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         titleColor: '#1f2937',
@@ -207,12 +191,10 @@ const SectorChart = ({ companies }) => {
         padding: 12,
         displayColors: false,
         callbacks: {
-          title: function(context) {
-            const company = companies[context[0].dataIndex];
-            return company.name;
-          },
           label: function(context) {
-            return `${context.parsed.y >= 0 ? '+' : ''}${context.parsed.y.toFixed(2)}%`;
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
           }
         }
       }
@@ -244,26 +226,91 @@ const SectorChart = ({ companies }) => {
           maxRotation: 45,
           minRotation: 0
         },
-        barPercentage: 1,    // Controls the thickness of the bar (80% of the category width)
-        categoryPercentage: 0.9,
+        barPercentage: 0.7, // Thinner bars for more companies
+        categoryPercentage: 0.8, // More spacing between categories
       }
     }
   };
 
   return <Bar data={chartData} options={options} />;
 };
+
 const SectorOverviewDashboard = () => {
-  const [sectors, setSectors] = useState(initialSectors);
+  const [sectors, setSectors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedSector, setSelectedSector] = useState(null);
-  
   const [tempSelectedCompanies, setTempSelectedCompanies] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [refreshing, setRefreshing] = useState(false);
+
   const sectionRefs = useRef({});
+
+  // Fetch real-time data from backend
+  const fetchSectorData = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      console.log('Fetching real-time sector data...');
+      const response = await fetch('/sector/api/sector-overview/');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Raw API data received:', data);
+      
+      // Remove metadata if present
+      const { _metadata, ...sectorsData } = data;
+      
+      // Transform the API response to match our frontend structure
+      const transformedSectors = Object.entries(sectorsData).map(([sectorName, sectorData]) => {
+        // FIX: Ensure the companies have the correct property names
+        const companies = (sectorData.stocks || []).map(stock => ({
+          symbol: stock.symbol,
+          name: stock.name || stock.symbol,
+          change_pct: stock.change_pct || 0,
+          price: stock.price || 0,
+          ticker: stock.symbol
+        }));
+        
+        return {
+          name: sectorName,
+          avgPrice: sectorData.avg_price || 0,
+          avgChange: sectorData.avg_change_pct || 0,
+          companies: companies,
+          companies_count: sectorData.companies_count || companies.length,
+          success_rate: sectorData.success_rate || '0/0'
+        };
+      });
+      
+      setSectors(transformedSectors);
+      setLastUpdated(new Date().toLocaleTimeString());
+      setLoading(false);
+      
+    } catch (err) {
+      console.error('Error fetching sector data:', err);
+      setError(err.message);
+      setLoading(false);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSectorData();
+    
+    // Set up auto-refresh every 30 minutes (1800000 milliseconds)
+    const interval = setInterval(fetchSectorData, 1800000);
+    return () => clearInterval(interval);
+  }, []);
 
   const scrollToSector = (sectorName) => {
     const element = sectionRefs.current[sectorName];
@@ -287,37 +334,25 @@ const SectorOverviewDashboard = () => {
     );
   };
 
-// ... in SectorOverviewDashboard component
-const applyCustomGroup = () => {
-    // 1. Find the full company list from the initial data
-    const fullSectorData = initialSectors.find(
-      (s) => s.name === selectedSector.name
-    );
+  const applyCustomGroup = () => {
+    if (!selectedSector) return;
 
-    if (!fullSectorData) {
-      console.error('Sector not found in initial data.');
-      setModalOpen(false);
-      return;
-    }
-
-    // 2. Filter the FULL company list using the temporary selections
-    const newCompanyList = fullSectorData.companies.filter((c) =>
+    const newCompanyList = selectedSector.companies.filter((c) =>
       tempSelectedCompanies.includes(c.ticker)
     );
 
-    // 3. Update the component state with the new list
     setSectors((prev) =>
       prev.map((sector) =>
         sector.name === selectedSector.name
           ? {
               ...sector,
-              companies: newCompanyList, // Use the new list derived from FULL data
+              companies: newCompanyList,
             }
           : sector
       )
     );
     setModalOpen(false);
-};
+  };
 
   const filteredSectors = sectors.filter(sector =>
     sector.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -326,113 +361,59 @@ const applyCustomGroup = () => {
       c.ticker.toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
-  const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img
-            src={fglogo_Wbg}
-            style={{ height: "80px", width: "auto" }}
-            alt="logo"
-          />
-        </div>
-      </div>
-      <nav style={styles.nav}>
-        <span style={styles.navLink}>Home</span>
-        <span style={styles.navLink}>News</span>
-        <span style={styles.navLink}>About us</span>
-        
-        <div
-          style={styles.toolsMenu}
-          onMouseEnter={() => setShowToolsDropdown(true)}
-          onMouseLeave={() => setShowToolsDropdown(false)}
-        >
-          <Wrench size={24} color="black" style={styles.userIcon} />
-          {showToolsDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Activity size={16} />
-                <span>Charts & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div
-          style={styles.userMenu}
-          onMouseEnter={() => setShowDropdown(true)}
-          onMouseLeave={() => setShowDropdown(false)}
-        >
-          <User size={24} color="black" style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <LogOut size={16} />
-                <span>Sign out</span>
-              </div>
-            </div>
-          )}
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div style={styles.page}>
+        <Header 
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
+        <div style={styles.loadingContainer}>
+          <div style={styles.spinner}></div>
+          <h3 style={styles.loadingText}>Loading Real-Time Market Data...</h3>
+          <p style={styles.loadingSubtext}>Fetching live stock prices from yfinance</p>
         </div>
-      </nav>
-    </header>
-  );
+      </div>
+    );
+  }
 
-  const Footer = () => (
-    <footer style={styles.footer}>
-      <div style={styles.footerLeft}>
-        <p style={styles.copyright}>
-          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-        </p>
+  // Error state
+  if (error) {
+    return (
+      <div style={styles.page}>
+        <Header 
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
+        <div style={styles.errorContainer}>
+          <h3 style={styles.errorTitle}>⚠️ Unable to Load Market Data</h3>
+          <p style={styles.errorText}>{error}</p>
+          <button 
+            style={styles.retryButton}
+            onClick={fetchSectorData}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing...' : '🔄 Try Again'}
+          </button>
+        </div>
       </div>
-      <div style={styles.footerRight}>
-        <h4 style={styles.functionsTitle}>Functions</h4>
-        <ul style={styles.functionsList}>
-          <li style={styles.functionsItem}>AI summary</li>
-          <li style={styles.functionsItem}>stock graphs</li>
-          <li style={styles.functionsItem}>Debt ratings</li>
-          <li style={styles.functionsItem}>search companies</li>
-          <li style={styles.functionsItem}>Blog Page</li>
-          <li style={styles.functionsItem}>Charts & KPIs</li>
-        </ul>
-      </div>
-    </footer>
-  );
+    );
+  }
 
   return (
     <div style={styles.page}>
-      <Header />
+      <Header 
+        showDropdown={showDropdown}
+        setShowDropdown={setShowDropdown}
+        showToolsDropdown={showToolsDropdown}
+        setShowToolsDropdown={setShowToolsDropdown}
+      />
 
       <div style={styles.controlsBar}>
         <div style={styles.searchContainer}>
@@ -473,58 +454,120 @@ const applyCustomGroup = () => {
             </div>
           )}
         </div>
+
+        <button
+          style={styles.refreshButton}
+          onClick={fetchSectorData}
+          disabled={refreshing}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#707181ff'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#515266'}
+        >
+          <RefreshCw 
+            size={18} 
+            style={refreshing ? { 
+              animation: 'spin 1s linear infinite',
+              transformOrigin: 'center'
+            } : {}} 
+          />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+
+      <div style={styles.statusBar}>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>Sectors Loaded:</span>
+          <span style={styles.statusValue}>{sectors.length}</span>
+        </div>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>Total Stocks:</span>
+          <span style={styles.statusValue}>
+            {sectors.reduce((acc, sector) => acc + sector.companies_count, 0)}
+          </span>
+        </div>
+        {lastUpdated && (
+          <div style={styles.statusItem}>
+            <span style={styles.statusLabel}>Last Updated:</span>
+            <span style={styles.statusValue}>{lastUpdated}</span>
+          </div>
+        )}
       </div>
 
       <div style={styles.container}>
-        {filteredSectors.map(sector => (
-          <div
-            key={sector.name}
-            ref={el => sectionRefs.current[sector.name] = el}
-            style={styles.sectionContainer}
-          >
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectorTitle}>{sector.name}</h2>
-              <button
-                style={styles.createGroupButton}
-                onClick={() => openModal(sector)}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
-              >
-                <Plus size={18} />
-                Make custom company group
-              </button>
-            </div>
-
-            <div style={styles.metricsContainer}>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>Average Price</span>
-                <span style={styles.metricValue}>
-                  ₹{sector.avgPrice.toFixed(2)}
-                </span>
-              </div>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>Average % Change</span>
-                <span
-                  style={{
-                    ...styles.metricValue,
-                    color: sector.avgChange >= 0 ? '#1cc638ff' : '#ef4444'
-                  }}
-                >
-                  {sector.avgChange >= 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-                  {/* Sector Chart ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
-            <div style={styles.chartContainer}>
-              <div style={{ ...styles.chartWrapper, minWidth: `${Math.max(600, sector.companies.length * 120)}px` }}>
-                <SectorChart companies={sector.companies} />
-              </div>
-            </div>
+        {filteredSectors.length === 0 ? (
+          <div style={styles.noResults}>
+            <h3>No sectors found</h3>
+            <p>Try adjusting your search terms</p>
           </div>
-        ))}
+        ) : (
+          filteredSectors.map(sector => (
+            <div
+              key={sector.name}
+              ref={el => sectionRefs.current[sector.name] = el}
+              style={styles.sectionContainer}
+            >
+              <div style={styles.sectionHeader}>
+                <div>
+                  <h2 style={styles.sectorTitle}>{sector.name}</h2>
+                  {sector.success_rate && (
+                    <p style={styles.successRate}>
+                      {sector.success_rate} stocks loaded
+                    </p>
+                  )}
+                </div>
+                <button
+                  style={styles.createGroupButton}
+                  onClick={() => openModal(sector)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
+                >
+                  <Plus size={18} />
+                  Make custom company group
+                </button>
+              </div>
+
+              <div style={styles.metricsContainer}>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Average Price</span>
+                  <span style={styles.metricValue}>
+                    ₹{sector.avgPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Average % Change</span>
+                  <span
+                    style={{
+                      ...styles.metricValue,
+                      color: sector.avgChange >= 0 ? '#1cc638ff' : '#ef4444'
+                    }}
+                  >
+                    {sector.avgChange >= 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
+                  </span>
+                </div>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Companies</span>
+                  <span style={styles.metricValue}>
+                    {sector.companies_count}
+                  </span>
+                </div>
+              </div>
+
+              {sector.companies.length > 0 ? (
+                <div style={styles.chartContainer}>
+                  <div style={{ ...styles.chartWrapper, minWidth: `${Math.max(600, sector.companies.length * 90)}px` }}>
+                    <SectorChart companies={sector.companies} />
+                  </div>
+                </div>
+              ) : (
+                <div style={styles.noData}>
+                  <p>No stock data available for this sector</p>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
-      <Footer />
+      <Footer lastUpdated={lastUpdated} />
 
       {modalOpen && selectedSector && (
         <div style={styles.modal} onClick={() => setModalOpen(false)}>
@@ -540,32 +583,30 @@ const applyCustomGroup = () => {
                 <X size={24} />
               </button>
             </div>
-      {/* Company Selection List////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
             <div style={styles.companyList}>
-              {initialSectors
-                .find(s => s.name === selectedSector.name)
-                .companies.map(company => (
-                  <div
-                    key={company.ticker}
-                    style={styles.companyItem}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              {selectedSector.companies.map(company => (
+                <div
+                  key={company.ticker}
+                  style={styles.companyItem}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <input
+                    type="checkbox"
+                    id={company.ticker}
+                    style={styles.checkbox}
+                    checked={tempSelectedCompanies.includes(company.ticker)}
+                    onChange={() => toggleCompany(company.ticker)}
+                  />
+                  <label
+                    htmlFor={company.ticker}
+                    style={styles.companyLabel}
                   >
-                    <input
-                      type="checkbox"
-                      id={company.ticker}
-                      style={styles.checkbox}
-                      checked={tempSelectedCompanies.includes(company.ticker)}
-                      onChange={() => toggleCompany(company.ticker)}
-                    />
-                    <label
-                      htmlFor={company.ticker}
-                      style={styles.companyLabel}
-                    >
-                      {company.name} ({company.ticker})
-                    </label>
-                  </div>
-                ))}
+                    {company.ticker} - ₹{company.price} ({company.change_pct >= 0 ? '+' : ''}{company.change_pct}%)
+                  </label>
+                </div>
+              ))}
             </div>
 
             <div style={styles.modalActions}>
@@ -589,6 +630,16 @@ const applyCustomGroup = () => {
           </div>
         </div>
       )}
+
+      {/* Add CSS for spinning animation */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };
@@ -601,6 +652,61 @@ const styles = {
     display: 'flex',
     flexDirection: 'column'
   },
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    padding: '4rem 2rem'
+  },
+  spinner: {
+    width: '50px',
+    height: '50px',
+    border: '5px solid #f3f3f3',
+    borderTop: '5px solid #515266',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    marginBottom: '1rem'
+  },
+  loadingText: {
+    fontSize: '1.5rem',
+    color: '#1f2937',
+    marginBottom: '0.5rem'
+  },
+  loadingSubtext: {
+    color: '#6b7280',
+    fontSize: '1rem'
+  },
+  errorContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    padding: '4rem 2rem',
+    textAlign: 'center'
+  },
+  errorTitle: {
+    fontSize: '1.5rem',
+    color: '#dc2626',
+    marginBottom: '1rem'
+  },
+  errorText: {
+    color: '#6b7280',
+    marginBottom: '2rem',
+    maxWidth: '400px'
+  },
+  retryButton: {
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#515266',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: '500'
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -609,7 +715,6 @@ const styles = {
     backgroundColor: '#ffffff',
     border: '1px solid #000000ff',
     borderRadius: '8px',
-
     position: 'sticky',
     top: 0,
     zIndex: 100
@@ -632,10 +737,7 @@ const styles = {
     fontSize: '1rem',
     fontWeight: '500',
     color: '#070d1fff',
-    transition: 'color 0.2s',
-    '&:hover': {
-      color: '#454c5cff'
-    }
+    transition: 'color 0.2s'
   },
   toolsMenu: {
     position: 'relative',
@@ -693,10 +795,14 @@ const styles = {
     fontSize: '0.9rem',
     color: '#d1d5db'
   },
+  lastUpdated: {
+    margin: '0.5rem 0 0 0',
+    fontSize: '0.8rem',
+    color: '#9ca3af'
+  },
   footerLink: {
     color: '#60a5fa',
-    textDecoration: 'none',
-    transition: 'color 0.2s'
+    textDecoration: 'none'
   },
   footerRight: {
     flex: 1
@@ -761,6 +867,21 @@ const styles = {
     transition: 'background-color 0.2s',
     whiteSpace: 'nowrap'
   },
+  refreshButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.25rem',
+    backgroundColor: '#515266',
+    color: 'white',
+    border: '1px solid #000000ff',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap'
+  },
   dropdown: {
     position: 'absolute',
     top: '100%',
@@ -780,12 +901,39 @@ const styles = {
     transition: 'background-color 0.2s',
     fontSize: '0.95rem'
   },
+  statusBar: {
+    backgroundColor: '#f8fafc',
+    padding: '1rem 2rem',
+    display: 'flex',
+    gap: '2rem',
+    alignItems: 'center',
+    borderBottom: '1px solid #e5e7eb'
+  },
+  statusItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  statusLabel: {
+    fontSize: '0.9rem',
+    color: '#6b7280'
+  },
+  statusValue: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#1f2937'
+  },
   container: {
     padding: '2rem',
     maxWidth: '1400px',
     margin: '0 auto',
     width: '100%',
     flex: 1
+  },
+  noResults: {
+    textAlign: 'center',
+    padding: '4rem 2rem',
+    color: '#6b7280'
   },
   sectionContainer: {
     backgroundColor: 'white',
@@ -798,7 +946,7 @@ const styles = {
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: '1.5rem',
     flexWrap: 'wrap',
     gap: '1rem'
@@ -808,6 +956,11 @@ const styles = {
     fontWeight: 'bold',
     color: '#1f2937',
     margin: 0
+  },
+  successRate: {
+    margin: '0.25rem 0 0 0',
+    fontSize: '0.9rem',
+    color: '#6b7280'
   },
   createGroupButton: {
     display: 'flex',
@@ -852,7 +1005,14 @@ const styles = {
   },
   chartWrapper: {
     minWidth: '600px',
-    height: '350px'
+    height: '400px'
+  },
+  noData: {
+    textAlign: 'center',
+    padding: '3rem',
+    color: '#6b7280',
+    backgroundColor: '#f9fafb',
+    borderRadius: '8px'
   },
   modal: {
     position: 'fixed',
@@ -899,7 +1059,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  
   companyList: {
     display: 'flex',
     flexDirection: 'column',

@@ -14,5 +14,5 @@ urlpatterns = [
     path('api/stock-data/<str:ticker_symbol>/<str:period>/', views.get_stock_data_api, name='get_stock_data_with_period'),
     
     # Test endpoint
-    path('api/test/', views.test_process_api, name='test_process_api'),
+    #path('api/test/', views.test_process_api, name='test_process_api'),
 ]
