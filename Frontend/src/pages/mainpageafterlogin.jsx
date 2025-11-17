@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 // Add this import at the top with your other imports
 
+
 // Add the CurvedLoop component inside your file (before FinGenieLanding component)
 // const CurvedLoop = ({
 //   marqueeText = 'Explore Our Features',
