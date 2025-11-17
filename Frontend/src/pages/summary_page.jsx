@@ -19,6 +19,12 @@ import {
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import jsPDF from 'jspdf';
+import { 
+  djangoRequest, 
+  testAuthStatus, 
+  getLatestReport, 
+  getReport 
+} from '../api/index'; // Import the corrected functions
 
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
@@ -42,62 +48,99 @@ export default function FinGenieApp() {
   const [financialRatios, setFinancialRatios] = useState([]);
   const [stockData, setStockData] = useState(null);
 
-  // Improved CSRF token function
-  function getCSRFToken() {
-    const csrfCookie = document.cookie.split('; ')
-        .find(row => row.startsWith('csrftoken='));
-    return csrfCookie ? csrfCookie.split('=')[1] : null;
-  }
+  // Enhanced authentication check
+  const checkAuthentication = async () => {
+    try {
+      console.log("Checking authentication status...");
+      const authStatus = await testAuthStatus();
+      console.log("Auth status:", authStatus);
+      
+      if (!authStatus.authenticated) {
+        console.log('User not authenticated, redirecting to login');
+        setError('Please log in to access this page');
+        setTimeout(() => {
+          navigate("/homepage_beforelogin");
+        }, 2000);
+        return false;
+      }
+      
+      console.log('User authenticated successfully');
+      return true;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setError('Authentication check failed. Please log in again.');
+      setTimeout(() => {
+        navigate("/homepage_beforelogin");
+      }, 2000);
+      return false;
+    }
+  };
+
+  // Add logout function
+  const handleLogout = async () => {
+    try {
+      await djangoRequest('/accounts/api/logout/', {
+        method: 'POST'
+      });
+      navigate("/homepage_beforelogin");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Navigate anyway even if logout request fails
+      navigate("/homepage_beforelogin");
+    }
+  };
 
   // Get data from location state (if coming from upload) or fetch from backend
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Check if we have data from location state (from upload)
-        const locationData = location.state;
-        
-        let response;
-        if (locationData && locationData.report_id) {
-          response = await fetch(`http://127.0.0.1:8000/dataprocessor/api/reports/${locationData.report_id}/`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCSRFToken(),
-            },
-            credentials: 'include',
-          });
-        } else {
-          response = await fetch('http://127.0.0.1:8000/dataprocessor/api/latest-report/', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCSRFToken(),
-            },
-            credentials: 'include',
-          });
-        }
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // First check authentication
+      const isAuthenticated = await checkAuthentication();
+      if (!isAuthenticated) return;
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('API Response:', data); // Debug log
-        
-        setCompanyData(data);
-        setFinancialRatios(data.ratios || []);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message || 'Failed to load company data');
-      } finally {
-        setLoading(false);
+      console.log("Fetching company data...");
+      
+      let data;
+      const locationData = location.state;
+      
+      if (locationData && locationData.report_id) {
+        console.log("Fetching specific report:", locationData.report_id);
+        data = await getReport(locationData.report_id);
+      } else {
+        console.log("Fetching latest report");
+        data = await getLatestReport();
       }
-    };
 
+      console.log('API Response:', data);
+      
+      if (data.success === false) {
+        throw new Error(data.error || 'Failed to load data');
+      }
+      
+      setCompanyData(data);
+      setFinancialRatios(data.ratios || []);
+      
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      
+      if (err.message.includes('Authentication') || err.message.includes('401') || err.message.includes('403')) {
+        setError('Authentication required. Redirecting to login...');
+        setTimeout(() => {
+          navigate("/homepage_beforelogin");
+        }, 2000);
+      } else if (err.message.includes('404')) {
+        setError('No financial reports found. Please upload a balance sheet to get started.');
+      } else {
+        setError(err.message || 'Failed to load company data');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [location.state]);
 
@@ -107,19 +150,8 @@ export default function FinGenieApp() {
       if (!companyData?.ticker_symbol) return;
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/dataprocessor/api/stock-data/${companyData.ticker_symbol}/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken(),
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const stockDataResponse = await response.json();
-          setStockData(stockDataResponse.stock_data);
-        }
+        const stockDataResponse = await djangoRequest(`/dataprocessor/api/stock-data/${companyData.ticker_symbol}/`);
+        setStockData(stockDataResponse.data || stockDataResponse);
       } catch (err) {
         console.error('Error fetching stock data:', err);
       }
@@ -333,27 +365,62 @@ export default function FinGenieApp() {
 
           {showToolsDropdown && (
             <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/debt-ratings");
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <TrendingUp size={16} />
                 <span>Debt Ratings</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/company-search");
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <Search size={16} />
                 <span>Search Companies</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/charts-kpis");
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <Activity size={16} />
                 <span>Charts & KPIs</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/blogs");
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <BookOpen size={16} />
                 <span>Blog Page</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <Cpu size={16} />
                 <span>AI Summary</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/comparison");
+                  setShowToolsDropdown(false);
+                }}
+              >
                 <GitCompare size={16} />
                 <span>Comparison</span>
               </div>
@@ -371,15 +438,33 @@ export default function FinGenieApp() {
 
           {showDropdown && (
             <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/profile");
+                  setShowDropdown(false);
+                }}
+              >
                 <User size={16} />
                 <span>Profile</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/profile?tab=history");
+                  setShowDropdown(false);
+                }}
+              >
                 <History size={16} />
                 <span>History</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/profile?tab=settings");
+                  setShowDropdown(false);
+                }}
+              >
                 <Settings size={16} />
                 <span>Settings</span>
               </div>
@@ -387,7 +472,7 @@ export default function FinGenieApp() {
               <div
                 style={styles.dropdownItem}
                 onClick={() => {
-                  navigate("/homepage_beforelogin");
+                  handleLogout();
                 }}
               >
                 <LogOut size={16} />
@@ -465,7 +550,7 @@ export default function FinGenieApp() {
   const SummaryPage = () => {
     if (loading) return <div style={styles.loading}>Loading company data...</div>;
     if (error) return <div style={styles.error}>{error}</div>;
-    if (!companyData) return <div style={styles.error}>No company data available</div>;
+    if (!companyData) return <div style={styles.noData}>No company data available. Please upload a balance sheet to get started.</div>;
 
     // Safely access the data with fallbacks
     const summary = companyData.summary || {};
@@ -541,8 +626,8 @@ export default function FinGenieApp() {
               <h3 style={styles.prosTitle}>Stock Performance</h3>
               <div style={styles.chartContainer}>
                 <p>Stock data available for {companyData.ticker_symbol}</p>
-                <p>Current Price: ${stockData.current_price}</p>
-                <p>Change: {stockData.change} ({stockData.change_percent}%)</p>
+                <p>Current Price: ${stockData.current_price || 'N/A'}</p>
+                <p>Change: {stockData.change || 'N/A'} ({stockData.change_percent || 'N/A'}%)</p>
               </div>
             </div>
           )}
@@ -555,6 +640,7 @@ export default function FinGenieApp() {
   const RatiosPage = () => {
     if (loading) return <div style={styles.loading}>Loading ratios...</div>;
     if (error) return <div style={styles.error}>{error}</div>;
+    if (!companyData) return <div style={styles.noData}>No company data available.</div>;
 
     // Safely access ratios data
     const ratios = Array.isArray(companyData?.ratios) ? companyData.ratios : [];
@@ -678,15 +764,26 @@ const styles = {
   },
   loading: {
     textAlign: 'center',
-    padding: '2rem',
+    padding: '3rem',
     color: '#333',
-    fontSize: '16px'
+    fontSize: '16px',
+    fontStyle: 'italic'
   },
   error: {
     textAlign: 'center',
-    padding: '2rem',
-    color: '#d6867d',
-    fontSize: '16px'
+    padding: '3rem',
+    color: '#d32f2f',
+    fontSize: '16px',
+    backgroundColor: '#ffebee',
+    borderRadius: '8px',
+    margin: '2rem'
+  },
+  noData: {
+    textAlign: 'center',
+    padding: '3rem',
+    color: '#666',
+    fontSize: '16px',
+    fontStyle: 'italic'
   },
   header: {
     display: 'flex',

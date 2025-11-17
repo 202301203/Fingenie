@@ -28,6 +28,7 @@ urlpatterns = [
     path('sector/',include('apps.sector_overview.urls')),
     path('trends/',include('apps.trends.urls')),
     path('blog/', include('apps.blog.urls')),
+    path('company-search/', include('apps.company_search.urls')), # Link Company Search app
     path('api/chat/', include('apps.chatbot.urls')), #Link Chatbot app
     path('api/learning/', include('apps.learning.urls')),# Link quiz learning app
     path('api/insights/', include('apps.ai_insights.urls')), # Link AI insights app

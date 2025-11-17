@@ -71,8 +71,22 @@ const FinanceBlog = () => {
       if (selectedCategory !== 'all') params.category = selectedCategory;
       
       const response = await blogService.getBlogPosts(params);
-      // Handle both response formats
-      const posts = Array.isArray(response) ? response : (response.data || response.results || []);
+      
+      // Handle Django response format
+      console.log('Blog API Response:', response); // Debug log
+      
+      let posts = [];
+      if (response.success) {
+        // Django success format
+        posts = response.posts || response.data || [];
+      } else if (Array.isArray(response)) {
+        // Direct array
+        posts = response;
+      } else {
+        // Other formats
+        posts = response.data || response.results || response.posts || [];
+      }
+      
       setBlogPosts(posts);
     } catch (err) {
       setError('Failed to fetch blog posts');
@@ -167,15 +181,70 @@ const FinanceBlog = () => {
     }
 
     setLoading(true);
+    setError('');
+    setValidationError('');
+    
     try {
-      await blogService.createBlogPost(newBlog);
+      // Test authentication first
+      const authCheck = await blogService.testAuth();
+      console.log('Auth check result:', authCheck);
+      
+      if (!authCheck.authenticated) {
+        setError('You need to be logged in to create a blog post. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Creating blog post as user:', authCheck.user);
+      
+      // Create FormData for proper file upload
+      const formData = new FormData();
+      formData.append('title', newBlog.title);
+      formData.append('category', newBlog.category);
+      formData.append('snippet', newBlog.snippet);
+      formData.append('content', newBlog.content);
+      
+      // Add image if present
+      if (newBlog.imageFile) {
+        formData.append('image', newBlog.imageFile);
+      }
+      
+      console.log('Sending blog data...');
+      
+      // Send the request
+      const result = await blogService.createBlogPost(formData);
+      console.log('Blog creation result:', result);
+      
       showNotification('Blog post created successfully!');
       setCurrentView('listing');
+      
+      // Reset form
+      setNewBlog({
+        title: '',
+        category: 'Investments',
+        snippet: '',
+        content: '',
+        imageFile: null,
+        imageFileName: '',
+      });
+      
       // Refresh the blog posts
-      fetchBlogPosts();
+      await fetchBlogPosts();
     } catch (err) {
-      setError('Failed to create blog post: ' + err.message);
-      console.error('Error creating blog post:', err);
+      console.error('Full error creating blog post:', err);
+      console.error('Error response:', err.response);
+      
+      // Better error messages
+      if (err.response) {
+        const errorMsg = err.response.data?.detail || 
+                        err.response.data?.message || 
+                        JSON.stringify(err.response.data);
+        setError(`Failed to create blog post: ${errorMsg}`);
+      } else if (err.request) {
+        setError('Network error: Could not reach the server. Please check your connection.');
+      } else {
+        setError('Failed to create blog post: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }

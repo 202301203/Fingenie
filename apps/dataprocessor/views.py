@@ -1,5 +1,7 @@
+# dataprocessor/views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 import os
 import uuid
@@ -79,12 +81,15 @@ def process_financial_statements_api(request):
         else:
             ratios_data = ratios_result.get("financial_ratios", [])
 
-        # Step 5: Save to DB using your model's setter methods
+        # Step 5: Save to DB using your model's setter methods - NOW WITH USER LINK
         report_id = str(uuid.uuid4())
         report = FinancialReport.objects.create(
             report_id=report_id,
             company_name=extracted_data.get("company_name", "Unknown Company"),
             ticker_symbol=extracted_data.get("ticker_symbol", ""),
+            user=request.user,  # CRITICAL: Link to current user
+            uploaded_pdf=uploaded_file,  # Save the uploaded file
+            pdf_original_name=uploaded_file.name,  # Save original filename
         )
         
         # Use the setter methods from your model
@@ -105,9 +110,10 @@ def process_financial_statements_api(request):
             'ratios': report.get_ratios(),    # Use getter to ensure proper format
             'metadata': {
                 "file_name": uploaded_file.name,
-                "size_kb": round(uploaded_file.size / 1024, 2)
+                "size_kb": round(uploaded_file.size / 1024, 2),
+                "uploaded_pdf": True,
             }
-        },encoder=CustomJSONEncoder)
+        }, encoder=CustomJSONEncoder)
 
     except Exception as e:
         import traceback
@@ -118,10 +124,12 @@ def process_financial_statements_api(request):
         return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
 @csrf_exempt
+@login_required
 def get_report_by_id_api(request, report_id):
     try:
         print(f" Looking for report: {report_id}")
-        report = FinancialReport.objects.get(report_id=report_id)
+        # Only allow users to access their own reports
+        report = FinancialReport.objects.get(report_id=report_id, user=request.user)
         print(f" Found report: {report.company_name}")
         
         # Debug: Check what data we have
@@ -143,14 +151,18 @@ def get_report_by_id_api(request, report_id):
             'ticker_symbol': report.ticker_symbol,
             'summary': summary_data,
             'ratios': ratios_data,
+            'created_at': report.created_at.isoformat(),
+            'time_ago': report.time_ago,
+            'has_uploaded_pdf': report.has_uploaded_pdf,
+            'uploaded_pdf_name': report.pdf_original_name,
         }
         
         print(f" Sending response for report: {report_id}")
         return JsonResponse(response_data)
         
     except FinancialReport.DoesNotExist:
-        print(f" Report not found: {report_id}")
-        return JsonResponse({'error': 'Report not found'}, status=404)
+        print(f" Report not found or access denied: {report_id}")
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
     except Exception as e:
         print(f" Error in get_report_by_id_api: {str(e)}")
         import traceback
@@ -158,12 +170,14 @@ def get_report_by_id_api(request, report_id):
         return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
 @csrf_exempt
+@login_required
 def get_latest_report_api(request):
     try:
         print(" Looking for latest report...")
-        report = FinancialReport.objects.order_by('-created_at').first()
+        # Only get latest report for current user
+        report = FinancialReport.objects.filter(user=request.user).order_by('-created_at').first()
         if not report:
-            print(" No reports found")
+            print(" No reports found for user")
             return JsonResponse({'error': 'No reports found'}, status=404)
 
         print(f" Found latest report: {report.company_name}")
@@ -176,6 +190,9 @@ def get_latest_report_api(request):
             'ticker_symbol': report.ticker_symbol,
             'summary': report.get_summary(),
             'ratios': report.get_ratios(),
+            'created_at': report.created_at.isoformat(),
+            'time_ago': report.time_ago,
+            'has_uploaded_pdf': report.has_uploaded_pdf,
         }
         
         print(f" Sending latest report response")
@@ -187,9 +204,108 @@ def get_latest_report_api(request):
         print(f"Stack trace: {traceback.format_exc()}")
         return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
+# ============================================
+# NEW PROFILE-INTEGRATED VIEWS
+# ============================================
+
+@csrf_exempt
+@login_required
+def user_summary_history(request):
+    """Get user's financial analysis history for profile page"""
+    try:
+        reports = FinancialReport.objects.filter(user=request.user).order_by('-created_at')
+        
+        reports_data = []
+        for report in reports:
+            reports_data.append({
+                'report_id': str(report.report_id),
+                'company_name': report.company_name,
+                'ticker_symbol': report.ticker_symbol,
+                'summary_preview': report.financial_health_summary[:100] + '...' if report.financial_health_summary else '',
+                'full_summary': report.financial_health_summary,
+                'date': report.created_at.strftime('%b %d, %Y'),
+                'time_ago': report.time_ago,
+                'uploaded_pdf': report.has_uploaded_pdf,
+                'pdf_name': report.pdf_original_name,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'reports': reports_data,
+            'total_reports': len(reports_data)
+        })
+        
+    except Exception as e:
+        print(f"Error in user_summary_history: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to load summary history'
+        }, status=500)
+
+@csrf_exempt
+@login_required
+def delete_report_api(request, report_id):
+    """Delete a user's financial report"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    try:
+        # Only allow users to delete their own reports
+        report = FinancialReport.objects.get(report_id=report_id, user=request.user)
+        company_name = report.company_name
+        report.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Report for {company_name} deleted successfully'
+        })
+        
+    except FinancialReport.DoesNotExist:
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
+    except Exception as e:
+        print(f"Error deleting report: {str(e)}")
+        return JsonResponse({'error': 'Failed to delete report'}, status=500)
+
+@csrf_exempt
+@login_required
+def get_recent_analyses(request):
+    """Get recent analyses for dashboard/activity feed"""
+    try:
+        limit = request.GET.get('limit', 5)
+        reports = FinancialReport.objects.filter(user=request.user).order_by('-created_at')[:int(limit)]
+        
+        analyses_data = []
+        for report in reports:
+            analyses_data.append({
+                'report_id': str(report.report_id),
+                'company_name': report.company_name,
+                'ticker_symbol': report.ticker_symbol,
+                'summary_preview': report.financial_health_summary[:50] + '...' if report.financial_health_summary else 'Analysis completed',
+                'date': report.created_at.strftime('%b %d, %Y'),
+                'time_ago': report.time_ago,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'analyses': analyses_data
+        })
+        
+    except Exception as e:
+        print(f"Error in get_recent_analyses: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to load recent analyses'
+        }, status=500)
+
 @csrf_exempt
 def get_stock_data_api(request, ticker_symbol, period='1M'):
     """
     Mock stock data endpoint - you'll want to integrate with a real API
     """
-    return process_financial_statements_api(request)
+    # This might not need authentication if it's public data
+    return JsonResponse({
+        'success': True,
+        'ticker': ticker_symbol,
+        'period': period,
+        'data': []  # Mock data - integrate with real API
+    })
