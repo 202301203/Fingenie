@@ -1,819 +1,649 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  TrendingUp, 
-  BarChart3, 
-  Building2, 
-  ArrowRight, 
-  Star, 
-  Loader2, 
-  DollarSign, 
-  Users,
-  TrendingDown,
-  GitCompare,
-  User,
-  Building,
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  PieChart,
-  X,
-  Plus,
-  RefreshCw
-} from 'lucide-react';
-import { companySearchService, testAuthStatus } from '../api/index';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Wrench, User, ChevronDown, Plus, X, TrendingUp, Activity, BookOpen, Cpu, GitCompare, History, Settings, LogOut, RefreshCw } from 'lucide-react';
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
 
-const CompanySearch = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [popularSearches, setPopularSearches] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [companyData, setCompanyData] = useState(null);
-  const [historicalData, setHistoricalData] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
-  const [error, setError] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
-  const [backendStatus, setBackendStatus] = useState('checking');
-  
-  const searchInputRef = useRef(null);
-  const suggestionsRef = useRef(null);
-  const toolsMenuRef = useRef(null);
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 
-  const enhancedPopularStocks = [
-    { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', country: 'USA' },
-    { symbol: 'MSFT', name: 'Microsoft Corporation', exchange: 'NASDAQ', country: 'USA' },
-    { symbol: 'GOOGL', name: 'Alphabet Inc.', exchange: 'NASDAQ', country: 'USA' },
-    { symbol: 'TSLA', name: 'Tesla Inc.', exchange: 'NASDAQ', country: 'USA' },
-    { symbol: 'RELIANCE.NS', name: 'Reliance Industries', exchange: 'NSE', country: 'India' },
-    { symbol: 'TCS.NS', name: 'Tata Consultancy Services', exchange: 'NSE', country: 'India' },
-    { symbol: 'INFY.NS', name: 'Infosys Limited', exchange: 'NSE', country: 'India' },
-    { symbol: 'HDFCBANK.NS', name: 'HDFC Bank Limited', exchange: 'NSE', country: 'India' },
-  ];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-  useEffect(() => {
-    checkBackendConnection();
-    fetchPopularSearches();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target) &&
-          suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
-        setShowSuggestions(false);
-      }
+// Define Header component at the top level, before SectorOverviewDashboard
+const Header = ({ showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
+  <header style={styles.header}>
+    <div style={styles.headerLeft}>
+      <div style={styles.logo}>
+        <img
+          src={fglogo_Wbg}
+          style={{ height: "80px", width: "auto" }}
+          alt="logo"
+        />
+      </div>
+    </div>
+    <nav style={styles.nav}>
+      <span style={styles.navLink}>Home</span>
+      <span style={styles.navLink}>News</span>
+      <span style={styles.navLink}>About us</span>
       
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target)) {
-        setShowToolsDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const checkBackendConnection = async () => {
-    try {
-      setBackendStatus('checking');
-      await companySearchService.search('AAPL');
-      setBackendStatus('connected');
-    } catch (error) {
-      setBackendStatus('error');
-    }
-  };
-
-  const fetchPopularSearches = async () => {
-    try {
-      const data = await companySearchService.getPopularSearches();
-      if (data && Array.isArray(data) && data.length > 0) {
-        setPopularSearches(data);
-      } else {
-        setPopularSearches(enhancedPopularStocks);
-      }
-    } catch (error) {
-      setPopularSearches(enhancedPopularStocks);
-    }
-  };
-
-  const fetchSuggestions = async (query) => {
-    if (!query || query.length < 1) return [];
-
-    try {
-      setIsFetchingSuggestions(true);
-      const data = await companySearchService.getSearchSuggestions(query);
-      return data && Array.isArray(data) ? data.slice(0, 8) : getEnhancedFallbackSuggestions(query);
-    } catch (error) {
-      return getEnhancedFallbackSuggestions(query);
-    } finally {
-      setIsFetchingSuggestions(false);
-    }
-  };
-
-  const getEnhancedFallbackSuggestions = (query) => {
-    const queryLower = query.toLowerCase().trim();
-    return enhancedPopularStocks.filter(stock => 
-      stock.symbol.toLowerCase().includes(queryLower) || 
-      stock.name.toLowerCase().includes(queryLower)
-    ).slice(0, 8);
-  };
-
-  const handleSearchInputChange = async (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    if (value.length > 0) {
-      setShowSuggestions(true);
-      const backendSuggestions = await fetchSuggestions(value);
-      setSuggestions(backendSuggestions);
-    } else {
-      setShowSuggestions(false);
-      setSuggestions([]);
-    }
-  };
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setIsLoading(true);
-    setSearchResults([]);
-    setSelectedCompany(null);
-    setCompanyData(null);
-    setHistoricalData([]);
-    setError('');
-    setShowSuggestions(false);
-
-    try {
-      let searchResults = await companySearchService.search(searchQuery);
-      
-      if (!searchResults || searchResults.error || (Array.isArray(searchResults) && searchResults.length === 0)) {
-        searchResults = getEnhancedFallbackSuggestions(searchQuery);
-      }
-
-      if (searchResults.length > 0) {
-        const results = Array.isArray(searchResults) ? searchResults : [searchResults];
-        setSearchResults(results);
-        const company = results[0];
-        setSelectedCompany(company);
-        await fetchCompanyData(company.symbol);
-      } else {
-        setError('Company not found. Try popular symbols like AAPL, MSFT, TSLA, RELIANCE.NS');
-      }
-    } catch (error) {
-      setError('Error searching for company. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSuggestionClick = async (company) => {
-    setSearchQuery(company.symbol);
-    setSelectedCompany(company);
-    setError('');
-    setShowSuggestions(false);
-    setIsLoading(true);
-    
-    try {
-      await fetchCompanyData(company.symbol);
-    } catch (error) {
-      setError('Failed to load company data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePopularSearchClick = async (company) => {
-    setSearchQuery(company.symbol);
-    setSelectedCompany(company);
-    setError('');
-    setShowSuggestions(false);
-    setIsLoading(true);
-    
-    try {
-      await fetchCompanyData(company.symbol);
-    } catch (error) {
-      setError('Failed to load company data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCompanyData = async (symbol) => {
-    try {
-      setIsLoading(true);
-      const comprehensiveData = await companySearchService.getCompanyData(symbol);
-      
-      if (comprehensiveData && !comprehensiveData.error) {
-        setCompanyData(comprehensiveData);
-        await fetchHistoricalData(symbol);
-      } else {
-        throw new Error('Failed to load company data');
-      }
-    } catch (error) {
-      setError('Using demo data - backend connection issue');
-      setCompanyData(generateEnhancedDemoData(symbol));
-      await fetchHistoricalData(symbol);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchHistoricalData = async (symbol) => {
-    try {
-      const data = await companySearchService.getHistoricalData(symbol, '1y', '1d');
-      if (data && data.data) {
-        setHistoricalData(data.data.map(item => ({
-          date: new Date(item.Date).toLocaleDateString(),
-          price: item.Close || item.High || 0
-        })).slice(-30)); // Last 30 days
-      } else {
-        // Generate demo historical data
-        const demoData = [];
-        const basePrice = 100 + Math.random() * 100;
-        for (let i = 30; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          demoData.push({
-            date: date.toLocaleDateString(),
-            price: basePrice + (Math.random() - 0.5) * 20
-          });
-        }
-        setHistoricalData(demoData);
-      }
-    } catch (error) {
-      // Generate demo historical data on error
-      const demoData = [];
-      const basePrice = 100 + Math.random() * 100;
-      for (let i = 30; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        demoData.push({
-          date: date.toLocaleDateString(),
-          price: basePrice + (Math.random() - 0.5) * 20
-        });
-      }
-      setHistoricalData(demoData);
-    }
-  };
-
-  const generateEnhancedDemoData = (symbol) => {
-    const baseValue = 1000000000;
-    const randomMultiplier = () => 0.5 + Math.random();
-    
-    return {
-      company_info: {
-        name: `${symbol} Corporation`,
-        exchange: symbol.includes('.NS') ? 'NSE' : 'NASDAQ',
-        sector: 'Technology',
-        industry: 'Software & Services',
-        employees: 5000 + Math.floor(Math.random() * 45000),
-        description: `${symbol} Corporation is a leading technology company specializing in innovative software solutions and digital services.`,
-        country: symbol.includes('.NS') ? 'India' : 'USA'
-      },
-      stock_price: {
-        current_price: 150 + Math.random() * 200,
-        previous_close: 145 + Math.random() * 200,
-        market_cap: baseValue * (50 + Math.random() * 50),
-        pe_ratio: 15 + Math.random() * 25,
-        fifty_two_week_high: 200 + Math.random() * 100,
-        fifty_two_week_low: 100 + Math.random() * 50,
-        volume: 1000000 + Math.floor(Math.random() * 9000000),
-      },
-      balance_sheet: [{
-        period: '2023-12-31',
-        total_assets: baseValue * 2 * randomMultiplier(),
-        total_liabilities: baseValue * randomMultiplier(),
-        total_equity: baseValue * randomMultiplier(),
-        cash_and_cash_equivalents: baseValue * 0.3 * randomMultiplier(),
-      }],
-      income_statement: [{
-        period: '2023-12-31',
-        total_revenue: baseValue * 1.5 * randomMultiplier(),
-        gross_profit: baseValue * 0.9 * randomMultiplier(),
-        operating_income: baseValue * 0.4 * randomMultiplier(),
-        net_income: baseValue * 0.3 * randomMultiplier(),
-        eps: 2 + Math.random() * 3
-      }],
-      cash_flow: [{
-        period: '2023-12-31',
-        operating_cash_flow: baseValue * 0.4 * randomMultiplier(),
-        free_cash_flow: baseValue * 0.25 * randomMultiplier()
-      }],
-    };
-  };
-
-  const formatCurrency = (value) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
-
-  const formatNumber = (value) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    return `$${value.toFixed(2)}`;
-  };
-
-  const formatPercent = (value) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
-  };
-
-  const calculatePriceChange = () => {
-    if (!companyData?.stock_price?.current_price || !companyData?.stock_price?.previous_close) {
-      return { change: 0, percent: 0 };
-    }
-    const current = companyData.stock_price.current_price;
-    const previous = companyData.stock_price.previous_close;
-    const change = current - previous;
-    const percent = previous !== 0 ? (change / previous) * 100 : 0;
-    return { change, percent };
-  };
-
-  const priceChange = calculatePriceChange();
-
-  const renderStockChart = () => {
-    if (!historicalData || historicalData.length === 0) {
-      return <div style={styles.noData}>No historical data available</div>;
-    }
-
-    return (
-      <div style={styles.chartContainer}>
-        <div style={styles.chartWrapper}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={historicalData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
-                stroke="#6b7280"
-                fontSize={12}
-              />
-              <YAxis 
-                stroke="#6b7280"
-                fontSize={12}
-                tickFormatter={(value) => `$${value.toFixed(0)}`}
-              />
-              <Tooltip 
-                formatter={(value) => [`$${value.toFixed(2)}`, 'Price']}
-                labelFormatter={(label) => `Date: ${label}`}
-                contentStyle={styles.tooltip}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="price" 
-                stroke="#515266" 
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: "#515266" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBalanceSheet = () => {
-    if (!companyData?.balance_sheet || companyData.balance_sheet.length === 0) {
-      return <div style={styles.noData}>No balance sheet data available</div>;
-    }
-
-    return (
-      <div style={styles.financialTableContainer}>
-        <h4 style={styles.financialTableTitle}>Balance Sheet</h4>
-        <div style={styles.financialTable}>
-          <div style={styles.tableHeader}>
-            <div style={styles.tableCell}>Period</div>
-            <div style={styles.tableCell}>Total Assets</div>
-            <div style={styles.tableCell}>Total Liabilities</div>
-            <div style={styles.tableCell}>Total Equity</div>
-            <div style={styles.tableCell}>Cash</div>
-          </div>
-          {companyData.balance_sheet.map((period, index) => (
-            <div key={index} style={styles.tableRow}>
-              <div style={styles.tableCell}>{period.period}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.total_assets)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.total_liabilities)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.total_equity)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.cash_and_cash_equivalents)}</div>
+      <div
+        style={styles.toolsMenu}
+        onMouseEnter={() => setShowToolsDropdown(true)}
+        onMouseLeave={() => setShowToolsDropdown(false)}
+      >
+        <Wrench size={24} color="black" style={styles.userIcon} />
+        {showToolsDropdown && (
+          <div style={styles.HFdropdown}>
+            <div style={styles.dropdownItem}>
+              <TrendingUp size={16} />
+              <span>Debt Ratings</span>
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderIncomeStatement = () => {
-    if (!companyData?.income_statement || companyData.income_statement.length === 0) {
-      return <div style={styles.noData}>No income statement data available</div>;
-    }
-
-    return (
-      <div style={styles.financialTableContainer}>
-        <h4 style={styles.financialTableTitle}>Income Statement</h4>
-        <div style={styles.financialTable}>
-          <div style={styles.tableHeader}>
-            <div style={styles.tableCell}>Period</div>
-            <div style={styles.tableCell}>Revenue</div>
-            <div style={styles.tableCell}>Gross Profit</div>
-            <div style={styles.tableCell}>Operating Income</div>
-            <div style={styles.tableCell}>Net Income</div>
-          </div>
-          {companyData.income_statement.map((period, index) => (
-            <div key={index} style={styles.tableRow}>
-              <div style={styles.tableCell}>{period.period}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.total_revenue)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.gross_profit)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.operating_income)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.net_income)}</div>
+            <div style={styles.dropdownItem}>
+              <Search size={16} />
+              <span>Search Companies</span>
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCashFlow = () => {
-    if (!companyData?.cash_flow || companyData.cash_flow.length === 0) {
-      return <div style={styles.noData}>No cash flow data available</div>;
-    }
-
-    return (
-      <div style={styles.financialTableContainer}>
-        <h4 style={styles.financialTableTitle}>Cash Flow Statement</h4>
-        <div style={styles.financialTable}>
-          <div style={styles.tableHeader}>
-            <div style={styles.tableCell}>Period</div>
-            <div style={styles.tableCell}>Operating Cash Flow</div>
-            <div style={styles.tableCell}>Free Cash Flow</div>
-          </div>
-          {companyData.cash_flow.map((period, index) => (
-            <div key={index} style={styles.tableRow}>
-              <div style={styles.tableCell}>{period.period}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.operating_cash_flow)}</div>
-              <div style={styles.tableCell}>{formatCurrency(period.free_cash_flow)}</div>
+            <div style={styles.dropdownItem}>
+              <Activity size={16} />
+              <span>Charts & KPIs</span>
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderSuggestionsDropdown = () => {
-    if (!showSuggestions) return null;
-
-    return (
-      <div style={styles.suggestionsDropdown} ref={suggestionsRef}>
-        {isFetchingSuggestions ? (
-          <div style={styles.noSuggestions}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-            Searching...
+            <div style={styles.dropdownItem}>
+              <BookOpen size={16} />
+              <span>Blog Page</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Cpu size={16} />
+              <span>AI Summary</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <GitCompare size={16} />
+              <span>Comparison</span>
+            </div>
           </div>
-        ) : suggestions.length > 0 ? (
-          suggestions.map((company, index) => (
-            <button
-              key={`${company.symbol}-${index}`}
-              style={styles.suggestionItem}
-              onClick={() => handleSuggestionClick(company)}
-              type="button"
-            >
-              <Building size={16} style={styles.suggestionIcon} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
-                <span style={styles.suggestionSymbol}>{company.symbol}</span>
-                <span style={styles.suggestionName}>{company.name}</span>
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>
-                {company.exchange}
-              </span>
-            </button>
-          ))
-        ) : (
-          <div style={styles.noSuggestions}>No companies found</div>
         )}
       </div>
+
+      <div
+        style={styles.userMenu}
+        onMouseEnter={() => setShowDropdown(true)}
+        onMouseLeave={() => setShowDropdown(false)}
+      >
+        <User size={24} color="black" style={styles.userIcon} />
+        {showDropdown && (
+          <div style={styles.HFdropdown}>
+            <div style={styles.dropdownItem}>
+              <User size={16} />
+              <span>Profile</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <History size={16} />
+              <span>History</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <Settings size={16} />
+              <span>Settings</span>
+            </div>
+            <div style={styles.dropdownItem}>
+              <LogOut size={16} />
+              <span>Sign out</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
+  </header>
+);
+
+// Define Footer component
+const Footer = ({ lastUpdated }) => (
+  <footer style={styles.footer}>
+    <div style={styles.footerLeft}>
+      <p style={styles.copyright}>
+        © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+      </p>
+      {lastUpdated && (
+        <p style={styles.lastUpdated}>
+          Last updated: {lastUpdated}
+        </p>
+      )}
+    </div>
+    <div style={styles.footerRight}>
+      <h4 style={styles.functionsTitle}>Functions</h4>
+      <ul style={styles.functionsList}>
+        <li style={styles.functionsItem}>AI summary</li>
+        <li style={styles.functionsItem}>stock graphs</li>
+        <li style={styles.functionsItem}>Debt ratings</li>
+        <li style={styles.functionsItem}>search companies</li>
+        <li style={styles.functionsItem}>Blog Page</li>
+        <li style={styles.functionsItem}>Charts & KPIs</li>
+      </ul>
+    </div>
+  </footer>
+);
+
+const SectorChart = ({ companies }) => {
+  // Check if we have valid data
+  if (!companies || companies.length === 0) {
+    return (
+      <div style={styles.noData}>
+        <p>No company data available for chart</p>
+      </div>
+    );
+  }
+
+  // Validate that we have the required properties
+  const validCompanies = companies.filter(company => 
+    company && company.symbol && typeof company.change_pct !== 'undefined'
+  );
+
+  if (validCompanies.length === 0) {
+    return (
+      <div style={styles.noData}>
+        <p>No valid data for chart</p>
+      </div>
+    );
+  }
+
+  const chartData = {
+    labels: validCompanies.map(c => c.symbol),
+    datasets: [
+      {
+        label: '% Change',
+        data: validCompanies.map(c => c.change_pct),
+        backgroundColor: validCompanies.map(c => 
+          c.change_pct >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+        ),
+        borderColor: validCompanies.map(c => 
+          c.change_pct >= 0 ? 'rgba(12, 218, 149, 1)' : 'rgba(239, 68, 68, 1)'
+        ),
+        borderWidth: 1,
+        borderRadius: 6
+      }
+    ]
+  };
+
+  // Optimized for more companies
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: function(context) {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e5e7eb'
+        },
+        ticks: {
+          color: '#6b7280',
+          callback: function(value) {
+            return value + '%';
+          }
+        },
+        title: {
+          display: true,
+          text: '% Change',
+          color: '#6b7280'
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: '#6b7280',
+          maxRotation: 45,
+          minRotation: 0
+        },
+        barPercentage: 0.7, // Thinner bars for more companies
+        categoryPercentage: 0.8, // More spacing between categories
+      }
+    }
+  };
+
+  return <Bar data={chartData} options={options} />;
+};
+
+const SectorOverviewDashboard = () => {
+  const [sectors, setSectors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSector, setSelectedSector] = useState(null);
+  const [tempSelectedCompanies, setTempSelectedCompanies] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const sectionRefs = useRef({});
+
+  // Fetch real-time data from backend
+  const fetchSectorData = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      console.log('Fetching real-time sector data...');
+      const response = await fetch('/sector/api/sector-overview/');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Raw API data received:', data);
+      
+      // Remove metadata if present
+      const { _metadata, ...sectorsData } = data;
+      
+      // Transform the API response to match our frontend structure
+      const transformedSectors = Object.entries(sectorsData).map(([sectorName, sectorData]) => {
+        // FIX: Ensure the companies have the correct property names
+        const companies = (sectorData.stocks || []).map(stock => ({
+          symbol: stock.symbol,
+          name: stock.name || stock.symbol,
+          change_pct: stock.change_pct || 0,
+          price: stock.price || 0,
+          ticker: stock.symbol
+        }));
+        
+        return {
+          name: sectorName,
+          avgPrice: sectorData.avg_price || 0,
+          avgChange: sectorData.avg_change_pct || 0,
+          companies: companies,
+          companies_count: sectorData.companies_count || companies.length,
+          success_rate: sectorData.success_rate || '0/0'
+        };
+      });
+      
+      setSectors(transformedSectors);
+      setLastUpdated(new Date().toLocaleTimeString());
+      setLoading(false);
+      
+    } catch (err) {
+      console.error('Error fetching sector data:', err);
+      setError(err.message);
+      setLoading(false);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSectorData();
+    
+    // Set up auto-refresh every 30 minutes (1800000 milliseconds)
+    const interval = setInterval(fetchSectorData, 1800000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const scrollToSector = (sectorName) => {
+    const element = sectionRefs.current[sectorName];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setDropdownOpen(false);
+    }
+  };
+
+  const openModal = (sector) => {
+    setSelectedSector(sector);
+    setTempSelectedCompanies(sector.companies.map(c => c.ticker));
+    setModalOpen(true);
+  };
+
+  const toggleCompany = (ticker) => {
+    setTempSelectedCompanies(prev =>
+      prev.includes(ticker)
+        ? prev.filter(t => t !== ticker)
+        : [...prev, ticker]
     );
   };
 
-  const renderBackendStatus = () => {
-    if (backendStatus === 'checking') {
-      return (
-        <div style={styles.statusIndicator}>
-          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-          Connecting to backend...
-        </div>
-      );
-    }
-    
-    if (backendStatus === 'connected') {
-      return (
-        <div style={{...styles.statusIndicator, color: '#10b981'}}>
-          <CheckCircle2 size={14} style={{ marginRight: '0.5rem' }} />
-          Backend connected
-        </div>
-      );
-    }
-    
+  const applyCustomGroup = () => {
+    if (!selectedSector) return;
+
+    const newCompanyList = selectedSector.companies.filter((c) =>
+      tempSelectedCompanies.includes(c.ticker)
+    );
+
+    setSectors((prev) =>
+      prev.map((sector) =>
+        sector.name === selectedSector.name
+          ? {
+              ...sector,
+              companies: newCompanyList,
+            }
+          : sector
+      )
+    );
+    setModalOpen(false);
+  };
+
+  const filteredSectors = sectors.filter(sector =>
+    sector.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sector.companies.some(c =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.ticker.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  // Loading skeleton
+  if (loading) {
     return (
-      <div style={{...styles.statusIndicator, color: '#ef4444'}}>
-        <AlertCircle size={14} style={{ marginRight: '0.5rem' }} />
-        Backend offline - using demo data
+      <div style={styles.page}>
+        <Header 
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
+        <div style={styles.loadingContainer}>
+          <div style={styles.spinner}></div>
+          <h3 style={styles.loadingText}>Loading Real-Time Market Data...</h3>
+          <p style={styles.loadingSubtext}>Fetching live stock prices from yfinance</p>
+        </div>
       </div>
     );
-  };
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div style={styles.page}>
+        <Header 
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
+        <div style={styles.errorContainer}>
+          <h3 style={styles.errorTitle}>⚠️ Unable to Load Market Data</h3>
+          <p style={styles.errorText}>{error}</p>
+          <button 
+            style={styles.retryButton}
+            onClick={fetchSectorData}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing...' : '🔄 Try Again'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#070d1fff' }}>Fingenie</span>
-          </div>
-        </div>
-        
-        <nav style={styles.nav}>
-          <span style={styles.navLink}>Home</span>
-          <span style={styles.navLink}>Features</span>
-          <div 
-            ref={toolsMenuRef}
-            style={styles.toolsMenu}
-            onMouseEnter={() => setShowToolsDropdown(true)}
-            onMouseLeave={() => setShowToolsDropdown(false)}
-          >
-            <span style={styles.navLink}>Tools</span>
-            {showToolsDropdown && (
-              <div style={styles.HFdropdown}>
-                <div style={styles.dropdownItem}>
-                  <BarChart3 size={16} />
-                  <span>Financial Analysis</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Company Comparison</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <TrendingUp size={16} />
-                  <span>Market Trends</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <span style={styles.navLink}>About</span>
-          <div style={styles.userMenu}>
-            <User style={styles.userIcon} size={20} />
-          </div>
-        </nav>
-      </header>
+      <Header 
+        showDropdown={showDropdown}
+        setShowDropdown={setShowDropdown}
+        showToolsDropdown={showToolsDropdown}
+        setShowToolsDropdown={setShowToolsDropdown}
+      />
 
-      {/* Controls Bar */}
       <div style={styles.controlsBar}>
-        <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: '500px' }}>
-          <div style={styles.searchContainer}>
-            <Search size={18} style={styles.searchIcon} />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-              placeholder="Search companies (AAPL, MSFT, RELIANCE.NS, TCS.NS)..."
-              style={styles.searchInput}
-            />
-            {renderSuggestionsDropdown()}
-          </div>
-        </form>
-        
-        <button style={styles.sectorsButton}>
-          <Plus size={16} />
-          Sectors
-        </button>
-        
-        <button style={styles.refreshButton}>
-          <RefreshCw size={16} />
-          Refresh
-        </button>
-      </div>
-
-      {/* Status Bar */}
-      <div style={styles.statusBar}>
-        {renderBackendStatus()}
-        <div style={styles.statusItem}>
-          <span style={styles.statusLabel}>Data Source:</span>
-          <span style={styles.statusValue}>
-            {backendStatus === 'connected' ? 'Live Market Data' : 'Demo Data'}
-          </span>
+        <div style={styles.searchContainer}>
+          <Search size={20} style={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search sectors or companies..."
+            style={styles.searchInput}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div style={styles.errorContainer}>
-          <div style={styles.errorTitle}>Error</div>
-          <div style={styles.errorText}>{error}</div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div style={styles.container}>
-        {isLoading ? (
-          <div style={styles.loadingContainer}>
-            <div style={styles.spinner}></div>
-            <div style={styles.loadingText}>Loading Financial Data</div>
-            <div style={styles.loadingSubtext}>Please wait while we fetch the latest information</div>
-          </div>
-        ) : selectedCompany && companyData ? (
-          <div style={styles.sectionContainer}>
-            {/* Company Header */}
-            <div style={styles.sectionHeader}>
-              <div>
-                <h2 style={styles.sectorTitle}>
-                  {companyData.company_info?.name || selectedCompany.name}
-                </h2>
-                <p style={styles.successRate}>
-                  {selectedCompany.symbol} • {companyData.company_info?.exchange} • {companyData.company_info?.country}
-                </p>
-              </div>
-              
-              {companyData.stock_price && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>
-                    {formatCurrency(companyData.stock_price.current_price)}
-                  </div>
-                  <div style={{
-                    color: priceChange.change >= 0 ? '#10b981' : '#ef4444',
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    {priceChange.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                    {formatCurrency(Math.abs(priceChange.change))} ({formatPercent(priceChange.percent)})
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Metrics */}
-            <div style={styles.metricsContainer}>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>Market Cap</span>
-                <span style={styles.metricValue}>
-                  {formatNumber(companyData.stock_price?.market_cap)}
-                </span>
-              </div>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>P/E Ratio</span>
-                <span style={styles.metricValue}>
-                  {companyData.stock_price?.pe_ratio ? companyData.stock_price.pe_ratio.toFixed(2) : 'N/A'}
-                </span>
-              </div>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>52W High</span>
-                <span style={styles.metricValue}>
-                  {formatCurrency(companyData.stock_price?.fifty_two_week_high)}
-                </span>
-              </div>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>52W Low</span>
-                <span style={styles.metricValue}>
-                  {formatCurrency(companyData.stock_price?.fifty_two_week_low)}
-                </span>
-              </div>
-              <div style={styles.metric}>
-                <span style={styles.metricLabel}>Volume</span>
-                <span style={styles.metricValue}>
-                  {companyData.stock_price?.volume?.toLocaleString() || 'N/A'}
-                </span>
-              </div>
-            </div>
-
-            {/* Tab Navigation */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
-              {['overview', 'chart', 'balance-sheet', 'income-statement', 'cash-flow'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: activeTab === tab ? '#515266' : 'transparent',
-                    color: activeTab === tab ? 'white' : '#6b7280',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    transition: 'all 0.2s'
-                  }}
+        <div style={{ position: 'relative' }}>
+          <button
+            style={styles.sectorsButton}
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#707181ff'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#515266'}
+          >
+            Sectors
+            <ChevronDown size={18} />
+          </button>
+          
+          {dropdownOpen && (
+            <div style={styles.dropdown}>
+              {sectors.map(sector => (
+                <div
+                  key={sector.name}
+                  style={styles.dropdownItemSector}
+                  onClick={() => scrollToSector(sector.name)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
-                  {tab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                </button>
+                  {sector.name}
+                </div>
               ))}
             </div>
+          )}
+        </div>
 
-            {/* Tab Content */}
-            <div style={styles.tabContent}>
-              {activeTab === 'overview' && (
-                <div>
-                  {companyData.company_info?.description && (
-                    <div style={{ marginBottom: '2rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937' }}>
-                        Company Description
-                      </h3>
-                      <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                        {companyData.company_info.description}
-                      </p>
-                    </div>
-                  )}
-                  {renderStockChart()}
-                </div>
-              )}
+        <button
+          style={styles.refreshButton}
+          onClick={fetchSectorData}
+          disabled={refreshing}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#707181ff'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#515266'}
+        >
+          <RefreshCw 
+            size={18} 
+            style={refreshing ? { 
+              animation: 'spin 1s linear infinite',
+              transformOrigin: 'center'
+            } : {}} 
+          />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
 
-              {activeTab === 'chart' && renderStockChart()}
-              {activeTab === 'balance-sheet' && renderBalanceSheet()}
-              {activeTab === 'income-statement' && renderIncomeStatement()}
-              {activeTab === 'cash-flow' && renderCashFlow()}
-            </div>
-          </div>
-        ) : (
-          <div style={styles.noResults}>
-            <h3 style={{ color: '#6b7280', marginBottom: '1rem' }}>Search for a Company</h3>
-            <p style={{ color: '#9ca3af' }}>Enter a stock symbol or company name to get started</p>
-            
-            {/* Popular Searches */}
-            {popularSearches.length > 0 && (
-              <div style={{ marginTop: '2rem' }}>
-                <h4 style={{ color: '#6b7280', marginBottom: '1rem' }}>Popular Companies</h4>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {popularSearches.map((company) => (
-                    <button
-                      key={company.symbol}
-                      onClick={() => handlePopularSearchClick(company)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem 1rem',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <Star size={14} style={{ color: '#f59e0b' }} />
-                      <span style={{ fontWeight: '600' }}>{company.symbol}</span>
-                      <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>{company.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+      <div style={styles.statusBar}>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>Sectors Loaded:</span>
+          <span style={styles.statusValue}>{sectors.length}</span>
+        </div>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>Total Stocks:</span>
+          <span style={styles.statusValue}>
+            {sectors.reduce((acc, sector) => acc + sector.companies_count, 0)}
+          </span>
+        </div>
+        {lastUpdated && (
+          <div style={styles.statusItem}>
+            <span style={styles.statusLabel}>Last Updated:</span>
+            <span style={styles.statusValue}>{lastUpdated}</span>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-          <p style={styles.copyright}>
-            © 2024 Fingenie. All rights reserved.
-          </p>
-          <p style={styles.lastUpdated}>
-            Data last updated: {new Date().toLocaleDateString()}
-          </p>
-        </div>
-        <div style={styles.footerRight}>
-          <h4 style={styles.functionsTitle}>Financial Tools</h4>
-          <ul style={styles.functionsList}>
-            <li style={styles.functionsItem}>Company Analysis</li>
-            <li style={styles.functionsItem}>Financial Statements</li>
-            <li style={styles.functionsItem}>Market Trends</li>
-            <li style={styles.functionsItem}>Investment Research</li>
-          </ul>
-        </div>
-      </footer>
+      <div style={styles.container}>
+        {filteredSectors.length === 0 ? (
+          <div style={styles.noResults}>
+            <h3>No sectors found</h3>
+            <p>Try adjusting your search terms</p>
+          </div>
+        ) : (
+          filteredSectors.map(sector => (
+            <div
+              key={sector.name}
+              ref={el => sectionRefs.current[sector.name] = el}
+              style={styles.sectionContainer}
+            >
+              <div style={styles.sectionHeader}>
+                <div>
+                  <h2 style={styles.sectorTitle}>{sector.name}</h2>
+                  {sector.success_rate && (
+                    <p style={styles.successRate}>
+                      {sector.success_rate} stocks loaded
+                    </p>
+                  )}
+                </div>
+                <button
+                  style={styles.createGroupButton}
+                  onClick={() => openModal(sector)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#CAD3E7'}
+                >
+                  <Plus size={18} />
+                  Make custom company group
+                </button>
+              </div>
 
-      {/* Global Styles */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+              <div style={styles.metricsContainer}>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Average Price</span>
+                  <span style={styles.metricValue}>
+                    ₹{sector.avgPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Average % Change</span>
+                  <span
+                    style={{
+                      ...styles.metricValue,
+                      color: sector.avgChange >= 0 ? '#1cc638ff' : '#ef4444'
+                    }}
+                  >
+                    {sector.avgChange >= 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
+                  </span>
+                </div>
+                <div style={styles.metric}>
+                  <span style={styles.metricLabel}>Companies</span>
+                  <span style={styles.metricValue}>
+                    {sector.companies_count}
+                  </span>
+                </div>
+              </div>
+
+              {sector.companies.length > 0 ? (
+                <div style={styles.chartContainer}>
+                  <div style={{ ...styles.chartWrapper, minWidth: `${Math.max(600, sector.companies.length * 90)}px` }}>
+                    <SectorChart companies={sector.companies} />
+                  </div>
+                </div>
+              ) : (
+                <div style={styles.noData}>
+                  <p>No stock data available for this sector</p>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <Footer lastUpdated={lastUpdated} />
+
+      {modalOpen && selectedSector && (
+        <div style={styles.modal} onClick={() => setModalOpen(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Customize {selectedSector.name} Companies</h3>
+              <button
+                style={styles.closeButton}
+                onClick={() => setModalOpen(false)}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={styles.companyList}>
+              {selectedSector.companies.map(company => (
+                <div
+                  key={company.ticker}
+                  style={styles.companyItem}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <input
+                    type="checkbox"
+                    id={company.ticker}
+                    style={styles.checkbox}
+                    checked={tempSelectedCompanies.includes(company.ticker)}
+                    onChange={() => toggleCompany(company.ticker)}
+                  />
+                  <label
+                    htmlFor={company.ticker}
+                    style={styles.companyLabel}
+                  >
+                    {company.ticker} - ₹{company.price} ({company.change_pct >= 0 ? '+' : ''}{company.change_pct}%)
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div style={styles.modalActions}>
+              <button
+                style={{ ...styles.button, ...styles.secondaryButton }}
+                onClick={() => setModalOpen(false)}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1d5db'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ ...styles.button, ...styles.primaryButton }}
+                onClick={applyCustomGroup}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#515266'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#515266'}
+              >
+                Apply Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add CSS for spinning animation */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };
 
-// Updated styles matching your aesthetic
 const styles = {
   page: {
     minHeight: '100vh',
@@ -853,21 +683,29 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '2rem',
-    textAlign: 'center',
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    margin: '2rem'
+    flex: 1,
+    padding: '4rem 2rem',
+    textAlign: 'center'
   },
   errorTitle: {
-    fontSize: '1.25rem',
+    fontSize: '1.5rem',
     color: '#dc2626',
-    marginBottom: '0.5rem'
+    marginBottom: '1rem'
   },
   errorText: {
     color: '#6b7280',
-    marginBottom: '1rem'
+    marginBottom: '2rem',
+    maxWidth: '400px'
+  },
+  retryButton: {
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#515266',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: '500'
   },
   header: {
     display: 'flex',
@@ -962,6 +800,10 @@ const styles = {
     fontSize: '0.8rem',
     color: '#9ca3af'
   },
+  footerLink: {
+    color: '#60a5fa',
+    textDecoration: 'none'
+  },
   footerRight: {
     flex: 1
   },
@@ -1040,6 +882,25 @@ const styles = {
     transition: 'background-color 0.2s',
     whiteSpace: 'nowrap'
   },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    maxHeight: '400px',
+    overflowY: 'auto',
+    zIndex: 1000
+  },
+  dropdownItemSector: {
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '0.95rem'
+  },
   statusBar: {
     backgroundColor: '#f8fafc',
     padding: '1rem 2rem',
@@ -1047,12 +908,6 @@ const styles = {
     gap: '2rem',
     alignItems: 'center',
     borderBottom: '1px solid #e5e7eb'
-  },
-  statusIndicator: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '0.9rem',
-    fontWeight: '500'
   },
   statusItem: {
     display: 'flex',
@@ -1107,6 +962,20 @@ const styles = {
     fontSize: '0.9rem',
     color: '#6b7280'
   },
+  createGroupButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.25rem',
+    backgroundColor: '#CAD3E7',
+    color: 'black',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    transition: 'background-color 0.2s'
+  },
   metricsContainer: {
     display: 'flex',
     gap: '2rem',
@@ -1138,13 +1007,6 @@ const styles = {
     minWidth: '600px',
     height: '400px'
   },
-  tooltip: {
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    padding: '0.5rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
   noData: {
     textAlign: 'center',
     padding: '3rem',
@@ -1152,99 +1014,99 @@ const styles = {
     backgroundColor: '#f9fafb',
     borderRadius: '8px'
   },
-  tabContent: {
-    minHeight: '400px'
-  },
-  // Financial Table Styles
-  financialTableContainer: {
-    marginBottom: '2rem'
-  },
-  financialTableTitle: {
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: '1rem'
-  },
-  financialTable: {
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    overflow: 'hidden'
-  },
-  tableHeader: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-    backgroundColor: '#f7fafc',
-    borderBottom: '1px solid #e5e7eb',
-    fontWeight: '600',
-    color: '#1f2937'
-  },
-  tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-    borderBottom: '1px solid #f3f4f6'
-  },
-  tableCell: {
-    padding: '0.75rem 1rem',
-    borderRight: '1px solid #f3f4f6',
-    fontSize: '0.9rem',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  // Suggestions Dropdown
-  suggestionsDropdown: {
-    position: 'absolute',
-    top: '100%',
+  modal: {
+    position: 'fixed',
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    zIndex: 1001,
-    maxHeight: '300px',
-    overflowY: 'auto',
-    marginTop: '4px'
-  },
-  suggestionItem: {
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    borderBottom: '1px solid #f3f4f6',
-    border: 'none',
+    justifyContent: 'center',
+    zIndex: 2000,
+    padding: '1rem'
+  },
+  modalContent: {
     backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '2rem',
+    maxWidth: '600px',
     width: '100%',
-    fontFamily: 'inherit',
-    textAlign: 'left'
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    position: 'relative'
   },
-  suggestionSymbol: {
-    fontWeight: '600',
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1.5rem'
+  },
+  modalTitle: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
     color: '#1f2937',
-    minWidth: '80px'
+    margin: 0
   },
-  suggestionName: {
+  closeButton: {
+    padding: '0.5rem',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
     color: '#6b7280',
-    fontSize: '0.9rem',
-    flex: 1,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap'
-  },
-  suggestionIcon: {
-    color: '#9ca3af'
-  },
-  noSuggestions: {
-    padding: '1rem',
-    textAlign: 'center',
-    color: '#9ca3af',
-    fontSize: '0.9rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  companyList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    marginBottom: '1.5rem'
+  },
+  companyItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    transition: 'background-color 0.2s'
+  },
+  checkbox: {
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer'
+  },
+  companyLabel: {
+    fontSize: '0.95rem',
+    color: '#1f2937',
+    cursor: 'pointer',
+    flex: 1
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '1rem',
+    justifyContent: 'flex-end'
+  },
+  button: {
+    padding: '0.75rem 1.5rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    transition: 'background-color 0.2s'
+  },
+  primaryButton: {
+    backgroundColor: '#515266',
+    color: 'white'
+  },
+  secondaryButton: {
+    backgroundColor: '#e5e7eb',
+    color: '#1f2937'
   }
 };
 
-export default CompanySearch;
+export default SectorOverviewDashboard;
