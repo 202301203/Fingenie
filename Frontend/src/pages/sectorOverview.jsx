@@ -712,7 +712,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '0.5rem 2rem',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#DEE6E6',
     border: '1px solid #000000ff',
     borderRadius: '8px',
     position: 'sticky',

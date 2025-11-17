@@ -4,7 +4,9 @@ import {
   Heart, Share2, Bookmark, X, LogOut, History, Settings,
   Wrench, TrendingUp, Activity, BookOpen, Cpu, GitCompare  // Add these missing icons
 } from 'lucide-react';
-import fglogo_Wbg from './images/fglogo_Wbg.png';
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import { useNavigate } from "react-router-dom";
+
 
 
 
@@ -24,7 +26,7 @@ const FinanceBlog = () => {
   const [notification, setNotification] = useState(''); 
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [featuredImage, setFeaturedImage] = useState(null); 
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
     const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const [isNewsActive, setIsNewsActive] = useState(false);
@@ -374,11 +376,9 @@ const FinanceBlog = () => {
         <nav style={styles.nav}>
           {/* Home */}
           <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/mainpageafterlogin" ? "2px solid black" : "none",
-            }}
+            style={
+              styles.navLink
+              }
             onClick={() => navigate("/mainpageafterlogin")}
           >
             Home
@@ -397,11 +397,8 @@ const FinanceBlog = () => {
 
           {/* About */}
            <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
+            style={
+              styles.navLink}
             onClick={() => navigate("/AboutUs")}
           >
             About us

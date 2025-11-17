@@ -143,6 +143,19 @@ export default function FinGenieApp() {
 
   // Simplified PDF Download Function 
   const downloadPDF = async () => {
+    const addWrappedText = (pdf, text, x, y, maxWidth, lineHeight = 16) => {
+  const lines = pdf.splitTextToSize(text, maxWidth);
+  for (let line of lines) {
+    if (y > 760) {             // page overflow check
+      pdf.addPage();
+      y = 40;                  // reset to top margin
+    }
+    pdf.text(line, x, y);
+    y += lineHeight;
+  }
+  return y;
+};
+
     try {
       const pdf = new jsPDF('p', 'pt', 'a4');
       let yPosition = 40;
@@ -170,6 +183,22 @@ export default function FinGenieApp() {
 
       pdf.setFontSize(10);
       if (companyData?.summary) {
+        // Financial Health Summary
+        if (companyData.summary.financial_health_summary) {
+  pdf.setTextColor(0, 0, 139);
+  pdf.text("Financial Health Overview:", 40, yPosition);
+  yPosition += 20;
+  pdf.setTextColor(0, 0, 0);
+
+  yPosition = addWrappedText(
+    pdf,
+    companyData.summary.financial_health_summary,
+    40,
+    yPosition,
+    500,   // max width
+    16     // line height
+  );
+}
         // Pros
         if (companyData.summary.pros && companyData.summary.pros.length > 0) {
           pdf.setTextColor(0, 100, 0); // Green for pros
@@ -178,13 +207,9 @@ export default function FinGenieApp() {
           pdf.setTextColor(0, 0, 0);
           
           companyData.summary.pros.forEach(pro => {
-            if (yPosition > 700) {
-              pdf.addPage();
-              yPosition = 40;
-            }
-            pdf.text(`• ${pro}`, 50, yPosition);
-            yPosition += 15;
-          });
+  yPosition = addWrappedText(pdf, `• ${pro}`, 50, yPosition, 480, 16);
+});
+
         }
 
         // Cons
@@ -199,83 +224,60 @@ export default function FinGenieApp() {
           pdf.setTextColor(0, 0, 0);
           
           companyData.summary.cons.forEach(con => {
-            if (yPosition > 700) {
-              pdf.addPage();
-              yPosition = 40;
-            }
-            pdf.text(`• ${con}`, 50, yPosition);
-            yPosition += 15;
-          });
+  yPosition = addWrappedText(pdf, `• ${con}`, 50, yPosition, 480, 16);
+});
+
         }
 
-        // Financial Health Summary
-        if (companyData.summary.financial_health_summary) {
-          if (yPosition > 600) {
-            pdf.addPage();
-            yPosition = 40;
-          }
-          pdf.setTextColor(0, 0, 139); // Blue for summary
-          pdf.text('Financial Health Overview:', 40, yPosition);
-          yPosition += 15;
-          pdf.setTextColor(0, 0, 0);
-          
-          // Split long text into multiple lines
-          const summaryLines = pdf.splitTextToSize(companyData.summary.financial_health_summary, 500);
-          summaryLines.forEach(line => {
-            if (yPosition > 700) {
-              pdf.addPage();
-              yPosition = 40;
-            }
-            pdf.text(line, 40, yPosition);
-            yPosition += 15;
-          });
-        }
+        
+
       }
 
       // Ratios section on new page
-      pdf.addPage();
-      yPosition = 40;
-      pdf.setFontSize(14);
-      pdf.text('Financial Ratios Analysis', 40, yPosition);
-      yPosition += 30;
+      // Ratios section on new page
+pdf.addPage();
+yPosition = 40;
 
-      pdf.setFontSize(10);
-      if (financialRatios.length > 0) {
-        financialRatios.forEach((ratio, index) => {
-          if (yPosition > 700) {
-            pdf.addPage();
-            yPosition = 40;
-          }
-          
-          pdf.setFontSize(12);
-          pdf.setTextColor(0, 0, 128);
-          pdf.text(`${index + 1}. ${ratio.ratio_name || `Ratio ${index + 1}`}`, 40, yPosition);
-          yPosition += 20;
-          
-          pdf.setFontSize(10);
-          pdf.setTextColor(0, 0, 0);
-          pdf.text(`Formula: ${ratio.formula || 'N/A'}`, 50, yPosition);
-          yPosition += 15;
-          pdf.text(`Calculation: ${ratio.calculation || 'N/A'}`, 50, yPosition);
-          yPosition += 15;
-          pdf.text(`Result: ${ratio.result || 'N/A'}`, 50, yPosition);
-          yPosition += 15;
-          
-          // Split interpretation text
-          const interpretation = ratio.interpretation || 'No interpretation available';
-          const interpretationLines = pdf.splitTextToSize(`Interpretation: ${interpretation}`, 500);
-          interpretationLines.forEach(line => {
-            if (yPosition > 700) {
-              pdf.addPage();
-              yPosition = 40;
-            }
-            pdf.text(line, 50, yPosition);
-            yPosition += 15;
-          });
-          
-          yPosition += 10; // Space between ratios
-        });
-      }
+pdf.setFontSize(14);
+pdf.text('Financial Ratios Analysis', 40, yPosition);
+yPosition += 30;
+
+pdf.setFontSize(10);
+
+if (financialRatios.length > 0) {
+ financialRatios.forEach((ratio, index) => {
+
+  if (yPosition > 720) {
+    pdf.addPage();
+    yPosition = 40;
+  }
+
+  pdf.setFontSize(12);
+  pdf.setTextColor(0, 0, 128);
+  pdf.text(`${index + 1}. ${ratio.ratio_name || `Ratio ${index + 1}`}`, 40, yPosition);
+  yPosition += 22;
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(0, 0, 0);
+
+  yPosition = addWrappedText(pdf, `Formula: ${ratio.formula || "N/A"}`, 50, yPosition, 480, 16);
+  yPosition = addWrappedText(pdf, `Calculation: ${ratio.calculation || "N/A"}`, 50, yPosition, 480, 16);
+  yPosition = addWrappedText(pdf, `Result: ${ratio.result || "N/A"}`, 50, yPosition, 480, 16);
+
+  yPosition = addWrappedText(
+    pdf,
+    `Interpretation: ${ratio.interpretation || "No interpretation available"}`,
+    50,
+    yPosition,
+    480,
+    16
+  );
+
+  yPosition += 10;
+});
+
+}
+
 
       // Save PDF
       pdf.save(`FinGenie_Report_${companyData?.company_name || 'Unknown'}.pdf`);
@@ -286,119 +288,143 @@ export default function FinGenieApp() {
   };
 
   // Header Component
-  const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img
-            src={fglogo_Wbg}
-            style={{ height: "80px", width: "auto" }}
-            alt="logo"
-          />
+    const Header = () => (
+      <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logo}>
+            <img
+              src={fglogo_Wbg}
+              style={{ height: "80px", width: "auto" }}
+              alt="logo"
+            />
+          </div>
         </div>
-      </div>
-
-      <nav style={styles.nav}>
-        {/* Home */}
-        <span
-          style={styles.navLink}
-          onClick={() => navigate("/mainpageafterlogin")}
-        >
-          Home
-        </span>
-
-        {/* News */}
-        <span
-          style={styles.navLink}
-          onClick={() => navigate("/NewsPage")}
-        >
-          News
-        </span>
-
-        {/* About */}
-        <span
-          style={styles.navLink}
-          onClick={() => navigate("/AboutUs")}
-        >
-          About us
-        </span>
-
-        {/* Tools Menu */}
-        <div
-          style={styles.toolsMenu}
-          onMouseEnter={() => setShowToolsDropdown(true)}
-          onMouseLeave={() => setShowToolsDropdown(false)}
-        >
-          <Wrench size={24} color="black" style={styles.userIcon} />
-
-          {showToolsDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
+        <nav style={styles.nav}>
+          <span
+            className="nav-link"
+            style={styles.navLink}
+            onClick={() => navigate("/mainpageafterlogin")}
+          >
+            Home
+          </span>
+          <span
+            className="nav-link"
+            style={{
+              ...styles.navLink,
+              borderBottom:
+                location.pathname === "/NewsPage" ? "2px solid black" : "none",
+            }}
+            onClick={() => navigate("/NewsPage")}
+          >
+            News
+          </span>
+          <span
+            className="nav-link"
+            style={{
+              ...styles.navLink,
+              borderBottom:
+                location.pathname === "/AboutUs" ? "2px solid black" : "none",
+            }}
+            onClick={() => navigate("/AboutUs")}
+          >
+            About us
+          </span>
+  
+          <div
+            style={styles.toolsMenu}
+             onClick={() => setShowToolsDropdown(prev => !prev)} 
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
+            {showToolsDropdown && (
+              <div style={styles.HFdropdown}>
+                <div style={styles.dropdownItem}>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Search size={16} />
+                  <span>Search Companies</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Activity size={16} />
+                  <span>Trends & KPIs</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Sector Overview</span>
+                </div>
               </div>
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
+            )}
+          </div>
+  
+          <div
+            style={styles.userMenu}
+            onClick={() => setShowDropdown(prev => !prev)} 
+          >
+            <User size={24} color="black" style={styles.userIcon} />
+            {showDropdown && (
+              <div style={styles.HFdropdown}>
+                <div style={styles.dropdownItem}>
+                  <User size={16} />
+                  <span>Profile</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <History size={16} />
+                  <span>History</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </div>
+                <div style={styles.dropdownItem}
+                  onClick={() => {
+                    // (Optional) clear user data or tokens here
+                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                  }}>
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </div>
               </div>
-              <div style={styles.dropdownItem}>
-                <Activity size={16} />
-                <span>Charts & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
+        </nav>
+      </header>
+    );
+  
+    const Footer = () => (
+      <footer style={styles.footer}>
+        <div style={styles.footerLeft}>
+          <p style={styles.copyright}>
+            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+          </p>
         </div>
-
-        {/* User Menu */}
-        <div
-          style={styles.userMenu}
-          onMouseEnter={() => setShowDropdown(true)}
-          onMouseLeave={() => setShowDropdown(false)}
-        >
-          <User size={24} color="black" style={styles.userIcon} />
-
-          {showDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-
-              <div
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/homepage_beforelogin");
-                }}
-              >
-                <LogOut size={16} />
-                <span>Sign out</span>
-              </div>
-            </div>
-          )}
+  
+        <div style={styles.footerRight}>
+          <h4 style={styles.functionsTitle}>Functions</h4>
+          <ul style={styles.functionsList}>
+            <li style={styles.functionsItem}>AI summary</li>
+            <li style={styles.functionsItem}>Sector View</li>
+            <li style={styles.functionsItem}>Debt ratings</li>
+            <li style={styles.functionsItem}>search companies</li>
+            <li style={styles.functionsItem}>Blog Page</li>
+            <li style={styles.functionsItem}>Trends & KPIs</li>
+            <li style={styles.functionsItem}>Compare companies</li>
+          </ul>
         </div>
-      </nav>
-    </header>
-  );
+      </footer>
+    );
 
   // Navigation Component
   const Navigation = () => (
@@ -432,27 +458,7 @@ export default function FinGenieApp() {
   );
 
   // Footer Component
-  const Footer = () => (
-    <footer style={styles.footer}>
-      <div style={styles.footerLeft}>
-        <p style={styles.copyright}>
-          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-        </p>
-      </div>
 
-      <div style={styles.footerRight}>
-        <h4 style={styles.functionsTitle}>Functions</h4>
-        <ul style={styles.functionsList}>
-          <li style={styles.functionsItem}>AI summary</li>
-          <li style={styles.functionsItem}>stock graphs</li>
-          <li style={styles.functionsItem}>Debt ratings</li>
-          <li style={styles.functionsItem}>search companies</li>
-          <li style={styles.functionsItem}>Blog Page</li>
-          <li style={styles.functionsItem}>Charts & KPIs</li>
-        </ul>
-      </div>
-    </footer>
-  );
 
   const sectors = [
     'Telecom', 'Technology', 'Financial Services', 
@@ -480,73 +486,38 @@ export default function FinGenieApp() {
           {companyData.ticker_symbol && (
             <p style={styles.tickerSymbol}>Ticker: {companyData.ticker_symbol}</p>
           )}
-          <div onClick={() => setSectorDropdown(prev => !prev)}>
-            <button style={styles.compareSectorButton}>  
-              Compare with your sector
-            </button>
-
-            {sectorDropdown && (
-              <div style={styles.dropdownContainer}>
-                <div style={styles.sectorHeader}>select your sector</div>
-                {sectors.map((sector, index) => (
-                  <div 
-                    key={index} 
-                    style={styles.sectorItem}
-                  >
-                    <span>{sector}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          
         </div>
 
         <div style={styles.contentBox}>
-          <div style={styles.contentGrid}>
-            <div style={styles.prosSection}>
-              <h3 style={styles.prosTitle}>→ Pros</h3>
-              <ul style={styles.prosList}>
-                {pros.length > 0 ? (
-                  pros.map((pro, i) => (
-                    <li key={i}>{pro}</li>
-                  ))
-                ) : (
-                  <li>No pros data available</li>
-                )}
-              </ul>
-            </div>
-            <div style={styles.consSection}>
-              <h3 style={styles.prosTitle}>→ Cons</h3>
-              <ul style={styles.prosList}>
-                {cons.length > 0 ? (
-                  cons.map((con, i) => (
-                    <li key={i}>{con}</li>
-                  ))
-                ) : (
-                  <li>No cons data available</li>
-                )}
-              </ul>
-            </div> 
-          </div>
-          
-          <div style={styles.financialHealthSummarySec}>
-            <h3 style={styles.prosTitle}>→ Financial Health Summary</h3>
-            <h4 style={{ color: '#3d3d3dff' }}> Overview </h4>
-            <p>{financialHealthSummary}</p>
-          </div>
+  <div style={styles.contentGrid}>
 
-          {/* Stock Chart Section */}
-          {stockData && (
-            <div style={{ marginTop: '2rem' }}>
-              <h3 style={styles.prosTitle}>Stock Performance</h3>
-              <div style={styles.chartContainer}>
-                <p>Stock data available for {companyData.ticker_symbol}</p>
-                <p>Current Price: ${stockData.current_price}</p>
-                <p>Change: {stockData.change} ({stockData.change_percent}%)</p>
-              </div>
-            </div>
-          )}
-        </div>
+    {/* SUMMARY (FULL WIDTH) */}
+    <div style={{ ...styles.financialHealthSummarySec, gridArea: "summary" }}>
+      <h3 style={styles.prosTitle}>Financial Health Summary</h3>
+      <h4 style={{ color: '#3d3d3dff' }}>Overview</h4>
+      <p style={styles.financialSummary}>{financialHealthSummary}</p>
+    </div>
+
+    {/* CONS (LEFT BOX) */}
+    <div style={{ ...styles.consSection, gridArea: "cons" }}>
+      <h3 style={styles.prosTitle}>Cons</h3>
+      <ul style={styles.prosList}>
+        {cons.length > 0 ? cons.map((con, i) => <li key={i}>{con}</li>) : <li>No cons data available</li>}
+      </ul>
+    </div>
+
+    {/* PROS (RIGHT BOX) */}
+    <div style={{ ...styles.prosSection, gridArea: "pros" }}>
+      <h3 style={styles.prosTitle}>Pros</h3>
+      <ul style={styles.prosList}>
+        {pros.length > 0 ? pros.map((pro, i) => <li key={i}>{pro}</li>) : <li>No pros data available</li>}
+      </ul>
+    </div>
+
+  </div>
+</div>
+
       </>
     );
   };
@@ -619,12 +590,10 @@ export default function FinGenieApp() {
             <div
               key={index}
               style={{
-                ...styles.ratioCard,
-                ...(index === 2 || index === 3 ? styles.ratioCardDark : {}),
-                ...(index === 4 || index === 5 ? styles.ratioCardLight : {})
+                ...styles.ratioCard
               }}
             >
-              <h3 style={index >= 4 ? styles.ratioCardTitleDark : styles.ratioCardTitle}>
+              <h3 style={styles.ratioCardTitleDark}>
                 {ratio.ratio_name || `Ratio ${index + 1}`}
               </h3>
               <p style={index >= 4 ? styles.ratioCardTextDark : styles.ratioCardText}>
@@ -664,7 +633,7 @@ export default function FinGenieApp() {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#f8f8f8',
     color: 'white',
     fontFamily: 'Arial, sans-serif',
     display: 'flex',
@@ -692,17 +661,15 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
-    position: 'relative',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)',
-    borderBottom: '2px solid black',
-    color: 'white',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   },
   headerLeft: {
     display: 'flex',
@@ -733,12 +700,11 @@ const styles = {
     transition: "opacity 0.3s",
   },
   toolsMenu: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    marginLeft: "1rem",
-    color: "Black",
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
   },
   userMenu: {
     position: 'relative',
@@ -748,17 +714,7 @@ const styles = {
   userIcon: {
     transition: 'color 0.2s'
   },
-  dropdown: {
-    position: 'absolute',
-    right: '0',
-    top: '32px',
-    backgroundColor: '#D9D9D9',
-    borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-    padding: '0.5rem',
-    minWidth: '120px',
-    zIndex: 1000
-  },
+
   dropdownItem: {
     display: 'flex',
     alignItems: 'center',
@@ -768,13 +724,14 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     fontSize: '14px'
+    ,color:'black'
   },
   navigation: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '1.5rem 3rem',
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#f8f8f8',
   },
   navButtons: {
     display: 'flex',
@@ -785,11 +742,23 @@ const styles = {
     backgroundColor: '#ffffffff',
     color: 'black',
     border: '1px solid black',
-    borderRadius: '15px',
+    borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500',
     transition: 'background-color 0.3s',
+  },
+    HFdropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    zIndex: 1000
   },
   navButtonActive: {
     backgroundColor: '#515266',
@@ -836,7 +805,7 @@ const styles = {
     padding: '0.5rem 3rem',
   },
   contentBox: {
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#faf9f9ff',
     border: '2px solid #444',
     borderRadius: '20px',
     padding: '2rem',
@@ -849,36 +818,46 @@ const styles = {
     color: 'black',
   },
   contentGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '40px',
-  },
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gridTemplateAreas: `
+    "summary summary"
+    "cons    pros"
+  `,
+  gap: "40px",
+},
+
   prosSection: {
     backgroundColor: '#D1DFDF',
     padding: '2rem',
-    borderRadius: '20px',
+    borderRadius: '12px',
     minHeight: '300px'
   },
   consSection: {
     backgroundColor: '#dfd1d1ff',
     padding: '2rem',
-    borderRadius: '20px',
+    borderRadius: '12px',
     minHeight: '300px'
   },
   financialHealthSummarySec: {
     backgroundColor: '#d1d5dfff',
     padding: '2rem',
-    borderRadius: '20px',
+    borderRadius: '12px',
     minHeight: '300px',
     marginTop: '2rem',
   },
   prosTitle: {
     fontSize: '20px',
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1a1a1a',
     marginBottom: '1rem',
   },
   prosList: {
+    color: '#1a1a1a',
+    lineHeight: '1.8',
+    paddingLeft: '1.5rem',
+  },
+  financialSummary: {
     color: '#1a1a1a',
     lineHeight: '1.8',
     paddingLeft: '1.5rem',
@@ -909,10 +888,10 @@ const styles = {
   },
   ratioButton: {
     padding: '1rem',
-    backgroundColor: '#515266',
-    color: 'white',
+    backgroundColor: '#c1cadcff',
+    color: 'Black',
     border: 'none',
-    borderRadius: '20px',
+    borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500',
@@ -924,7 +903,7 @@ const styles = {
   ratioDescription: {
     backgroundColor: '#D1DFDF',
     padding: '2rem',
-    borderRadius: '25px',
+    borderRadius: '10px',
     position: 'relative',
     marginBottom: '2rem',
   },
@@ -938,11 +917,10 @@ const styles = {
     backgroundColor: '#ECF0D4',
     color: 'black',
     border: '1px solid black',
-    borderRadius: '15px',
+    borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500',
-    marginLeft: '3rem',
     marginTop: '1rem',
   },
   modalOverlay: {
@@ -989,7 +967,7 @@ const styles = {
     gap: '1.5rem',
   },
   ratioCard: {
-    backgroundColor: '#4D5C61',
+    backgroundColor: '#D1DFDF',
     padding: '2rem',
     borderRadius: '8px',
   },
@@ -1014,7 +992,7 @@ const styles = {
   ratioCardText: {
     fontSize: '14px',
     lineHeight: '1.8',
-    color: '#ddd',
+    color: '#0c0c0cff',
   },
   ratioCardTextDark: {
     fontSize: '14px',

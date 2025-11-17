@@ -18,11 +18,13 @@ import {
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation } from "react-router-dom";
 import api from '../api';
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
+    const location = useLocation();
+  
   const [currentPage, setCurrentPage] = useState('first'); 
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -95,49 +97,120 @@ const FileUploadApp = () => {
   const goBack = () => { setCurrentPage('first'); setUploadedFiles([]); };
 
   // Header Component
-  const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img src={fglogo_Wbg} style={{ height: "80px", width: "auto" }} alt="logo" />
+    const Header = () => (
+      <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logo}>
+            <img
+              src={fglogo_Wbg}
+              style={{ height: "80px", width: "auto" }}
+              alt="logo"
+            />
+          </div>
         </div>
-      </div>
-
-      <nav style={styles.nav}>
-        <span style={styles.navLink} onClick={() => navigate("/mainpageafterlogin")}>Home</span>
-        <span style={styles.navLink} onClick={() => navigate("/NewsPage")}>News</span>
-        <span style={styles.navLink} onClick={() => navigate("/AboutUs")}>About us</span>
-
-        {/* Tools Menu */}
-        <div style={styles.toolsMenu} onMouseEnter={() => setShowToolsDropdown(true)} onMouseLeave={() => setShowToolsDropdown(false)}>
-          <Wrench size={24} color="black" style={styles.userIcon} />
-          {showToolsDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}><TrendingUp size={16} /><span>Debt Ratings</span></div>
-              <div style={styles.dropdownItem}><Search size={16} /><span>Search Companies</span></div>
-              <div style={styles.dropdownItem}><Activity size={16} /><span>Charts & KPIs</span></div>
-              <div style={styles.dropdownItem}><BookOpen size={16} /><span>Blog Page</span></div>
-              <div style={styles.dropdownItem}><Cpu size={16} /><span>AI Summary</span></div>
-              <div style={styles.dropdownItem}><GitCompare size={16} /><span>Comparison</span></div>
-            </div>
-          )}
-        </div>
-
-        {/* User Menu */}
-        <div style={styles.userMenu} onMouseEnter={() => setShowDropdown(true)} onMouseLeave={() => setShowDropdown(false)}>
-          <User size={24} color="black" style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}><User size={16} /><span>Profile</span></div>
-              <div style={styles.dropdownItem}><History size={16} /><span>History</span></div>
-              <div style={styles.dropdownItem}><Settings size={16} /><span>Settings</span></div>
-              <div style={styles.dropdownItem} onClick={() => navigate("/homepage_beforelogin")}><LogOut size={16} /><span>Sign out</span></div>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
-  );
+        <nav style={styles.nav}>
+          <span
+            className="nav-link"
+            style={styles.navLink}
+            onClick={() => navigate("/mainpageafterlogin")}
+          >
+            Home
+          </span>
+          <span
+            className="nav-link"
+            style={{
+              ...styles.navLink,
+              borderBottom:
+                location.pathname === "/NewsPage" ? "2px solid black" : "none",
+            }}
+            onClick={() => navigate("/NewsPage")}
+          >
+            News
+          </span>
+          <span
+            className="nav-link"
+            style={{
+              ...styles.navLink,
+              borderBottom:
+                location.pathname === "/AboutUs" ? "2px solid black" : "none",
+            }}
+            onClick={() => navigate("/AboutUs")}
+          >
+            About us
+          </span>
+  
+          <div
+            style={styles.toolsMenu}
+             onClick={() => setShowToolsDropdown(prev => !prev)} 
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
+            {showToolsDropdown && (
+              <div style={styles.HFdropdown}>
+                <div style={styles.dropdownItem}>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Search size={16} />
+                  <span>Search Companies</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Activity size={16} />
+                  <span>Trends & KPIs</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Sector Overview</span>
+                </div>
+              </div>
+            )}
+          </div>
+  
+          <div
+            style={styles.userMenu}
+            onClick={() => setShowDropdown(prev => !prev)} 
+          >
+            <User size={24} color="black" style={styles.userIcon} />
+            {showDropdown && (
+              <div style={styles.HFdropdown}>
+                <div style={styles.dropdownItem}>
+                  <User size={16} />
+                  <span>Profile</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <History size={16} />
+                  <span>History</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </div>
+                <div style={styles.dropdownItem}
+                  onClick={() => {
+                    // (Optional) clear user data or tokens here
+                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                  }}>
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </nav>
+      </header>
+    );
 
   if (currentPage === 'first') {
     return (
@@ -150,11 +223,16 @@ const FileUploadApp = () => {
               <h1 style={styles.title}>Please upload the financial report file here to generate a simplified financial report.</h1>
               <div style={styles.formSection}>
                 <label style={styles.label}>Enter the number of files (1-4) to upload.</label>
+
                 <input type="number" min="1" max="4" value={numberOfFiles} onChange={(e) => setNumberOfFiles(parseInt(e.target.value) || 1)} style={styles.input} />
+
                 <button onClick={goToUpload} style={styles.uploadButton}>Upload Files</button>
               </div>
             </div>
           </div>
+          <div style={styles.aiWarning}>
+              <strong>Note:</strong> AI-generated summaries may contain inaccuracies. Always cross-verify with original documents.
+            </div>
         </div>
       </div>
     );
@@ -172,10 +250,10 @@ const FileUploadApp = () => {
                 <div style={styles.fileCounter}>Upload {numberOfFiles} file{numberOfFiles > 1 ? 's' : ''}</div>
               </div>
 
-              <div style={{ margin: '1rem 0', textAlign: 'left' }}>
+              {/* <div style={{ margin: '1rem 0', textAlign: 'left' }}>
                 <label style={{ display: 'block', marginBottom: '0.25rem', color: '#D1DFDF' }}>LLM API Key (optional)</label>
                 <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste API key here if you want to use a custom key" style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #a7a7a7' }} />
-              </div>
+              </div> */}
 
               <div style={styles.uploadTitle}><h1 style={styles.title}>Upload Your Files</h1></div>
 
@@ -246,6 +324,7 @@ const FileUploadApp = () => {
               )}
 
             </div>
+            
           </div>
         </div>
       </div>
@@ -260,7 +339,7 @@ const FileUploadApp = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #ffffffff 0%, #ffffffff 50%, #ffffffff 100%)',
+    background: '#f8f8f8',
     fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
   },
 
@@ -268,18 +347,15 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
-    position: 'relative',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
-    backdropFilter: 'blur(10px)',            // Blur background
-    WebkitBackdropFilter: 'blur(10px)',      // Safari support
-    borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
-    borderBottom: '2px solid black',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
 
-    color: 'white',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   },
 
 
@@ -347,23 +423,30 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 'calc(100vh - 80px)',
-    marginTop: '-70px'
+    minHeight: 'calc(110vh - 80px)',
+    //marginTop: '-70px'
+     flexDirection: 'column', 
   },
 
   card: {
-    backgroundColor: '#515266',
+    background: "linear-gradient(135deg, #CAD3E7, #a6b1caff)",
+
     backdropFilter: 'blur(10px)',
-    borderRadius: '30px',
+    borderRadius: '15px',
     boxShadow: '0 -4px 10px rgba(255, 255, 255, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
+    border: '1px solid #191919ff',
     padding: '2rem',
     width: '100%',
     maxWidth: '1300px'
   },
 
   cardContent: {
-    textAlign: 'center'
-  },
+  display: 'flex',          // ⭐ required
+  flexDirection: 'column',  // so inputs stack vertically
+  alignItems: 'center',
+  textAlign: 'center',
+  position: 'relative',
+},
 
   iconContainer: {
     width: '64px',
@@ -379,7 +462,7 @@ const styles = {
   title: {
     fontSize: '1.7rem',
     fontWeight: 'bold',
-    color: '#D1DFDF',
+    color: '#212121ff',
     margin: '0 0 3rem 0'
   },
 
@@ -396,12 +479,12 @@ const styles = {
     display: 'block',
     fontSize: '14px',
     fontWeight: '500',
-    color: '#D1DFDF',
+    color: '#474747ff',
     marginBottom: '0.5rem'
   },
 
   input: {
-    width: '60%',
+    width: '50%',
     height: '30px',
     padding: '0.75rem',
     border: '1px solid #a7a7a7ff',
@@ -414,8 +497,8 @@ const styles = {
 
   uploadButton: {
     width: '100%',
-    backgroundColor: '#fbfbfeff',
-    color: 'black',
+    backgroundColor: '#515266',
+    color: 'white',
     fontWeight: '600',
     padding: '1rem 1.5rem',
     marginTop: '0.5rem',
@@ -430,15 +513,16 @@ const styles = {
     gap: '0.5rem',
     fontSize: '1.2rem'
   },
-
-  uploadHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    color: 'Black',
-    marginBottom: '1.5rem'
-  
+  aiWarning: {
+    marginTop: '1rem',
+    padding: '1rem',
+    backgroundColor: '#fff3cd',
+    border: '1px solid #ffeeba',
+    borderRadius: '8px',
+    color: '#856404',
+    fontSize: '14px'
   },
+
 
   //for 2nd page 
 
@@ -450,10 +534,12 @@ const styles = {
   },
 
   card1: {
-    backgroundColor: '#515266ff',
+    background: "linear-gradient(135deg, #CAD3E7, #a6b1caff)",
+
     backdropFilter: 'blur(10px)',
-    borderRadius: '30px',
-    boxShadow: '0 -4px 100px rgba(0, 0, 0, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
+    borderRadius: '15px',
+    boxShadow: '0 20px 100px rgba(0, 0, 0, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
+    border: '1px solid #191919ff',
     padding: '2rem',
     width: '100%',
     maxWidth: '1000px'
@@ -468,7 +554,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    color: '#D1DFDF',
+    color: '#1e1e1eff',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -477,7 +563,7 @@ const styles = {
 
   fileCounter: {
     fontSize: '14px',
-    color: '#D1DFDF'
+    color: '#434343ff'
   },
 
   uploadTitle: {
@@ -525,7 +611,7 @@ const styles = {
   uploadIcon: {
     width: '64px',
     height: '64px',
-    borderRadius: '50%',
+    borderRadius: '20%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
@@ -626,8 +712,8 @@ const styles = {
 
   generateButton: {
     width: '100%',
-    backgroundColor: '#D1DFDF',
-    color: 'Black',
+    backgroundColor: '#25344F',
+    color: 'white',
     fontSize:'20px',
     fontWeight: '600',
     padding: '1.00rem 1.5rem',

@@ -101,10 +101,7 @@ const NewsPage = () => {
 
   //  Check if we are on News page (for underline)
   const isNewsActive = location.pathname === "/NewsPage";
-
-  return (
-    <>
-      {/*  HEADER SECTION */}
+    const Header = () => (
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.logo}>
@@ -115,33 +112,27 @@ const NewsPage = () => {
             />
           </div>
         </div>
-
         <nav style={styles.nav}>
-          {/* Home */}
           <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/mainpageafterlogin" ? "2px solid black" : "none",
-            }}
+            className="nav-link"
+            style={styles.navLink}
             onClick={() => navigate("/mainpageafterlogin")}
           >
             Home
           </span>
-
-          {/* News */}
           <span
+            className="nav-link"
             style={{
               ...styles.navLink,
-              borderBottom: isNewsActive ? "2px solid black" : "none",
+              borderBottom:
+                location.pathname === "/NewsPage" ? "2px solid black" : "none",
             }}
             onClick={() => navigate("/NewsPage")}
           >
             News
           </span>
-
-          {/* About */}
-           <span
+          <span
+            className="nav-link"
             style={{
               ...styles.navLink,
               borderBottom:
@@ -151,61 +142,53 @@ const NewsPage = () => {
           >
             About us
           </span>
-
-            {/* Tools Menu */}
-            <div
+  
+          <div
             style={styles.toolsMenu}
-            onMouseEnter={() => setShowToolsDropdown(true)}
-            onMouseLeave={() => setShowToolsDropdown(false)}
-            >
-            <Wrench size={24} color="black" style={styles.userIcon} /> 
-            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
-
+             onClick={() => setShowToolsDropdown(prev => !prev)} 
+          >
+            <Wrench size={24} color="black" style={styles.userIcon} />
             {showToolsDropdown && (
-                <div style={styles.dropdown}>
+              <div style={styles.HFdropdown}>
                 <div style={styles.dropdownItem}>
-                      <TrendingUp size={16} />
-                    <span>Debt Ratings</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                    <Search size={16} />
-                    <span>Search Companies</span>
+                  <TrendingUp size={16} />
+                  <span>Debt Ratings</span>
                 </div>
                 <div style={styles.dropdownItem}>
-                    <Activity size={16} />
-                    <span>Charts & KPIs</span>
+                  <Search size={16} />
+                  <span>Search Companies</span>
                 </div>
                 <div style={styles.dropdownItem}>
-                    <BookOpen size={16} />
-                    <span>Blog Page</span>
+                  <Activity size={16} />
+                  <span>Trends & KPIs</span>
                 </div>
-                    <div style={styles.dropdownItem}
-                    onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to dashboard on logout
-                }}
-                    >
-                        <Cpu size={16} />
-                        <span>AI Summary</span>
-                    </div>
-                    <div style={styles.dropdownItem}>
-                        <GitCompare size={16} />
-                        <span>Comparison</span>
-                    </div>
+                <div style={styles.dropdownItem}>
+                  <BookOpen size={16} />
+                  <span>Blog Page</span>
                 </div>
+                <div style={styles.dropdownItem}>
+                  <Cpu size={16} />
+                  <span>AI Summary</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Comparison</span>
+                </div>
+                <div style={styles.dropdownItem}>
+                  <GitCompare size={16} />
+                  <span>Sector Overview</span>
+                </div>
+              </div>
             )}
-            </div>
-
-          {/* User Menu */}
+          </div>
+  
           <div
             style={styles.userMenu}
-            onMouseEnter={() => setShowDropdown(true)}
-            onMouseLeave={() => setShowDropdown(false)}
+            onClick={() => setShowDropdown(prev => !prev)} 
           >
             <User size={24} color="black" style={styles.userIcon} />
-
             {showDropdown && (
-              <div style={styles.dropdown}>
+              <div style={styles.HFdropdown}>
                 <div style={styles.dropdownItem}>
                   <User size={16} />
                   <span>Profile</span>
@@ -218,27 +201,51 @@ const NewsPage = () => {
                   <Settings size={16} />
                   <span>Settings</span>
                 </div>
-
-               {/* Sign out */}
-                 <div
-                 style={styles.dropdownItem}
-                 onClick={() => {
-                   // (Optional) clear user data or tokens here
-                   navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                 }}
-               >
-                 <LogOut size={16} />
-                 <span>Sign out</span>
-               </div>
+                <div style={styles.dropdownItem}
+                  onClick={() => {
+                    // (Optional) clear user data or tokens here
+                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                  }}>
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </div>
               </div>
             )}
           </div>
         </nav>
       </header>
+    );
+  
+    const Footer = () => (
+      <footer style={styles.footer}>
+        <div style={styles.footerLeft}>
+          <p style={styles.copyright}>
+            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+          </p>
+        </div>
+  
+        <div style={styles.footerRight}>
+          <h4 style={styles.functionsTitle}>Functions</h4>
+          <ul style={styles.functionsList}>
+            <li style={styles.functionsItem}>AI summary</li>
+            <li style={styles.functionsItem}>Sector View</li>
+            <li style={styles.functionsItem}>Debt ratings</li>
+            <li style={styles.functionsItem}>search companies</li>
+            <li style={styles.functionsItem}>Blog Page</li>
+            <li style={styles.functionsItem}>Trends & KPIs</li>
+            <li style={styles.functionsItem}>Compare companies</li>
+          </ul>
+        </div>
+      </footer>
+    );
+  return (
+    <>
+      {/*  HEADER SECTION */}
+      <Header />
 
       {/* 📰 MAIN NEWS SECTION */}
       <div style={styles.container}>
-        <h1 style={styles.heading}>Latest News</h1>
+        
 
         {/* Search Bar */}
         <div style={{ position: "relative", width: "900px" }}>
@@ -263,7 +270,7 @@ const NewsPage = () => {
                 }}
             />
             </div>
-
+<h1 style={styles.heading}>Latest News</h1>
 
         {/* News Grid */}
         <div style={styles.grid}>
@@ -297,50 +304,26 @@ const NewsPage = () => {
           ))}
         </div>
       </div>
-      <footer style={styles.footer}>
-  <div style={styles.footerLeft}>
-    <p style={styles.copyright}>
-            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-          </p>
-  </div>
-
-  <div style={styles.footerRight}>
-    <h4 style={styles.functionsTitle}>Functions</h4>
-    <ul style={styles.functionsList}>
-      <li style={styles.functionsItem}>AI summary</li>
-      <li style={styles.functionsItem}>stock graphs</li>
-      <li style={styles.functionsItem}>Debt ratings</li>
-      <li style={styles.functionsItem}>search companies</li>
-      <li style={styles.functionsItem}>Blog Page</li>
-      <li style={styles.functionsItem}>Charts & KPIs</li>
-    </ul>
-  </div>
-</footer>
+<Footer />
     </>
   );
 };
 
-export default NewsPage;
 
 /* CSS */
 const styles = {
- header: {
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
-    position: 'relative',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
-    backdropFilter: 'blur(10px)',            // Blur background
-    WebkitBackdropFilter: 'blur(10px)',      // Safari support
-    borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
-    borderBottom: '2px solid black',
-
-    color: 'white',
-    },
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
+  },
 
 
  logo: {
@@ -430,11 +413,12 @@ const styles = {
     gap: "1.5rem",
   },
   card: {
-    backgroundColor: "#fff",
+    background: "linear-gradient(135deg, #e6ecf7ff, #ffffff)",
     borderRadius: "10px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     padding: "1rem",
     transition: "transform 0.2s",
+    border: "1px solid #1e1e1eff",
   },
   image: {
     width: "100%",
@@ -530,3 +514,4 @@ const styles = {
 
 };
 
+export default NewsPage;

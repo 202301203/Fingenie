@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import "../App.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import fgLogo from "../images/fglogo.png";
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import Glogo from "../images/Glogo.png";
 
-// Add CSRF token function
+// Custom Hook for hover/focus state management
 function getCSRFToken() {
   return getCookie('csrftoken');
 }
@@ -21,7 +22,6 @@ function getCookie(name) {
   return cookieValue;
 }
 
-// Custom Hook for hover/focus state management
 const useInteractionState = (defaultStyle, hoverStyle) => {
   const [style, setStyle] = useState(defaultStyle);
   const onMouseEnter = () => setStyle((prev) => ({ ...prev, ...hoverStyle }));
@@ -30,6 +30,7 @@ const useInteractionState = (defaultStyle, hoverStyle) => {
 };
 
 // Custom Hook for input focus state
+// BACKENDCHANGE: Added to standardize input focus styles
 const useInputFocus = () => {
   const [isFocused, setIsFocused] = useState(false);
   const inputStyle = {
@@ -42,7 +43,6 @@ const useInputFocus = () => {
     onBlur: () => setIsFocused(false),
   };
 };
-
 // Shared Google Auth Handler
 const useGoogleAuth = () => {
   const navigate = useNavigate();
@@ -93,18 +93,29 @@ const useGoogleAuth = () => {
 const CreateAccount = ({ onSwitch }) => {
   const navigate = useNavigate();
   const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
-  
   const [username, setUsername] = useState("");
+  //const [countryCode, setCountryCode] = useState("+91");
+//  const [contact, setContact] = useState("");
+ // const [contactError, setContactError] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  
+ // const [showPassword, setShowPassword] = useState(false);
+   const [isLoading, setIsLoading] = useState(false);
+ 
   const createBtnProps = useInteractionState(styles.button, styles.buttonHover);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupColor, setPopupColor] = useState("#4CAF50");
+
+  const googleBtnProps = useInteractionState(
+    styles.googleButton,
+    styles.googleButtonHover
+  );
+  //const linkProps = useInteractionState(styles.link, styles.linkHover);
+
+  // Input focus hooks
 
   // Input focus hooks
   const usernameInput = useInputFocus();
@@ -214,10 +225,11 @@ const CreateAccount = ({ onSwitch }) => {
         </div>
       )}
       <div style={styles.outerContainer}>
+        <div style={styles.creativeBG} />
         <div style={{ ...styles.modal, ...styles.pulse }}>
           <div style={styles.logo}>
             <img
-              src={fgLogo}
+              src={fglogo_Wbg}
               alt="Site logo"
               style={{ height: "130px", width: "auto" }}
             />
@@ -301,19 +313,21 @@ const CreateAccount = ({ onSwitch }) => {
   );
 };
 
-// 2. Login Page
+// 2. & 3. Login Page
 const LoginPage = ({ onSwitch }) => {
   const navigate = useNavigate();
-  const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
-  
-  const [loginType, setLoginType] = useState("email");
+   const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
+
+
+  const [loginType, setLoginType] = useState("email"); // 'email' or 'username'
   const [emailError, setEmailError] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
   
   const loginBtnProps = useInteractionState(styles.button, styles.buttonHover);
+  const signUpLinkProps = useInteractionState(styles.link, styles.linkHover);
   const identifierInput = useInputFocus();
   const passwordInput = useInputFocus();
   const [showPopup, setShowPopup] = useState(false);
@@ -404,10 +418,12 @@ const LoginPage = ({ onSwitch }) => {
     setLoginType(type);
     setIdentifier("");
     setEmailError("");
+ // Clear input on toggle for better UX
   };
 
   return (
     <>
+    <div style={styles.creativeBG} />
       {showPopup && (
         <div style={styles.popupOverlayStyle}>
           <div style={{...styles.popupBoxStyle, backgroundColor: popupColor}}>
@@ -432,7 +448,7 @@ const LoginPage = ({ onSwitch }) => {
         <div style={styles.modal}>
           <div style={styles.logo}>
             <img
-              src={fgLogo}
+              src={fglogo_Wbg}
               alt="Site logo"
               style={{ height: "130px", width: "auto" }}
             />
@@ -532,23 +548,59 @@ const LoginPage = ({ onSwitch }) => {
   );
 };
 
+
+
+// --- MAIN APPLICATION COMPONENT ---
+export const AuthFlow = () => {
+  const [currentPage, setCurrentPage] = useState("create"); // 'create' or 'login'
+
+  const handleSwitch = (page) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <div style={styles.appContainer}>
+
+      {currentPage === "create" && <CreateAccount onSwitch={handleSwitch} />}
+      {currentPage === "login" && <LoginPage onSwitch={handleSwitch} />}
+    </div>
+  );
+};
+
+// --- STYLES ---
 const styles = {
+  creativeBG: {
+    zIndex: 0,
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    width: '100vw', height: '100vh',
+    background: `
+      radial-gradient(ellipse 55% 38% at 25% 20%, #efeacc 0%, #b1e3de70 70%, #ffffff00 100%),
+      radial-gradient(ellipse 80% 60% at 75% 5%, #b5d1d1 0%, #f8f8f800 75%),
+      linear-gradient(120deg, #e0f2f1 12%, #f8f8f870 100%)
+    `,
+    pointerEvents: 'none'
+  },
   appContainer: {
-    backgroundColor: "#515266",
+    background: 'radial-gradient(ellipse 80% 60% at top, #e0f2f1 0%, #D1DFDF 40%, #f8f8f8 70%)',
     minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     animation: "fadeIn 0.8s ease-in-out",
   },
-  outerContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+
+  "@keyframes fadeIn": {
+    from: { opacity: 0, transform: "scale(0.9)" },
+    to: { opacity: 1, transform: "scale(1)" },
   },
+
   modal: {
-    backgroundColor: "#d1dfdf",
-    borderRadius: "24px",
+    background: '#ececec3c',
+    backdropFilter: 'blur(25px)',
+    WebkitBackdropFilter: 'blur(25px)',
+    borderRadius: '28px',
+    border: '1px solid #1c1c1c66',
     padding: "25px 50px",
     width: "400px",
     boxShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
@@ -556,16 +608,25 @@ const styles = {
     fontFamily: "Bricolage Grotesque, sans-serif",
     position: "relative",
   },
+
   googleContainer: {
     marginTop: "20px",
     display: "flex",
     justifyContent: "center",
   },
+
+
   header: {
     fontSize: "20px",
     fontWeight: "600",
     color: "#353342",
     marginBottom: "10px",
+  },
+
+  subText: {
+    fontSize: "12px",
+    color: "#57556a",
+    marginBottom: "25px",
   },
   logo: {
     fontSize: "40px",
@@ -583,10 +644,34 @@ const styles = {
     boxSizing: "border-box",
     outline: "none",
     transition: "border-color 0.3s ease-in-out",
-    fontFamily: "Bricolage Grotesque, sans-serif",
   },
+
+  phoneContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    margin: "8px 0",
+  },
+
+  countryCodeSelect: {
+    padding: "12px",
+    borderRadius: "8px",
+    border: "1px solid #c2c9cc",
+    backgroundColor: "#fff",
+    fontFamily: "Bricolage Grotesque, sans-serif",
+    cursor: "pointer",
+  },
+
+  errorText: {
+    color: "red",
+    fontSize: "12px",
+    marginTop: "-4px",
+    marginBottom: "8px",
+    textAlign: "left",
+  },
+
   inputFocus: {
-    borderColor: "#7f8c8d",
+    borderColor: "#7f8c8d", // Subtle focus color
     boxShadow: "0 0 5px rgba(127, 140, 141, 0.5)",
   },
   button: {
@@ -601,34 +686,61 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
     transition: "background-color 0.2s ease-in-out, transform 0.1s ease-out",
-    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   buttonHover: {
     backgroundColor: "#57556a",
     transform: "translateY(-1px)",
   },
-  buttonDisabled: {
-    backgroundColor: "#a0a0a0",
-    cursor: "not-allowed",
-    transform: "none",
+  googleButton: {
+    width: "100%",
+    padding: "12px",
+    margin: "10px 0",
+    borderRadius: "24px",
+    border: "1px solid #c2c9cc",
+    backgroundColor: "#dfe4e6",
+    color: "#353342",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    fontWeight: "bold",
+    transition: "background-color 0.2s ease-in-out",
+  },
+  googleButtonHover: {
+    backgroundColor: "#e7ebee",
+  },
+  googleIcon: {
+    width: "30px",
+    height: "30px",
+    marginRight: "10px",
   },
   divider: {
     display: "flex",
     alignItems: "center",
     textAlign: "center",
     margin: "20px 0",
-    color: "#7f8c8d",
-    width: "400px",
-    fontFamily: "Bricolage Grotesque, sans-serif",
+    color: "#000000ff",
   },
   dividerLine: {
-    flexGrow: "1",
+    flexGrow: 1,
     height: "1px",
-    backgroundColor: "#c2c9cc",
+    backgroundColor: "#000000ff",
   },
   dividerText: {
     padding: "0 10px",
     fontSize: "18px",
+  },
+  link: {
+    color: "#353342",
+    fontSize: "12px",
+    textDecoration: "none",
+    display: "block",
+    marginTop: "15px",
+    cursor: "pointer",
+    transition: "opacity 0.2s ease-in-out",
+  },
+  linkHover: {
+    opacity: 0.7,
   },
   tabContainer: {
     display: "flex",
@@ -640,14 +752,13 @@ const styles = {
     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
   },
   tab: {
-    flex: "1",
+    flex: 1,
     padding: "8px 10px",
     borderRadius: "6px",
     cursor: "pointer",
     fontWeight: "bold",
     fontSize: "14px",
     transition: "background-color 0.2s ease-in-out, color 0.2s ease-in-out",
-    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   tabActive: {
     backgroundColor: "#353342",
@@ -656,14 +767,6 @@ const styles = {
   tabInactive: {
     backgroundColor: "transparent",
     color: "#57556a",
-  },
-  errorText: {
-    color: "red",
-    fontSize: "12px",
-    marginTop: "-4px",
-    marginBottom: "8px",
-    textAlign: "left",
-    fontFamily: "Bricolage Grotesque, sans-serif",
   },
   popupOverlayStyle: {
     position: "fixed",
@@ -677,6 +780,7 @@ const styles = {
     alignItems: "center",
     zIndex: 1000,
   },
+
   popupBoxStyle: {
     backgroundColor: "#b1cfb2ff",
     color: "black",
@@ -684,7 +788,6 @@ const styles = {
     borderRadius: "8px",
     textAlign: "center",
     boxShadow: "0 4px 8px rgba(20, 13, 13, 0.3)",
-    minWidth: "300px",
   },
   okButtonStyle: {
     marginTop: "10px",
@@ -697,34 +800,15 @@ const styles = {
     transition: "all 0.2s ease-in-out",
     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
+
+  // Animation utility (using a small, repeated animation for effect)
   pulse: {
     animation: "pulse-animation 2s infinite alternate",
+    "@keyframes pulse-animation": {
+      "0%": { transform: "scale(1)" },
+      "100%": { transform: "scale(1.02)" },
+    },
   },
-};
-
-// --- MAIN APPLICATION COMPONENT ---
-const AuthFlow = () => {
-  const [currentPage, setCurrentPage] = useState("create");
-
-  const handleSwitch = (page) => {
-    setCurrentPage(page);
-  };
-
-  const googleClientId = "972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com";
-
-  if (!googleClientId) {
-    console.error("Google Client ID is not set!");
-    return <div>Error: Google authentication not configured</div>;
-  }
-
-  return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <div style={styles.appContainer}>
-        {currentPage === "create" && <CreateAccount onSwitch={handleSwitch} />}
-        {currentPage === "login" && <LoginPage onSwitch={handleSwitch} />}
-      </div>
-    </GoogleOAuthProvider>
-  );
 };
 
 export default AuthFlow;
