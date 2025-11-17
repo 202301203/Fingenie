@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 EXTERNAL_APPS = [
     'apps.accounts',
     'apps.dataprocessor',
+    'apps.balance_sheet_comparator',
     'apps.stockgraph',
     'apps.chatbot',
     'apps.learning',

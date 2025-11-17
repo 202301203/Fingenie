@@ -1,4 +1,64 @@
 from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field, ValidationError
+
+
+class BalanceSheetModel(BaseModel):
+    cash_and_cash_equivalents: Optional[float] = None
+    inventory: Optional[float] = None
+    accounts_receivable: Optional[float] = None
+    total_current_assets: Optional[float] = None
+    total_current_liabilities: Optional[float] = None
+    total_assets: Optional[float] = None
+    total_liabilities: Optional[float] = None
+    share_capital: Optional[float] = None
+    reserves_and_surplus: Optional[float] = None
+    long_term_debt: Optional[float] = None
+    intangible_assets: Optional[float] = None
+    fixed_assets: Optional[float] = None
+    no_of_shares_outstanding: Optional[float] = None
+
+
+class CompanyModel(BaseModel):
+    company_name: Optional[str] = None
+    fiscal_year_end: Optional[str] = None
+    currency: Optional[str] = None
+    units: Optional[str] = None
+    # Balance sheet entries may contain mixed types (strings or numbers), so accept Any
+    balance_sheet: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    ratios: Optional[Dict[str, Optional[float]]] = Field(default_factory=dict)
+
+
+class ComparisonEntry(BaseModel):
+    metric: str
+    preference: Optional[str] = None
+    company1_value: Optional[float] = None
+    company2_value: Optional[float] = None
+    winner: Optional[str] = None
+    result: Optional[str] = None
+
+
+class ComparisonModel(BaseModel):
+    verdict: str
+    score: Dict[str, int]
+    summary: str
+    comparisons: List[ComparisonEntry]
+    available_metrics: int
+    ties: int
+    labels: Dict[str, str]
+
+
+class FullComparisonSchema(BaseModel):
+    company1: CompanyModel
+    comparison: ComparisonModel
+    company2: CompanyModel
+
+
+def validate_comparison_schema(data: Dict[str, Any]) -> Optional[FullComparisonSchema]:
+    """Validate a comparison dict against the expected schema using Pydantic.
+
+    Returns the parsed model on success or raises `ValidationError` on failure.
+    """
+    return FullComparisonSchema.parse_obj(data)
 
 
 METRIC_PREFERENCES = {

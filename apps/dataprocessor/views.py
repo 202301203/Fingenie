@@ -18,51 +18,45 @@ from .services import (
 def process_financial_statements_api(request):
     if request.method == 'POST':
         uploaded_file = request.FILES.get('file')
+        api_key = request.POST.get('api_key')
+        
         if not uploaded_file:
-            return JsonResponse({'error': 'No file uploaded'}, status=400)
+            return JsonResponse({'error': 'No file uploaded', 'success': False}, status=400)
+        if not api_key:
+            return JsonResponse({'error': 'No API key provided', 'success': False}, status=400)
 
         temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_uploads')
         os.makedirs(temp_dir, exist_ok=True)
         temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}.pdf")
 
         try:
+            # Step 1: Save uploaded file
             with open(temp_path, 'wb+') as destination:
                 for chunk in uploaded_file.chunks():
                     destination.write(chunk)
-
-        context_text = prepare_context_smart(documents)
-        if len(context_text.strip()) < 100:
-            return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
-        
-       
-        extraction_result = extract_raw_financial_data(context_text, api_key)
-        if not extraction_result.get("success"):
-            raise ValueError(extraction_result.get("error", "Extraction failed."))
-
-        financial_items = extraction_result.get("financial_items", [])
-        summary_result = generate_summary_from_data(financial_items, api_key)
-        ratio_result = generate_ratios_from_data(financial_items, api_key)
-
-        extraction_result.update({
-            "summary": summary_result.get("summary"),
-            "ratios": ratio_result.get("ratios"),
-            "report_id": report_db_id
-        })
-
+            
             # Step 2: Load and extract financial data
             documents = load_pdf_robust(temp_path)
             context = prepare_context_smart(documents)
-            extracted_data = extract_raw_financial_data(context, google_api_key)
+            extracted_data = extract_raw_financial_data(context, api_key)
+
+            if not extracted_data.get("success"):
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                return JsonResponse({
+                    'error': extracted_data.get("error", "Extraction failed"),
+                    'success': False
+                }, status=400)
 
             # Step 3: Generate summary & ratios
-            summary_result = generate_summary_from_data(extracted_data.get('financial_items', []), google_api_key)
-            ratios_result = generate_ratios_from_data(extracted_data.get('financial_items', []), google_api_key)
+            summary_result = generate_summary_from_data(extracted_data.get('financial_items', []), api_key)
+            ratios_result = generate_ratios_from_data(extracted_data.get('financial_items', []), api_key)
 
-            # FIXED: Extract the actual data from the results
+            # Extract the actual data from the results
             summary_data = summary_result.get('summary', {}) if isinstance(summary_result, dict) else {}
             ratios_data = ratios_result.get('financial_ratios', []) if isinstance(ratios_result, dict) else ratios_result
 
-            # Step 4: Save to DB (FIXED - using TextField approach)
+            # Step 4: Save to DB
             report_id = str(uuid.uuid4())
             try:
                 report = FinancialReport.objects.create(
@@ -74,15 +68,14 @@ def process_financial_statements_api(request):
                 report.set_summary(summary_data)
                 report.set_ratios(ratios_data)
                 report.save()
-                print("Report saved to database successfully!")
             except Exception as e:
-                print(f"Error saving to database: {str(e)}")
-                import traceback
-                print(f"Traceback: {traceback.format_exc()}")
-                return JsonResponse({'error': f'Failed to save report: {str(e)}'}, status=500)
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                return JsonResponse({'error': f'Failed to save report: {str(e)}', 'success': False}, status=500)
 
             # Clean up temp file
-            os.remove(temp_path)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
             # Respond to frontend
             return JsonResponse({
@@ -99,14 +92,14 @@ def process_financial_statements_api(request):
             })
 
         except Exception as e:
-            print(f"Unexpected error: {str(e)}")
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-            return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+            return JsonResponse({
+                'error': f'Unexpected error: {str(e)}',
+                'success': False
+            }, status=500)
 
-    return JsonResponse({'error': 'Invalid request method'}, status=405)
+    return JsonResponse({'error': 'Invalid request method', 'success': False}, status=405)
 
 # FIX the other view functions to use getter methods:
 

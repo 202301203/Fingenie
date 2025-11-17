@@ -1,4 +1,98 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+
+
+def calculate_ratios_from_items(financial_items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Calculate financial ratios from extracted financial items.
+    Matches the format used in dataprocessor app.
+    """
+    # Build a map of items for quick lookup
+    items_map = {}
+    for item in financial_items:
+        particulars = item.get('particulars', '').lower()
+        value = item.get('current_year')
+        if value is not None:
+            items_map[particulars] = value
+    
+    # Helper function to find value by keywords
+    def find_value(keywords):
+        """Find value by matching any of the keywords"""
+        for key, value in items_map.items():
+            if any(keyword.lower() in key for keyword in keywords):
+                return value
+        return 0
+    
+    # Extract key values
+    cash = find_value(['cash', 'cash equivalents'])
+    inventory = find_value(['inventory'])
+    accounts_receivable = find_value(['receivable', 'accounts receivable'])
+    current_assets = find_value(['current assets', 'total current assets'])
+    current_liabilities = find_value(['current liabilities', 'total current liabilities'])
+    total_assets = find_value(['total assets'])
+    total_liabilities = find_value(['total liabilities'])
+    share_capital = find_value(['share capital'])
+    reserves = find_value(['reserves', 'surplus'])
+    long_term_debt = find_value(['long-term debt', 'long term debt', 'long-term borrowings'])
+    fixed_assets = find_value(['fixed assets', 'property plant equipment', 'ppe'])
+    intangible_assets = find_value(['intangible assets', 'goodwill'])
+    
+    ratios = {}
+    
+    # Current Ratio = Current Assets / Current Liabilities
+    if current_liabilities and current_liabilities != 0:
+        ratios['current_ratio'] = current_assets / current_liabilities
+    else:
+        ratios['current_ratio'] = None
+    
+    # Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+    if current_liabilities and current_liabilities != 0:
+        ratios['quick_ratio'] = (current_assets - inventory) / current_liabilities
+    else:
+        ratios['quick_ratio'] = None
+    
+    # Cash Ratio = Cash / Current Liabilities
+    if current_liabilities and current_liabilities != 0:
+        ratios['cash_ratio'] = cash / current_liabilities
+    else:
+        ratios['cash_ratio'] = None
+    
+    # Debt to Equity = Total Debt / Total Equity
+    total_debt = long_term_debt + current_liabilities
+    total_equity = share_capital + reserves
+    if total_equity and total_equity != 0:
+        ratios['debt_to_equity'] = total_debt / total_equity
+    else:
+        ratios['debt_to_equity'] = None
+    
+    # Debt Ratio = Total Liabilities / Total Assets
+    if total_assets and total_assets != 0:
+        ratios['debt_ratio'] = total_liabilities / total_assets
+    else:
+        ratios['debt_ratio'] = None
+    
+    # Working Capital = Current Assets - Current Liabilities
+    ratios['working_capital'] = current_assets - current_liabilities
+    
+    # Fixed Asset Ratio = Fixed Assets / Total Assets
+    if total_assets and total_assets != 0:
+        ratios['fixed_asset_ratio'] = fixed_assets / total_assets
+    else:
+        ratios['fixed_asset_ratio'] = None
+    
+    # Intangibles Percent = Intangible Assets / Total Assets
+    if total_assets and total_assets != 0:
+        ratios['intangibles_percent'] = intangible_assets / total_assets
+    else:
+        ratios['intangibles_percent'] = None
+    
+    # Asset Turnover (requires revenue - not always available in balance sheet alone)
+    ratios['asset_turnover'] = None
+    
+    # Return on Assets, Return on Equity (require net income - not always available)
+    ratios['return_on_assets'] = None
+    ratios['return_on_equity'] = None
+    
+    return ratios
 
 
 def calculate_ratios(canonical_data: Dict[str, Any]) -> Dict[str, Any]:

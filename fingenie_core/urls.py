@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/',include('apps.accounts.urls')),
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
+    path('api/balance_sheet_comparator/', include('apps.balance_sheet_comparator.urls')), # Balance Sheet Comparator API
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
     path('sector/',include('apps.sector_overview.urls')),
     path('trends/',include('apps.trends.urls')),
