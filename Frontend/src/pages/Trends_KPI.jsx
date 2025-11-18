@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare, CheckCircle, XCircle, UploadCloud, FileText, X } from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import api from '../api';
 
 
 // --- STYLING CONSTANTS ---
@@ -36,123 +37,144 @@ const styles = {
     colorTextStable: '#6c757d',
     colorActiveRow: '#e6f7ff',
 
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0.5rem 2rem',
-        backgroundColor: '#DEE6E6',
+   header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
 
-        border: '1px solid #000000ff',
-        borderRadius: '8px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
+  },
 
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-    },
-    headerLeft: {
-        display: 'flex',
-        alignItems: 'center'
-    },
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2rem'
+  },
+
+  navLink: {
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
+  },
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
     toolsMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-    },
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-    },
-    HFdropdown: {
-        position: 'absolute',
-        top: '100%',
-        right: 0,
-        marginTop: '0.5rem',
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        minWidth: '200px',
-        zIndex: 1000
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.75rem 1rem',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '0.95rem'
-    },
-    hamburger: {
-        display: 'none',
-        cursor: 'pointer',
-        color: '#4a5568'
-    },
-    logo: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '8px',
-    },
-    nav: {
-        display: 'flex',
-        gap: '1.5rem',
-        alignItems: 'center',
-    },
-    navLink: {
-        cursor: 'pointer',
-        color: '#000000',
-        textDecoration: 'none',
-        fontSize: '14px',
-        fontWeight: '500',
-        transition: 'opacity 0.3s',
-    },
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-    },
-    dropdown: {
-        position: 'absolute',
-        right: '0',
-        top: '32px',
-        backgroundColor: '#ffffff',
-        borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-        padding: '0.5rem',
-        minWidth: '120px',
-        zIndex: 1000,
-        border: '1px solid #ddd',
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.5rem',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '14px',
-    },
-    toolsMenu: {
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-    },
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  HFdropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    zIndex: 1000
+  },
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '0.95rem'
+  },
+   // --- FOOTER STYLES ---
     footer: {
-        backgroundColor: '#4D5C61',
-        color: '#FFFFFF',
-        padding: '2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginTop: '4rem',
-    },
+    backgroundColor: '#4D5C61',
+    color: '#FFFFFF',
+    padding: '2rem 4rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: '4rem',
+    position: 'relative',
+    zIndex: 5,
+  },
+
+  footerLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  copyright: {
+    fontSize: '0.9rem',
+    color: '#cbd5e0',
+    margin: 0
+  },
+  footerLink: {
+    color: '#FFFFFF',
+    textDecoration: 'none',
+    transition: 'opacity 0.3s',
+  },
+
+  footerRight: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  functionsTitle: {
+    fontSize: '14px',
+    fontWeight: '700',
+    marginRight: '8rem',
+  },
+
+  functionsList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right',
+    gap: '6px 0px',
+  },
+  functionsItem: {
+    fontSize: '13px',
+    margin: 0,
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
+  },
+    
+
     summaryCard: {
         background: '#fff',
         borderRadius: '8px',
@@ -300,145 +322,160 @@ function getCSRFToken() {
 
 
 // --- Header Component ---
-const Header = ({ navigate, location, setShowToolsDropdown, showToolsDropdown, setShowDropdown, showDropdown }) => (
+const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
+    
     <header style={styles.header}>
-        <div style={styles.headerLeft}>
-            <div style={styles.logo}>
-                <img
-                    src={fglogo_Wbg}
-                    style={{ height: "80px", width: "auto" }}
-                    alt="logo"
-                />
-            </div>
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+          <img
+            src={fglogo_Wbg}
+            style={{ height: "80px", width: "auto" }}
+            alt="logo"
+          />
         </div>
-        <nav style={styles.nav}>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                }}
-                onClick={() => navigate("/mainpageafterlogin")}
-            >
-                Home
-            </span>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                    borderBottom:
-                        location.pathname === "/NewsPage" ? "2px solid black" : "none",
-                }}
-                onClick={() => navigate("/NewsPage")}
-            >
-                News
-            </span>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                    borderBottom:
-                        location.pathname === "/AboutUs" ? "2px solid black" : "none",
-                }}
-                onClick={() => navigate("/AboutUs")}
-            >
-                About us
-            </span>
+      </div>
+      <nav style={styles.nav}>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/mainpageafterlogin")}
+        >
+          Home
+        </span>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/NewsPage")}
+        >
+          News
+        </span>
 
-            <div
-                style={styles.toolsMenu}
-                onClick={() => setShowToolsDropdown(prev => !prev)}
-            >
-                <Wrench size={24} color="black" style={styles.userIcon} />
-                {showToolsDropdown && (
-                    <div style={styles.HFdropdown}>
-                        <div style={styles.dropdownItem}>
-                            <TrendingUp size={16} />
-                            <span>Debt Ratings</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Search size={16} />
-                            <span>Search Companies</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Activity size={16} />
-                            <span>Trends & KPIs</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <BookOpen size={16} />
-                            <span>Blog Page</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Cpu size={16} />
-                            <span>AI Summary</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <GitCompare size={16} />
-                            <span>Comparison</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <GitCompare size={16} />
-                            <span>Sector Overview</span>
-                        </div>
-                    </div>
-                )}
-            </div>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/Chatbot")}
+        >
+          Chatbot
+        </span>
 
-            <div
-                style={styles.userMenu}
-                onClick={() => setShowDropdown(prev => !prev)}
-            >
-                <User size={24} color="black" style={styles.userIcon} />
-                {showDropdown && (
-                    <div style={styles.HFdropdown}>
-                        <div style={styles.dropdownItem}>
-                            <User size={16} />
-                            <span>Profile</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <History size={16} />
-                            <span>History</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Settings size={16} />
-                            <span>Settings</span>
-                        </div>
-                        <div style={styles.dropdownItem}
-                            onClick={() => {
-                                // (Optional) clear user data or tokens here
-                                navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                            }}>
-                            <LogOut size={16} />
-                            <span>Sign Out</span>
-                        </div>
-                    </div>
-                )}
+        <span
+          className="nav-link"
+          style={{...styles.navLink,
+          }}
+          onClick={() => navigate("/About_us")}
+        >
+          About us
+        </span>
+
+        <div
+          style={styles.toolsMenu}
+           onClick={() => setShowToolsDropdown(prev => !prev)} 
+        >
+          <Wrench size={24} color="black" style={styles.userIcon} />
+          {showToolsDropdown && (
+            <div style={styles.HFdropdown}>
+              
+              <div style={styles.dropdownItem}>
+                <Search size={16} />
+                <span>Search Companies</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/Trends_KPI")}
+              >
+                <Activity size={16} />
+                <span>Trends & KPIs</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/blogPage")}
+              >
+                <BookOpen size={16} />
+                <span>Blog Page</span>
+              </div>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/FileUploadApp")}
+              >
+                <Cpu size={16} />
+                <span>AI Summary</span>
+              </div>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/comparison")}
+              >
+                <GitCompare size={16} />
+                <span>Comparison</span>
+              </div>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/sectorOverview")}
+              >
+                <GitCompare size={16} />
+                <span>Sector Overview</span>
+              </div>
             </div>
-        </nav>
+          )}
+        </div>
+
+        <div
+          style={styles.userMenu}
+          onClick={() => setShowDropdown(prev => !prev)} 
+        >
+          <User size={24} color="black" style={styles.userIcon} />
+          {showDropdown && (
+            <div style={styles.HFdropdown}>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/Profile_page")}   
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => {
+                  // (Optional) clear user data or tokens here
+                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                }}>
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
     </header>
-);
+  );
 
-const Footer = () => (
+  const Footer = () => (
     <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-                © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-            </p>
-        </div>
+      <div style={styles.footerLeft}>
+        <p style={styles.copyright}>
+          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+        </p>
+      </div>
 
-        <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>Functions</h4>
-            <ul style={styles.functionsList}>
-                <li style={styles.functionsItem}>AI summary</li>
-                <li style={styles.functionsItem}>Sector View</li>
-                <li style={styles.functionsItem}>Debt ratings</li>
-                <li style={styles.functionsItem}>search companies</li>
-                <li style={styles.functionsItem}>Blog Page</li>
-                <li style={styles.functionsItem}>Trends & KPIs</li>
-                <li style={styles.functionsItem}>Compare companies</li>
-            </ul>
-        </div>
+      <div style={styles.footerRight}>
+        <h4 style={styles.functionsTitle}>Functions</h4>
+        <ul style={styles.functionsList}>
+          <li style={styles.functionsItem}>AI summary</li>
+          <li style={styles.functionsItem}>Sector View</li>
+          <li style={styles.functionsItem}>search companies</li>
+          <li style={styles.functionsItem}>Blog Page</li>
+          <li style={styles.functionsItem}>Trends & KPIs</li>
+          <li style={styles.functionsItem}>Compare companies</li>
+        </ul>
+      </div>
     </footer>
-);
+  );
 
 // --- FILE UPLOAD PAGE ---
 const FileUploadPage = ({ onUploadSuccess }) => {
@@ -450,6 +487,9 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     const [showToolsDropdown, setShowToolsDropdown] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const location = useLocation();
+    const [apiKey, setApiKey] = useState('');
+    
+
     const MIN_FILES = 3;
     const MAX_FILES = 10;
     const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
@@ -581,6 +621,65 @@ const FileUploadPage = ({ onUploadSuccess }) => {
             />
             <div style={styles.fileUploadContainer}>
                 <h2 style={{ color: 'Black', textAlign: 'center', marginBottom: '20px' }}>Upload Financial Documents</h2>
+
+                 <div style={{ 
+                margin: '1rem 0', 
+                textAlign: 'left',
+                padding: '1rem', // Added padding and background for better appearance
+                backgroundColor: '#a6b1caff',
+                borderRadius: '12px',
+                border: '1px solid #9ea8b8',
+            }}>
+    {/* Container for Label and Button */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <label style={{ 
+            display: 'block', 
+            color: '#0b0b0bff', 
+            fontWeight: '600', 
+            fontSize: '14px',
+            margin: 0,
+        }}>
+            LLM API Key (optional)
+        </label>
+        
+        {/* New Button */}
+        <button 
+             onClick={() => navigate("/API_key")}
+            style={{
+                backgroundColor: '#64748b', // Darker color for button
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '0.3rem 0.6rem',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                transition: 'background-color 0.2s',
+            }}
+            title="Click for instructions"
+        >
+            how to get API key? <span style={{fontSize: '14px'}}>🤔</span>
+        </button>
+    </div>
+    
+    {/* Input Field */}
+    <input 
+        type="text" 
+        value={apiKey} 
+        onChange={(e) => setApiKey(e.target.value)} 
+        placeholder="Paste API key here if you want to use a custom key" 
+        style={{ 
+            width: '100%', 
+            padding: '0.65rem', 
+            borderRadius: '8px', 
+            border: '1px solid #a7a7a7',
+            boxSizing: 'border-box'
+        }} 
+    />
+</div>
 
                 <div style={{ backgroundColor: '#ba8686ff', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                     <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Upload Requirements:</p>

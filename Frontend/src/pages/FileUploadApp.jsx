@@ -18,21 +18,19 @@ import {
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
-import { useNavigate,useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from '../api';
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
-    const location = useLocation();
-  
   const [currentPage, setCurrentPage] = useState('first'); 
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [apiKey, setApiKey] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false); // State defined
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false); // State defined
 
   const MAX_FILE_SIZE_MB = 10;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -97,125 +95,171 @@ const FileUploadApp = () => {
   const goBack = () => { setCurrentPage('first'); setUploadedFiles([]); };
 
   // Header Component
-    const Header = () => (
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <img
-              src={fglogo_Wbg}
-              style={{ height: "80px", width: "auto" }}
-              alt="logo"
-            />
+    const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
+        
+        <header style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.logo}>
+              <img
+                src={fglogo_Wbg}
+                style={{ height: "80px", width: "auto" }}
+                alt="logo"
+              />
+            </div>
           </div>
-        </div>
-        <nav style={styles.nav}>
-          <span
-            className="nav-link"
-            style={styles.navLink}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/NewsPage" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
-            News
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-  
-          <div
-            style={styles.toolsMenu}
-             onClick={() => setShowToolsDropdown(prev => !prev)} 
-          >
-            <Wrench size={24} color="black" style={styles.userIcon} />
-            {showToolsDropdown && (
-              <div style={styles.HFdropdown}>
-                <div style={styles.dropdownItem}>
-                  <TrendingUp size={16} />
-                  <span>Debt Ratings</span>
+          <nav style={styles.nav}>
+            <span
+              className="nav-link"
+              style={{
+                ...styles.navLink,
+              }}
+              onClick={() => navigate("/mainpageafterlogin")}
+            >
+              Home
+            </span>
+            <span
+              className="nav-link"
+              style={{
+                ...styles.navLink,
+              }}
+              onClick={() => navigate("/NewsPage")}
+            >
+              News
+            </span>
+    
+            <span
+              className="nav-link"
+              style={{
+                ...styles.navLink,
+              }}
+              onClick={() => navigate("/Chatbot")}
+            >
+              Chatbot
+            </span>
+    
+            <span
+              className="nav-link"
+              style={{...styles.navLink,
+              }}
+              onClick={() => navigate("/About_us")}
+            >
+              About us
+            </span>
+    
+            <div
+              style={styles.toolsMenu}
+               onClick={() => setShowToolsDropdown(prev => !prev)} 
+            >
+              <Wrench size={24} color="black" style={styles.userIcon} />
+              {showToolsDropdown && (
+                <div style={styles.HFdropdown}>
+                  
+                  <div style={styles.dropdownItem}>
+                    <Search size={16} />
+                    <span>Search Companies</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                    onClick={() => navigate("/Trends_KPI")}
+                  >
+                    <Activity size={16} />
+                    <span>Trends & KPIs</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                    onClick={() => navigate("/blogPage")}
+                  >
+                    <BookOpen size={16} />
+                    <span>Blog Page</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                     onClick={() => navigate("/FileUploadApp")}
+                  >
+                    <Cpu size={16} />
+                    <span>AI Summary</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                  onClick={() => navigate("/comparison")}
+                  >
+                    <GitCompare size={16} />
+                    <span>Comparison</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                     onClick={() => navigate("/sectorOverview")}
+                  >
+                    <GitCompare size={16} />
+                    <span>Sector Overview</span>
+                  </div>
                 </div>
-                <div style={styles.dropdownItem}>
-                  <Search size={16} />
-                  <span>Search Companies</span>
+              )}
+            </div>
+    
+            <div
+              style={styles.userMenu}
+              onClick={() => setShowDropdown(prev => !prev)} 
+            >
+              <User size={24} color="black" style={styles.userIcon} />
+              {showDropdown && (
+                <div style={styles.HFdropdown}>
+                  <div style={styles.dropdownItem}
+                  onClick={() => navigate("/Profile_page")}   
+                  >
+                    <User size={16} />
+                    <span>Profile</span>
+                  </div>
+                  <div style={styles.dropdownItem}>
+                    <History size={16} />
+                    <span>History</span>
+                  </div>
+                  <div style={styles.dropdownItem}>
+                    <Settings size={16} />
+                    <span>Settings</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                    onClick={() => {
+                      // (Optional) clear user data or tokens here
+                      navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                    }}>
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </div>
                 </div>
-                <div style={styles.dropdownItem}>
-                  <Activity size={16} />
-                  <span>Trends & KPIs</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <BookOpen size={16} />
-                  <span>Blog Page</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Cpu size={16} />
-                  <span>AI Summary</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Comparison</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Sector Overview</span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
+          </nav>
+        </header>
+      );
+    
+      const Footer = () => (
+        <footer style={styles.footer}>
+          <div style={styles.footerLeft}>
+            <p style={styles.copyright}>
+              © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+            </p>
           </div>
-  
-          <div
-            style={styles.userMenu}
-            onClick={() => setShowDropdown(prev => !prev)} 
-          >
-            <User size={24} color="black" style={styles.userIcon} />
-            {showDropdown && (
-              <div style={styles.HFdropdown}>
-                <div style={styles.dropdownItem}>
-                  <User size={16} />
-                  <span>Profile</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <History size={16} />
-                  <span>History</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </div>
-                <div style={styles.dropdownItem}
-                  onClick={() => {
-                    // (Optional) clear user data or tokens here
-                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                  }}>
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </div>
-              </div>
-            )}
+    
+          <div style={styles.footerRight}>
+            <h4 style={styles.functionsTitle}>Functions</h4>
+            <ul style={styles.functionsList}>
+              <li style={styles.functionsItem}>AI summary</li>
+              <li style={styles.functionsItem}>Sector View</li>
+              <li style={styles.functionsItem}>search companies</li>
+              <li style={styles.functionsItem}>Blog Page</li>
+              <li style={styles.functionsItem}>Trends & KPIs</li>
+              <li style={styles.functionsItem}>Compare companies</li>
+            </ul>
           </div>
-        </nav>
-      </header>
-    );
+        </footer>
+      );
 
   if (currentPage === 'first') {
     return (
       <div style={styles.container}>
-        <Header />
+        <Header 
+          navigate={navigate}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
         <div style={styles.mainContent}>
           <div style={styles.card}>
             <div style={styles.cardContent}>
@@ -234,6 +278,7 @@ const FileUploadApp = () => {
               <strong>Note:</strong> AI-generated summaries may contain inaccuracies. Always cross-verify with original documents.
             </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -241,7 +286,13 @@ const FileUploadApp = () => {
   if (currentPage === 'upload') {
     return (
       <div style={styles.container}>
-        <Header />
+        <Header 
+          navigate={navigate}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showToolsDropdown={showToolsDropdown}
+          setShowToolsDropdown={setShowToolsDropdown}
+        />
         <div style={styles.mainContent1}>
           <div style={{ ...styles.card1, maxWidth: '800px' }}>
             <div style={styles.cardContent1}>
@@ -251,9 +302,67 @@ const FileUploadApp = () => {
               </div>
 
               {/* <div style={{ margin: '1rem 0', textAlign: 'left' }}>
-                <label style={{ display: 'block', marginBottom: '0.25rem', color: '#D1DFDF' }}>LLM API Key (optional)</label>
+                <label style={{ display: 'block', marginBottom: '0.25rem', color: '#000000ff' }}>LLM API Key (optional)</label>
                 <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste API key here if you want to use a custom key" style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #a7a7a7' }} />
               </div> */}
+              <div style={{ 
+                margin: '1rem 0', 
+                textAlign: 'left',
+                padding: '1rem', // Added padding and background for better appearance
+                backgroundColor: '#a6b1caff',
+                borderRadius: '12px',
+                border: '1px solid #9ea8b8',
+            }}>
+    {/* Container for Label and Button */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <label style={{ 
+            display: 'block', 
+            color: '#0b0b0bff', 
+            fontWeight: '600', 
+            fontSize: '14px',
+            margin: 0,
+        }}>
+            LLM API Key (optional)
+        </label>
+        
+        {/* New Button */}
+        <button 
+             onClick={() => navigate("/API_key")}
+            style={{
+                backgroundColor: '#64748b', // Darker color for button
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '0.3rem 0.6rem',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                transition: 'background-color 0.2s',
+            }}
+            title="Click for instructions"
+        >
+            how to get API key? <span style={{fontSize: '14px'}}>🤔</span>
+        </button>
+    </div>
+    
+    {/* Input Field */}
+    <input 
+        type="text" 
+        value={apiKey} 
+        onChange={(e) => setApiKey(e.target.value)} 
+        placeholder="Paste API key here if you want to use a custom key" 
+        style={{ 
+            width: '100%', 
+            padding: '0.65rem', 
+            borderRadius: '8px', 
+            border: '1px solid #a7a7a7',
+            boxSizing: 'border-box'
+        }} 
+    />
+</div>
 
               <div style={styles.uploadTitle}><h1 style={styles.title}>Upload Your Files</h1></div>
 
@@ -327,6 +436,7 @@ const FileUploadApp = () => {
             
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -343,7 +453,7 @@ const styles = {
     fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
   },
 
-  header: {
+   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -357,66 +467,126 @@ const styles = {
     top: 0,
     zIndex: 100
   },
-
-
-  logo: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
   },
-
-  brandName: {
-    fontWeight: '600'
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
   },
 
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1.5rem',
-    marginTop: "10px",
+    gap: '2rem'
   },
 
   navLink: {
-    cursor: 'pointer',
+    fontSize: '0.95rem',
     fontWeight: '500',
-    transition: 'color 0.2s',
-    color: 'Black'
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
   },
-
-  userMenu: {
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
+    toolsMenu: {
     position: 'relative',
     cursor: 'pointer',
-    color: 'Black'
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
   },
-
-  userIcon: {
-    transition: 'color 0.2s'
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
   },
-
-  dropdown: {
+  HFdropdown: {
     position: 'absolute',
-    right: '0',
-    top: '32px',
-    backgroundColor: '#D9D9D9',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-    padding: '0.5rem',
-    minWidth: '120px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
     zIndex: 1000
   },
-
   dropdownItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    fontSize: '14px'
+    fontSize: '0.95rem'
+  },
+  footer: {
+    backgroundColor: '#4D5C61',
+    color: '#FFFFFF',
+    padding: '2rem 4rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: '4rem',
+    position: 'relative',
+    zIndex: 5,
+  },
+
+  footerLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  copyright: {
+    fontSize: '0.9rem',
+    color: '#cbd5e0',
+    margin: 0
+  },
+  footerLink: {
+    color: '#FFFFFF',
+    textDecoration: 'none',
+    transition: 'opacity 0.3s',
+  },
+
+  footerRight: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  functionsTitle: {
+    fontSize: '14px',
+    fontWeight: '700',
+    marginRight: '8rem',
+  },
+
+  functionsList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right',
+    gap: '6px 0px',
+  },
+  functionsItem: {
+    fontSize: '13px',
+    margin: 0,
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
   },
 
   mainContent: {
@@ -661,7 +831,7 @@ const styles = {
 
   filesTitle: {
     fontWeight: '600',
-    color: '#D1DFDF',
+    color: '#131313ff',
     margin: '0 0 0.75rem 0',
     textAlign: 'left'
   },
