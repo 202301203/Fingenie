@@ -379,7 +379,19 @@ const Header = () => {
             >
                 News
             </span>
+            
+            <span
+                style={{
+                    ...styles.navLink,
+                    // Optional: Add border bottom here to show it is active
+                    borderBottom: "2px solid black", 
+                }}
+                onClick={() => navigate("/wordOfTheDay")}
+            >
+                Word of the Day
+            </span>
 
+            
             {/* About */}
             <span
                 style={styles.navLink}

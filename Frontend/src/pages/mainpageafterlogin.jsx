@@ -251,6 +251,19 @@ const FinGenieLanding = () => {
             News
           </span>
 
+          {/* --- WordOfTheDay --- */}
+          <span
+              className="nav-link"
+              style={{
+                ...styles.navLink,
+                borderBottom:
+                  location.pathname === "/wordOfTheDay" ? "2px solid black" : "none",
+              }}
+              onClick={() => navigate("/wordOfTheDay")}
+          >
+              Word of the Day
+          </span>
+
           {/* About */}
           <span
             className="nav-link"
