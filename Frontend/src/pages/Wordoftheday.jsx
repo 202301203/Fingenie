@@ -348,88 +348,82 @@ const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, se
             alt="logo"
           />
         </div>
-      </div>
-      <nav style={styles.nav}>
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-          }}
-          onClick={() => navigate("/mainpageafterlogin")}
-        >
-          Home
-        </span>
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-          }}
-          onClick={() => navigate("/NewsPage")}
-        >
-          News
-        </span>
 
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-          }}
-          onClick={() => navigate("/Chatbot")}
-        >
-          Chatbot
-        </span>
+        <nav style={styles.nav}>
+            {/* Home */}
+            <span
+                style={styles.navLink}
+                onClick={() => navigate("/mainpageafterlogin")}
+            >
+                Home
+            </span>
 
-        <span
-          className="nav-link"
-          style={{...styles.navLink,
-          }}
-          onClick={() => navigate("/About_us")}
-        >
-          About us
-        </span>
+            {/* News */}
+            <span
+                style={styles.navLink}
+                onClick={() => navigate("/NewsPage")}
+            >
+                News
+            </span>
+            
+            <span
+                style={{
+                    ...styles.navLink,
+                    // Optional: Add border bottom here to show it is active
+                    borderBottom: "2px solid black", 
+                }}
+                onClick={() => navigate("/wordOfTheDay")}
+            >
+                Word of the Day
+            </span>
 
-        <div
-          style={styles.toolsMenu}
-           onClick={() => setShowToolsDropdown(prev => !prev)} 
-        >
-          <Wrench size={24} color="black" style={styles.userIcon} />
-          {showToolsDropdown && (
-            <div style={styles.HFdropdown}>
-              
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/Trends_KPI")}
-              >
-                <Activity size={16} />
-                <span>Trends & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/blogPage")}
-              >
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem}
-                 onClick={() => navigate("/FileUploadApp")}
-              >
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}
-              onClick={() => navigate("/comparison")}
-              >
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-              <div style={styles.dropdownItem}
-                 onClick={() => navigate("/sectorOverview")}
-              >
-                <GitCompare size={16} />
-                <span>Sector Overview</span>
-              </div>
+            
+            {/* About */}
+            <span
+                style={styles.navLink}
+                onClick={() => navigate("/AboutUs")}
+            >
+                About us
+            </span>
+
+            {/* Tools Menu */}
+            <div
+                style={styles.toolsMenu}
+                onMouseEnter={() => setShowToolsDropdown(true)}
+                onMouseLeave={() => setShowToolsDropdown(false)}
+            >
+                <Wrench size={24} color="black" style={styles.userIcon} />
+
+                {showToolsDropdown && (
+                    <div style={styles.dropdown}>
+                        <div style={styles.dropdownItem}>
+                            <TrendingUp size={16} />
+                            <span>Debt Ratings</span>
+                        </div>
+                        <div style={styles.dropdownItem}>
+                            <Search size={16} />
+                            <span>Search Companies</span>
+                        </div>
+                        <div style={styles.dropdownItem}>
+                            <Activity size={16} />
+                            <span>Trends & KPIs</span>
+                        </div>
+                        <div style={styles.dropdownItem}>
+                            <BookOpen size={16} />
+                            <span>Blog Page</span>
+                        </div>
+                        <div style={styles.dropdownItem}
+                        onClick={() => navigate("/FileUploadApp")}
+                        >
+                            <Cpu size={16} />
+                            <span>AI Summary</span>
+                        </div>
+                        <div style={styles.dropdownItem}>
+                            <GitCompare size={16} />
+                            <span>Comparison</span>
+                        </div>
+                    </div>
+                )}
             </div>
           )}
         </div>
