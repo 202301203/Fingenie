@@ -1,7 +1,13 @@
+# dataprocessor/models.py
 from django.db import models
 import uuid
 import json
 from typing import Dict, List, Any
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from apps.accounts.models import UserActivity  # Add this import
+
 
 class FinancialReport(models.Model):
     report_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -12,6 +18,30 @@ class FinancialReport(models.Model):
         null=True,
         default=""
     )
+    
+    # Add user relationship - CRITICAL FOR PROFILE INTEGRATION
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='financial_reports',
+        null=True,  # Allow null for existing reports
+        blank=True
+    )
+    
+    # Add file upload field for balance sheet PDFs
+    uploaded_pdf = models.FileField(
+        upload_to='balance_sheets/', 
+        blank=True, 
+        null=True,
+        help_text="Uploaded balance sheet PDF file"
+    )
+    pdf_original_name = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text="Original filename of the uploaded PDF"
+    )
+    
     summary = models.JSONField(default=dict, blank=True)
     ratios = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -82,10 +112,9 @@ class FinancialReport(models.Model):
                 "cons": data.get("cons", []),
                 "financial_health_summary": data.get("financial_health_summary", "")
             }
-            self.summary = default_structure  # Fixed: use self.summary, not self.summary_data
+            self.summary = default_structure
         else:
             self.summary = {"pros": [], "cons": [], "financial_health_summary": ""}
-        # Don't forget to save!
         self.save()
 
     def set_ratios(self, data: List[Dict[str, Any]]) -> None:
@@ -102,10 +131,9 @@ class FinancialReport(models.Model):
                         "result": ratio.get("result", 0),
                         "interpretation": ratio.get("interpretation", "")
                     })
-            self.ratios = validated_ratios  # Fixed: use self.ratios, not self.ratios_data
+            self.ratios = validated_ratios
         else:
             self.ratios = []
-        # Don't forget to save!
         self.save()
 
     # Property accessors for convenience
@@ -124,9 +152,44 @@ class FinancialReport(models.Model):
         """Quick access to financial health summary"""
         return self.get_summary().get("financial_health_summary", "")
 
+    # New methods for profile integration
+    @property
+    def has_uploaded_pdf(self) -> bool:
+        """Check if report has an uploaded PDF"""
+        return bool(self.uploaded_pdf)
+    
+    @property
+    def display_name(self) -> str:
+        """Get display name for activity logs"""
+        if self.ticker_symbol:
+            return f"{self.company_name} ({self.ticker_symbol})"
+        return self.company_name
+    
+    @property
+    def time_ago(self) -> str:
+        """Get human-readable time ago string"""
+        from django.utils import timezone
+        from django.utils.timesince import timesince
+        
+        now = timezone.now()
+        diff = now - self.created_at
+        
+        if diff.days == 0:
+            return "Today"
+        elif diff.days == 1:
+            return "Yesterday"
+        elif diff.days < 7:
+            return f"{diff.days} days ago"
+        elif diff.days < 30:
+            weeks = diff.days // 7
+            return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+        else:
+            return self.created_at.strftime('%b %d, %Y')
+
     def __str__(self):
         symbol = f" ({self.ticker_symbol})" if self.ticker_symbol else ""
-        return f"{self.company_name}{symbol} - {self.created_at.strftime('%Y-%m-%d')}"
+        user_info = f" by {self.user.username}" if self.user else ""
+        return f"{self.company_name}{symbol}{user_info} - {self.created_at.strftime('%Y-%m-%d')}"
 
     def to_api_response(self) -> Dict[str, Any]:
         """Convert model instance to API response format"""
@@ -135,7 +198,48 @@ class FinancialReport(models.Model):
             "report_id": str(self.report_id),
             "company_name": self.company_name,
             "ticker_symbol": self.ticker_symbol or "",
+            "user": self.user.username if self.user else None,
             "summary": self.get_summary(),
             "ratios": self.get_ratios(),
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "time_ago": self.time_ago,
+            "has_uploaded_pdf": self.has_uploaded_pdf,
+            "uploaded_pdf_name": self.pdf_original_name,
         }
+
+
+# ============================================
+# ACTIVITY LOGGING SIGNAL
+# ============================================
+
+@receiver(post_save, sender=FinancialReport)
+def create_analysis_activity(sender, instance, created, **kwargs):
+    """
+    Create activity log when a financial analysis is created
+    """
+    if created and instance.user:
+        UserActivity.objects.create(
+            user=instance.user,
+            activity_type='analysis',
+            title=f'Analyzed {instance.display_name}',
+            description=f'Financial analysis completed for {instance.display_name}',
+            content_type='analysis',
+            object_id=instance.report_id
+        )
+        print(f"✅ Activity log created for financial analysis: {instance.display_name}")
+
+
+# ============================================
+# MIGRATION INSTRUCTIONS
+# ============================================
+"""
+After adding these changes, run:
+
+python manage.py makemigrations dataprocessor
+python manage.py migrate
+
+This will:
+1. Add the user foreign key to FinancialReport
+2. Add PDF upload fields
+3. Create the activity logging signal
+"""

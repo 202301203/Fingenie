@@ -4,6 +4,8 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import Glogo from "../images/Glogo.png";
+import API_BASE_URL from '../api/index';
+
 
 // Custom Hook for hover/focus state management
 function getCSRFToken() {
@@ -53,11 +55,13 @@ const useGoogleAuth = () => {
     try {
       console.log("Sending Google token to backend...");
       
-      const response = await fetch("http://127.0.0.1:8000/accounts/api/google-login/", {
+      const csrfToken = await getCSRFToken();
+      
+      const response = await fetch(`/accounts/api/google-login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCSRFToken(),
+          "X-CSRFToken": csrfToken,
         },
         credentials: "include",
         body: JSON.stringify({ token }),
@@ -115,6 +119,7 @@ const CreateAccount = ({ onSwitch }) => {
   );
   //const linkProps = useInteractionState(styles.link, styles.linkHover);
 
+
   // Input focus hooks
 
   // Input focus hooks
@@ -162,11 +167,13 @@ const CreateAccount = ({ onSwitch }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/accounts/api/register/", {
+      const csrfToken = await getCSRFToken();
+      
+      const response = await fetch(`/accounts/api/register/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCSRFToken(),
+          "X-CSRFToken": csrfToken,
         },
         credentials: "include",
         body: JSON.stringify({ 
@@ -334,65 +341,41 @@ const LoginPage = ({ onSwitch }) => {
   const [popupMessage, setPopupMessage] = useState("");
   const [popupColor, setPopupColor] = useState("#4CAF50");
 
-  const validatePassword = (pwd) => {
-    if (pwd.length < 8) return "Password must be at least 8 characters";
-    if (!/[A-Z]/.test(pwd))
-      return "Password must contain at least one uppercase letter";
-    if (!/[a-z]/.test(pwd))
-      return "Password must contain at least one lowercase letter";
-    if (!/[0-9]/.test(pwd)) return "Password must contain at least one number";
-    if (!/[!@#$%^&*]/.test(pwd))
-      return "Password must contain at least one special character (!@#$%^&*)";
-    return "";
-  };
-
   const handleLogin = async () => {
-    if (!identifier || !password) {
-      setPopupMessage("Please enter your details.");
+    if (!identifier.trim() || !password) {
+      setPopupMessage("Please enter your email/username and password.");
       setPopupColor("#E74C3C");
       setShowPopup(true);
       return;
     }
 
-    // Email validation if loginType is email
-    if (loginType === "email") {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(identifier)) {
-        setEmailError("Please enter a valid email address");
-        return;
-      } else {
-        setEmailError("");
-      }
-    }
-
-    // Password validation
-    const pwdError = validatePassword(password);
-    if (pwdError) {
-      setPasswordError(pwdError);
-      return;
-    } else {
-      setPasswordError("");
-    }
-
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/accounts/api/login/", {
+      // Get CSRF token first
+      const csrfToken = await getCSRFToken();
+
+      console.log("Attempting login with:", { identifier, loginType });
+
+      const requestData = {
+        identifier: identifier.trim(),
+        password: password,
+      };
+
+      const response = await fetch(`/accounts/api/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCSRFToken(),
+          "X-CSRFToken": csrfToken,
         },
         credentials: "include",
-        body: JSON.stringify({ 
-          [loginType === "email" ? "email" : "username"]: identifier,
-          password,
-        }),
+        body: JSON.stringify(requestData),
       });
 
       const data = await response.json();
+      console.log("Login response:", data);
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         setPopupMessage(`Welcome back, ${data.username || identifier}!`);
         setPopupColor("#4CAF50");
         setShowPopup(true);
@@ -400,13 +383,14 @@ const LoginPage = ({ onSwitch }) => {
           navigate("/mainpageafterlogin");
         }, 1500);
       } else {
-        setPopupMessage(data.error || "Login failed");
+        const errorMessage = data.error || data.message || "Login failed";
+        setPopupMessage(errorMessage);
         setPopupColor("#E74C3C");
         setShowPopup(true);
       }
     } catch (err) {
       console.error("Error during login:", err);
-      setPopupMessage("Server error. Please try again later.");
+      setPopupMessage("Network error. Please check your connection and try again.");
       setPopupColor("#E74C3C");
       setShowPopup(true);
     } finally {
@@ -487,9 +471,6 @@ const LoginPage = ({ onSwitch }) => {
             onBlur={identifierInput.onBlur}
             style={identifierInput.inputStyle}
           />
-          {loginType === "email" && emailError && (
-            <p style={styles.errorText}>{emailError}</p>
-          )}
 
           <input
             type="password"
@@ -500,7 +481,6 @@ const LoginPage = ({ onSwitch }) => {
             onBlur={passwordInput.onBlur}
             style={passwordInput.inputStyle}
           />
-          {passwordError && <p style={styles.errorText}>{passwordError}</p>}
 
           <button
             onClick={handleLogin}

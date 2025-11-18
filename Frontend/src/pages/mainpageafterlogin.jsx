@@ -306,7 +306,6 @@ const FeatureCard = ({ feature, index }) => {
         <p style={styles.cardDescription}>{feature.description}</p>
       </div>
     </div>
-
   );
 };
 
@@ -629,8 +628,6 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '1rem 3rem',
-    //backgroundColor: '#ffffff',
-    //boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     position: 'sticky',
     borderRadius: '8px',
     top: 0,

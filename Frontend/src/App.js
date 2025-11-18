@@ -11,7 +11,7 @@ import NewsPage from "./pages/news_page";
 import TrendsPage from "./pages/Trends_KPI";
 import SectorOverviewDashboard from "./pages/sectorOverview";
 import BlogPage from "./pages/blogPage";
-
+import CompanySearch from "./pages/CompanySerach"
 function App() {
   return (
     <Routes>
@@ -28,6 +28,7 @@ function App() {
       <Route path="/Trends_KPI" element={<TrendsPage />} />  
       <Route path="/sectorOverview" element={<SectorOverviewDashboard />} /> 
       <Route path="/blogPage" element={<BlogPage />} />
+      <Route path="/companySearch" element={<CompanySearch/>}/>
     </Routes>
   );
 }
