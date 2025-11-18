@@ -234,14 +234,7 @@ const features = [
     bordercolor: '#515266',
     route: '/blogPage'
   },
-  {
-    title: 'Debt Ratings',
-    description: 'Get accurate and transparent debt analysis for smarter investment decisions.',
-    icon: Award,
-    bgColor: '#DCDCE0',
-    bordercolor: '#515266',
-    route: '/debtRatings'
-  },
+
   {
     title: 'Sector Overview',
     description: 'Analyze industry sectors with comprehensive data and insights.',
@@ -350,14 +343,27 @@ const FinGenieLanding = () => {
         >
           News
         </span>
+
         <span
           className="nav-link"
           style={{
             ...styles.navLink,
             borderBottom:
-              location.pathname === "/AboutUs" ? "2px solid black" : "none",
+              location.pathname === "/Chatbot" ? "2px solid black" : "none",
           }}
-          onClick={() => navigate("/AboutUs")}
+          onClick={() => navigate("/Chatbot")}
+        >
+          Chatbot
+        </span>
+
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+            borderBottom:
+              location.pathname === "/About_us" ? "2px solid black" : "none",
+          }}
+          onClick={() => navigate("/About_us")}
         >
           About us
         </span>
@@ -369,31 +375,38 @@ const FinGenieLanding = () => {
           <Wrench size={24} color="black" style={styles.userIcon} />
           {showToolsDropdown && (
             <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
-              </div>
+              
               <div style={styles.dropdownItem}>
                 <Search size={16} />
                 <span>Search Companies</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/Trends_KPI")}
+              >
                 <Activity size={16} />
                 <span>Trends & KPIs</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/blogPage")}
+              >
                 <BookOpen size={16} />
                 <span>Blog Page</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/FileUploadApp")}
+              >
                 <Cpu size={16} />
                 <span>AI Summary</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/comparison")}
+              >
                 <GitCompare size={16} />
                 <span>Comparison</span>
               </div>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/sectorOverview")}
+              >
                 <GitCompare size={16} />
                 <span>Sector Overview</span>
               </div>
@@ -408,7 +421,9 @@ const FinGenieLanding = () => {
           <User size={24} color="black" style={styles.userIcon} />
           {showDropdown && (
             <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/Profile_page")}   
+                >
                 <User size={16} />
                 <span>Profile</span>
               </div>
@@ -448,7 +463,6 @@ const FinGenieLanding = () => {
         <ul style={styles.functionsList}>
           <li style={styles.functionsItem}>AI summary</li>
           <li style={styles.functionsItem}>Sector View</li>
-          <li style={styles.functionsItem}>Debt ratings</li>
           <li style={styles.functionsItem}>search companies</li>
           <li style={styles.functionsItem}>Blog Page</li>
           <li style={styles.functionsItem}>Trends & KPIs</li>
@@ -568,32 +582,27 @@ const FinGenieLanding = () => {
       </div>
 
       {/* Features Grid */}
-      <section style={styles.featuresSection} className="features-section">
+<section style={styles.featuresSection} className="features-section">
 
   <div style={styles.featuresGrid} className="features-grid">
-    {features.slice(0, 3).map((feature, index) => (
+    {features.map((feature, index) => (
       <FeatureCard key={index} feature={feature} index={index} />
-    ))}
-  </div>
-    <div style={styles.fullWidthBox}>
-
-  {/* 🔥 Curved animation here */}
-
-
-  {/* ⭐ Static text that does NOT move */}
-  <div style={styles.quizText}>
-    Take a fun quiz!
-  </div>
-
-</div>
-
-  <div style={styles.featuresGrid} className="features-grid">
-    {features.slice(3).map((feature, index) => (
-      <FeatureCard key={index} feature={feature} index={index + 3} />
     ))}
   </div>
 
 </section>
+
+<div style={styles.fullWidthBox}
+onClick={() => navigate("/wordoftheday")}
+>
+  {/* 🔥 Curved animation here */}
+  {/* ⭐ Static text that does NOT move */}
+  <div style={styles.quizText}
+>
+    Take a fun quiz!
+  </div>
+
+</div>
 
 
       {/* Footer */}
@@ -661,11 +670,7 @@ const styles = {
     alignItems: 'center',
     gap: '2rem'
   },
-  navCenter: {
-    display: 'flex',
-    gap: '2.5rem',
-    alignItems: 'center'
-  },
+
   navLink: {
     fontSize: '0.95rem',
     fontWeight: '500',
@@ -898,6 +903,7 @@ margin: '2rem auto',
   background: "linear-gradient(135deg, #eef4ce66, #d9dfb766)", // ⭐ gradient added
       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     border: '1px solid #969a7fff',
+    cursor: 'pointer'
 },
 quizText: {
   fontSize: "1.4rem",
@@ -906,6 +912,7 @@ quizText: {
   fontFamily: '"Bricolage Grotesque", sans-serif',
   textTransform: "uppercase",
   letterSpacing: "1px",
+  cursor: "pointer",
 },
 
 

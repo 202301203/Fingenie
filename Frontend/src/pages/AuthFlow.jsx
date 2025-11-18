@@ -549,20 +549,17 @@ export const AuthFlow = () => {
 
 // --- STYLES ---
 const styles = {
-  creativeBG: {
-    zIndex: 0,
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    width: '100vw', height: '100vh',
-    background: `
-      radial-gradient(ellipse 55% 38% at 25% 20%, #efeacc 0%, #b1e3de70 70%, #ffffff00 100%),
-      radial-gradient(ellipse 80% 60% at 75% 5%, #b5d1d1 0%, #f8f8f800 75%),
-      linear-gradient(120deg, #e0f2f1 12%, #f8f8f870 100%)
-    `,
-    pointerEvents: 'none'
-  },
+
   appContainer: {
-    background: 'radial-gradient(ellipse 80% 60% at top, #e0f2f1 0%, #D1DFDF 40%, #f8f8f8 70%)',
+   background: `
+    linear-gradient(
+      to right,
+      #e0f2f1 0%,      /* left glow */
+      rgba(202, 211, 231, 0.0) 20%,    /* fade to center */
+      rgba(202, 211, 231, 0.0) 80%,    /* fade out to right glow */
+      #e0f2f1 100%    /* right glow */
+    )
+  `,
     minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
@@ -576,7 +573,8 @@ const styles = {
   },
 
   modal: {
-    background: '#ececec3c',
+      background: 'linear-gradient(180deg, #e3e8f1ff, #CAD3E7)',
+
     backdropFilter: 'blur(25px)',
     WebkitBackdropFilter: 'blur(25px)',
     borderRadius: '28px',
