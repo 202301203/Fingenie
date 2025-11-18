@@ -13,7 +13,8 @@ import {
   Activity,
   BookOpen,
   Cpu,
-  GitCompare
+  GitCompare,
+  Key
 } from 'lucide-react';
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
@@ -23,12 +24,13 @@ import api from '../api';
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
-    const location = useLocation();
+  const location = useLocation();
   
   const [currentPage, setCurrentPage] = useState('first'); 
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -94,123 +96,127 @@ const FileUploadApp = () => {
     if (numberOfFiles < 1 || numberOfFiles > 4) return alert('Please enter a number between 1 and 4');
     setCurrentPage('upload');
   };
-  const goBack = () => { setCurrentPage('first'); setUploadedFiles([]); };
+  const goBack = () => { 
+    setCurrentPage('first'); 
+    setUploadedFiles([]);
+    setApiKey('');
+    setShowApiKeyInput(false);
+  };
 
-  // Header Component
-    const Header = () => (
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <img
-              src={fglogo_Wbg}
-              style={{ height: "80px", width: "auto" }}
-              alt="logo"
-            />
-          </div>
+  // Header Component (unchanged)
+  const Header = () => (
+    <header style={styles.header}>
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+          <img
+            src={fglogo_Wbg}
+            style={{ height: "80px", width: "auto" }}
+            alt="logo"
+          />
         </div>
-        <nav style={styles.nav}>
-          <span
-            className="nav-link"
-            style={styles.navLink}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/NewsPage" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
-            News
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-  
-          <div
-            style={styles.toolsMenu}
-             onClick={() => setShowToolsDropdown(prev => !prev)} 
-          >
-            <Wrench size={24} color="black" style={styles.userIcon} />
-            {showToolsDropdown && (
-              <div style={styles.HFdropdown}>
-                <div style={styles.dropdownItem}>
-                  <TrendingUp size={16} />
-                  <span>Debt Ratings</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Search size={16} />
-                  <span>Search Companies</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Activity size={16} />
-                  <span>Trends & KPIs</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <BookOpen size={16} />
-                  <span>Blog Page</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Cpu size={16} />
-                  <span>AI Summary</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Comparison</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Sector Overview</span>
-                </div>
+      </div>
+      <nav style={styles.nav}>
+        <span
+          className="nav-link"
+          style={styles.navLink}
+          onClick={() => navigate("/mainpageafterlogin")}
+        >
+          Home
+        </span>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+            borderBottom:
+              location.pathname === "/NewsPage" ? "2px solid black" : "none",
+          }}
+          onClick={() => navigate("/NewsPage")}
+        >
+          News
+        </span>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+            borderBottom:
+              location.pathname === "/AboutUs" ? "2px solid black" : "none",
+          }}
+          onClick={() => navigate("/AboutUs")}
+        >
+          About us
+        </span>
+
+        <div
+          style={styles.toolsMenu}
+           onClick={() => setShowToolsDropdown(prev => !prev)} 
+        >
+          <Wrench size={24} color="black" style={styles.userIcon} />
+          {showToolsDropdown && (
+            <div style={styles.HFdropdown}>
+              <div style={styles.dropdownItem}>
+                <TrendingUp size={16} />
+                <span>Debt Ratings</span>
               </div>
-            )}
-          </div>
-  
-          <div
-            style={styles.userMenu}
-            onClick={() => setShowDropdown(prev => !prev)} 
-          >
-            <User size={24} color="black" style={styles.userIcon} />
-            {showDropdown && (
-              <div style={styles.HFdropdown}>
-                <div style={styles.dropdownItem}>
-                  <User size={16} />
-                  <span>Profile</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <History size={16} />
-                  <span>History</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </div>
-                <div style={styles.dropdownItem}
-                  onClick={() => {
-                    // (Optional) clear user data or tokens here
-                    navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                  }}>
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </div>
+              <div style={styles.dropdownItem}>
+                <Search size={16} />
+                <span>Search Companies</span>
               </div>
-            )}
-          </div>
-        </nav>
-      </header>
-    );
+              <div style={styles.dropdownItem}>
+                <Activity size={16} />
+                <span>Trends & KPIs</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <BookOpen size={16} />
+                <span>Blog Page</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Cpu size={16} />
+                <span>AI Summary</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <GitCompare size={16} />
+                <span>Comparison</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <GitCompare size={16} />
+                <span>Sector Overview</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          style={styles.userMenu}
+          onClick={() => setShowDropdown(prev => !prev)} 
+        >
+          <User size={24} color="black" style={styles.userIcon} />
+          {showDropdown && (
+            <div style={styles.HFdropdown}>
+              <div style={styles.dropdownItem}>
+                <User size={16} />
+                <span>Profile</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => {
+                  navigate("/homepage_beforelogin");
+                }}>
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+    </header>
+  );
 
   if (currentPage === 'first') {
     return (
@@ -225,6 +231,34 @@ const FileUploadApp = () => {
                 <label style={styles.label}>Enter the number of files (1-4) to upload.</label>
 
                 <input type="number" min="1" max="4" value={numberOfFiles} onChange={(e) => setNumberOfFiles(parseInt(e.target.value) || 1)} style={styles.input} />
+
+                {/* API Key Toggle */}
+                <div style={styles.apiKeySection}>
+                  <button 
+                    type="button"
+                    style={styles.apiKeyToggle}
+                    onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                  >
+                    <Key size={16} />
+                    <span>{showApiKeyInput ? 'Hide API Key' : 'Use Custom API Key'}</span>
+                  </button>
+                  
+                  {showApiKeyInput && (
+                    <div style={styles.apiKeyInputContainer}>
+                      <label style={styles.apiKeyLabel}>API Key (Optional)</label>
+                      <input 
+                        type="text" 
+                        value={apiKey} 
+                        onChange={(e) => setApiKey(e.target.value)} 
+                        placeholder="Enter your API key for enhanced processing"
+                        style={styles.apiKeyInput}
+                      />
+                      <p style={styles.apiKeyHelp}>
+                        Using your own API key may provide better processing results
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <button onClick={goToUpload} style={styles.uploadButton}>Upload Files</button>
               </div>
@@ -250,10 +284,25 @@ const FileUploadApp = () => {
                 <div style={styles.fileCounter}>Upload {numberOfFiles} file{numberOfFiles > 1 ? 's' : ''}</div>
               </div>
 
-              {/* <div style={{ margin: '1rem 0', textAlign: 'left' }}>
-                <label style={{ display: 'block', marginBottom: '0.25rem', color: '#D1DFDF' }}>LLM API Key (optional)</label>
-                <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste API key here if you want to use a custom key" style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #a7a7a7' }} />
-              </div> */}
+              {/* API Key Input Section */}
+              {showApiKeyInput && (
+                <div style={styles.apiKeySectionUpload}>
+                  <div style={styles.apiKeyHeader}>
+                    <Key size={20} />
+                    <span>Custom API Key</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={apiKey} 
+                    onChange={(e) => setApiKey(e.target.value)} 
+                    placeholder="Paste your API key here for enhanced processing"
+                    style={styles.apiKeyInputUpload}
+                  />
+                  <p style={styles.apiKeyNote}>
+                    Your API key will be used for this processing session only
+                  </p>
+                </div>
+              )}
 
               <div style={styles.uploadTitle}><h1 style={styles.title}>Upload Your Files</h1></div>
 
@@ -301,13 +350,22 @@ const FileUploadApp = () => {
 
                         const formData = new FormData();
                         formData.append('file', fileObj.file);
-                        if (apiKey?.trim()) formData.append('api_key', apiKey.trim());
+                        
+                        // Add API key to form data if provided
+                        if (apiKey?.trim()) {
+                          formData.append('api_key', apiKey.trim());
+                        }
 
                         const json = await api.postExtract(formData);
 
                         if (json?.report_id) localStorage.setItem('currentReportId', json.report_id);
-                        if (apiKey?.trim()) localStorage.setItem('userApiKey', apiKey.trim());
-                        else if (json?.api_key) localStorage.setItem('userApiKey', json.api_key);
+                        
+                        // Store API key in localStorage if provided
+                        if (apiKey?.trim()) {
+                          localStorage.setItem('userApiKey', apiKey.trim());
+                        } else if (json?.api_key) {
+                          localStorage.setItem('userApiKey', json.api_key);
+                        }
 
                         navigate('/summary_page', { state: json });
                       } catch (err) {
@@ -334,9 +392,104 @@ const FileUploadApp = () => {
   return null;
 };
 
-
-// CSS Styles 
+// CSS Styles - Add these new styles to your existing styles object
 const styles = {
+  // ... your existing styles remain the same ...
+
+  // New API Key styles
+  apiKeySection: {
+    width: '100%',
+    marginBottom: '1rem',
+  },
+
+  apiKeyToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    backgroundColor: 'transparent',
+    border: '1px solid #515266',
+    color: '#515266',
+    padding: '0.5rem 1rem',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'all 0.2s',
+    width: '100%',
+    justifyContent: 'center',
+  },
+
+  apiKeyInputContainer: {
+    marginTop: '1rem',
+    padding: '1rem',
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '8px',
+  },
+
+  apiKeyLabel: {
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#495057',
+    marginBottom: '0.5rem',
+  },
+
+  apiKeyInput: {
+    width: '100%',
+    padding: '0.75rem',
+    border: '1px solid #ced4da',
+    borderRadius: '4px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
+  },
+
+  apiKeyHelp: {
+    fontSize: '12px',
+    color: '#6c757d',
+    margin: '0.5rem 0 0 0',
+    fontStyle: 'italic',
+  },
+
+  apiKeySectionUpload: {
+    margin: '1rem 0',
+    padding: '1rem',
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '8px',
+    textAlign: 'left',
+  },
+
+  apiKeyHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: '0.5rem',
+    fontSize: '14px',
+  },
+
+  apiKeyInputUpload: {
+    width: '100%',
+    padding: '0.75rem',
+    border: '1px solid #ced4da',
+    borderRadius: '4px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
+    marginBottom: '0.5rem',
+  },
+
+  apiKeyNote: {
+    fontSize: '12px',
+    color: '#6c757d',
+    margin: '0',
+    fontStyle: 'italic',
+  },
+
   container: {
     minHeight: '100vh',
     background: '#f8f8f8',

@@ -239,10 +239,10 @@ GOOGLE_OAUTH_CLIENT_ID = os.environ.get(
     'GOOGLE_OAUTH_CLIENT_ID', 
     '972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com'
 )
-GOOGLE_API_KEY = os.environ.get(
-    'GOOGLE_API_KEY', 
-    'AIzaSyC5pZMfa-VQtcq2iuQ-KoQVSWbIuVPvVEs'
-)
+# GOOGLE_API_KEY = os.environ.get(
+#     'GOOGLE_API_KEY', 
+#     'AIzaSyBqHvZ3wTzU8A-cXBYk4Pkt_j1548AODCg'
+# )
 
 # ============================================================================
 # Logging Configuration

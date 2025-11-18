@@ -532,7 +532,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
             // Add API key if needed
             formData.append('api_key', 'AIzaSyDTz-Yi25lpP-foIQJkn2FpJEOMxO3kUFg'); // Replace with actual API key
 
-            const response = await fetch('http://localhost:8000/trends/api/process-financial-statements/', {
+            const response = await fetch('/trends/api/process-financial-statements/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken(),

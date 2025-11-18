@@ -118,22 +118,32 @@ def process_single_file(uploaded_file, api_key, media_root):
             os.remove(file_path)
         return None
 
-def process_files_parallel(uploaded_files, api_key, media_root, max_workers=None):
-    """Process multiple files in parallel using ThreadPoolExecutor."""
+def process_files_parallel(uploaded_files, api_keys, media_root, max_workers=None):
+    """Process multiple files in parallel using ThreadPoolExecutor with multiple API keys."""
     if max_workers is None:
         # Use optimal number of workers based on file count and CPU cores
         max_workers = min(len(uploaded_files), os.cpu_count() or 4, 8)  # Cap at 8 workers
     
-    print(f"Starting parallel processing of {len(uploaded_files)} files with {max_workers} workers...")
+    # Ensure we have enough API keys
+    if len(api_keys) < max_workers:
+        print(f"Warning: Only {len(api_keys)} API keys provided for {max_workers} workers")
+        # Cycle through available keys if we have fewer keys than workers
+        api_keys = [api_keys[i % len(api_keys)] for i in range(max_workers)]
     
-    # Create partial function with fixed parameters
-    process_func = partial(process_single_file, api_key=api_key, media_root=media_root)
+    print(f"Starting parallel processing of {len(uploaded_files)} files with {max_workers} workers using {len(set(api_keys))} API keys...")
+    
+    # Create a list of (file, api_key) pairs for each worker
+    file_key_pairs = []
+    for i, uploaded_file in enumerate(uploaded_files):
+        # Assign API key in round-robin fashion
+        api_key = api_keys[i % len(api_keys)]
+        file_key_pairs.append((uploaded_file, api_key))
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
+        # Submit all tasks with their assigned API keys
         future_to_file = {
-            executor.submit(process_func, uploaded_file): uploaded_file 
-            for uploaded_file in uploaded_files
+            executor.submit(process_single_file, uploaded_file, api_key, media_root): uploaded_file 
+            for uploaded_file, api_key in file_key_pairs
         }
         
         # Collect results as they complete
@@ -149,10 +159,6 @@ def process_files_parallel(uploaded_files, api_key, media_root, max_workers=None
     
     print(f"Parallel processing complete: {len(results)} files processed successfully")
     return results
-
-# ------------------------------
-# 🔹 CRITICAL FINANCIAL METRICS DEFINITION
-# ------------------------------
 
 CRITICAL_METRICS = {
     'total_assets': {
@@ -217,9 +223,16 @@ CRITICAL_METRICS = {
     }
 }
 
-# ------------------------------
-# 🔹 Enhanced Data Extraction Functions
-# ------------------------------
+API_KEYS = [
+    "AIzaSyD0pGRXvQDkI3UwhgSN5RQd8rvOxFVpKwE",
+    "AIzaSyBB6BtF8azY7cCoK5mC2paEEVElVZdUGBk", 
+    "AIzaSyCIRHpXUyG_f99tMI4sWFdWs4-gMLV-K1U",
+    "AIzaSyB4uWtqC6L9U9UBaIftFvkBNJ9gY6-TNN0",
+    "AIzaSyCbioN-X1Kt4PoxivCIPraU3dm6HzcfpKg",
+    "AIzaSyC5pZMfa-VQtcq2iuQ-KoQVSWbIuVPvVEs",
+    "AIzaSyCS-EkVLA4lodlh47c_rQ1Yh8td8rVBGDA",
+    "AIzaSyB3u4M9AyfNvxgfjFS8uN35y36Sa9R5s0A"
+]
 
 def extract_all_years_data(extraction: Dict[str, Any], year: str) -> Dict[str, Dict[str, float]]:
     """
@@ -1171,12 +1184,8 @@ def process_financial_statements_api(request):
         return JsonResponse({'error': 'Please upload 3 or more financial statements.'}, status=400)
 
     # Get API key with better validation
-    api_key = (
-        request.POST.get('api_key') or
-        getattr(settings, 'GENIE_API_KEY', None) or
-        os.environ.get('GENIE_API_KEY') or
-        os.environ.get('GOOGLE_API_KEY')
-    )
+    #api_key = request.POST.get('api_key')
+    api_key = request.POST.get('api_key') or 'AIzaSyCbioN-X1Kt4PoxivCIPraU3dm6HzcfpKg'
     
     if not api_key:
         return JsonResponse({'error': 'No API key provided. Please provide GENIE_API_KEY or GOOGLE_API_KEY.'}, status=400)
@@ -1184,8 +1193,7 @@ def process_financial_statements_api(request):
     os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
 
     try:
-        # 🔥 PARALLEL PROCESSING: Process all files concurrently
-        file_results = process_files_parallel(uploaded_files, api_key, settings.MEDIA_ROOT)
+        file_results = process_files_parallel(uploaded_files, API_KEYS, settings.MEDIA_ROOT)
         
         if not file_results:
             return JsonResponse({"error": "No data extracted from files."}, status=400)
@@ -1220,7 +1228,7 @@ def process_financial_statements_api(request):
 
         # Generate trends (this part is already optimized)
         print(f"Analyzing 10 CRITICAL financial trends from {len(formatted_items)} total metrics...")
-        trend_result = generate_trends_from_data(formatted_items, api_key)
+        trend_result = generate_trends_from_data(formatted_items, api_key[0])
 
         # Calculate data quality summary
         trends = trend_result.get("financial_trends", [])
@@ -1230,7 +1238,7 @@ def process_financial_statements_api(request):
             quality_counts[quality] = quality_counts.get(quality, 0) + 1
 
         # Get company name from extracted data
-        company_name = "Life Insurance Corporation of India"
+        company_name = "Company"
         if file_metadata and file_metadata[0].get('company_name'):
             company_name = file_metadata[0]['company_name']
 

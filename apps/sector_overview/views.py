@@ -1,14 +1,16 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
 import yfinance as yf
 import pandas as pd
 import time
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import concurrent.futures
 from threading import Lock
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,37 @@ SECTORS = {
         "UPL.NS", "COROMANDEL.NS", "RALLIS.NS", "DEEPAKNTR.NS", "GSFC.NS"
     ]
 }
+
+# Cache configuration
+CACHE_KEYS = {
+    'SECTOR_DATA': 'sector_overview_data',
+    'CACHE_TIMESTAMP': 'sector_data_timestamp',
+    'HEALTH_CHECK': 'health_check_data'
+}
+
+CACHE_DURATION = 30 * 60  # 30 minutes in seconds
+
+def get_cached_sector_data():
+    """Get cached sector data if it exists and is fresh"""
+    cached_data = cache.get(CACHE_KEYS['SECTOR_DATA'])
+    cache_timestamp = cache.get(CACHE_KEYS['CACHE_TIMESTAMP'])
+    
+    if cached_data and cache_timestamp:
+        # Check if cache is still valid (less than 30 minutes old)
+        cache_age = time.time() - cache_timestamp
+        if cache_age < CACHE_DURATION:
+            print(f" Returning cached data (age: {cache_age:.1f}s)")
+            return cached_data
+    
+    print(" Cache expired or not available")
+    return None
+
+def set_cached_sector_data(data):
+    """Cache sector data with timestamp"""
+    current_time = time.time()
+    cache.set(CACHE_KEYS['SECTOR_DATA'], data, CACHE_DURATION + 300)  # Extra 5 minutes buffer
+    cache.set(CACHE_KEYS['CACHE_TIMESTAMP'], current_time, CACHE_DURATION + 300)
+    print(f" Data cached at {datetime.fromtimestamp(current_time).strftime('%H:%M:%S')}")
 
 # Test if yfinance is working
 def test_yfinance_connection():
@@ -258,113 +291,174 @@ def process_sector_parallel(sector_name, tickers):
     print(f"Completed {sector_name}: {len(stocks_data)}/{len(tickers)} stocks")
     return sector_name, result
 
+def fetch_fresh_sector_data():
+    """
+    Fetch fresh sector data from yfinance (called when cache is expired)
+    """
+    start_time = time.time()
+    
+    # Test connection first
+    if not test_yfinance_connection():
+        return {
+            "error": "yfinance connection failed. Please check your network connection.",
+            "sectors": {},
+            "from_cache": False
+        }
+    
+    total_stocks = sum(len(tickers) for tickers in SECTORS.values())
+    print(f" Fetching fresh data for {len(SECTORS)} sectors, {total_stocks} stocks...")
+    
+    sector_data = {}
+    successful_sectors = 0
+    
+    # Process all sectors in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        # Submit all sectors for processing
+        future_to_sector = {
+            executor.submit(process_sector_parallel, sector_name, tickers[:10]): sector_name 
+            for sector_name, tickers in SECTORS.items()
+        }
+        
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(future_to_sector):
+            sector_name = future_to_sector[future]
+            try:
+                sector_name, result = future.result(timeout=60)  # 60 second timeout per sector
+                sector_data[sector_name] = result
+                if result['companies_count'] > 0:
+                    successful_sectors += 1
+                print(f"Sector completed: {sector_name}")
+            except concurrent.futures.TimeoutError:
+                print(f" Timeout processing sector: {sector_name}")
+                sector_data[sector_name] = {
+                    "avg_price": 0,
+                    "avg_change_pct": 0,
+                    "stocks": [],
+                    "companies_count": 0,
+                    "error": "Processing timeout"
+                }
+            except Exception as e:
+                print(f" Error processing sector {sector_name}: {e}")
+                sector_data[sector_name] = {
+                    "avg_price": 0,
+                    "avg_change_pct": 0,
+                    "stocks": [],
+                    "companies_count": 0,
+                    "error": str(e)
+                }
+    
+    # Calculate overall statistics
+    total_fetched_stocks = sum(sector['companies_count'] for sector in sector_data.values())
+    success_rate = (total_fetched_stocks / total_stocks) * 100
+    
+    end_time = time.time()
+    processing_time = end_time - start_time
+    
+    print(f"\n FRESH DATA FETCH COMPLETE")
+    print(f" Total time: {processing_time:.2f} seconds")
+    print(f" Successful sectors: {successful_sectors}/{len(SECTORS)}")
+    print(f" Stocks fetched: {total_fetched_stocks}/{total_stocks} ({success_rate:.1f}%)")
+    print(f" Performance: {total_stocks/processing_time:.2f} stocks/second")
+    
+    if total_fetched_stocks == 0:
+        return {
+            "error": "Unable to fetch any stock data. Please try again later.",
+            "sectors": {},
+            "from_cache": False
+        }
+    
+    # Add performance metrics to response
+    response_data = sector_data.copy()
+    response_data["_metadata"] = {
+        "processing_time_seconds": round(processing_time, 2),
+        "total_sectors": len(SECTORS),
+        "total_stocks_requested": total_stocks,
+        "total_stocks_fetched": total_fetched_stocks,
+        "success_rate_percent": round(success_rate, 1),
+        "timestamp": datetime.now().isoformat(),
+        "data_source": "yfinance",
+        "from_cache": False,
+        "cache_status": "fresh_data"
+    }
+    
+    return response_data
+
 @csrf_exempt
 def sector_overview_api(request):
     """
-    Real-time sector overview with parallel processing
+    Real-time sector overview with caching and 30-minute refresh
     """
     try:
-        start_time = time.time()
+        # First, check if we have valid cached data
+        cached_data = get_cached_sector_data()
         
-        # Test connection first
-        if not test_yfinance_connection():
-            return JsonResponse({
-                "error": "yfinance connection failed. Please check your network connection.",
-                "sectors": {}
-            }, status=503)
-        
-        total_stocks = sum(len(tickers) for tickers in SECTORS.values())
-        print(f" Starting parallel processing for {len(SECTORS)} sectors, {total_stocks} stocks...")
-        
-        sector_data = {}
-        successful_sectors = 0
-        
-        # Process all sectors in parallel
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-            # Submit all sectors for processing
-            future_to_sector = {
-                executor.submit(process_sector_parallel, sector_name, tickers[:10]): sector_name 
-                for sector_name, tickers in SECTORS.items()
-            }
+        if cached_data:
+            print(" Serving from cache")
+            # Add cache info to response
+            cache_timestamp = cache.get(CACHE_KEYS['CACHE_TIMESTAMP'])
+            if cache_timestamp:
+                cache_age = time.time() - cache_timestamp
+                cached_data['_metadata']['cache_age_seconds'] = round(cache_age, 2)
+                cached_data['_metadata']['cache_status'] = f"cached_{round(cache_age/60, 1)}min_old"
             
-            # Collect results as they complete
-            for future in concurrent.futures.as_completed(future_to_sector):
-                sector_name = future_to_sector[future]
-                try:
-                    sector_name, result = future.result(timeout=60)  # 60 second timeout per sector
-                    sector_data[sector_name] = result
-                    if result['companies_count'] > 0:
-                        successful_sectors += 1
-                    print(f"Sector completed: {sector_name}")
-                except concurrent.futures.TimeoutError:
-                    print(f" Timeout processing sector: {sector_name}")
-                    sector_data[sector_name] = {
-                        "avg_price": 0,
-                        "avg_change_pct": 0,
-                        "stocks": [],
-                        "companies_count": 0,
-                        "error": "Processing timeout"
-                    }
-                except Exception as e:
-                    print(f" Error processing sector {sector_name}: {e}")
-                    sector_data[sector_name] = {
-                        "avg_price": 0,
-                        "avg_change_pct": 0,
-                        "stocks": [],
-                        "companies_count": 0,
-                        "error": str(e)
-                    }
+            return JsonResponse(cached_data)
         
-        # Calculate overall statistics
-        total_fetched_stocks = sum(sector['companies_count'] for sector in sector_data.values())
-        success_rate = (total_fetched_stocks / total_stocks) * 100
+        # Cache is expired or not available, fetch fresh data
+        print(" Cache miss, fetching fresh data...")
+        fresh_data = fetch_fresh_sector_data()
         
-        end_time = time.time()
-        processing_time = end_time - start_time
+        # Cache the fresh data
+        if fresh_data and 'error' not in fresh_data:
+            set_cached_sector_data(fresh_data)
+            print(" Fresh data cached successfully")
+        else:
+            print(" Could not cache data due to errors")
         
-        print(f"\n PARALLEL PROCESSING COMPLETE")
-        print(f" Total time: {processing_time:.2f} seconds")
-        print(f" Successful sectors: {successful_sectors}/{len(SECTORS)}")
-        print(f" Stocks fetched: {total_fetched_stocks}/{total_stocks} ({success_rate:.1f}%)")
-        print(f" Performance: {total_stocks/processing_time:.2f} stocks/second")
-        
-        if total_fetched_stocks == 0:
-            return JsonResponse({
-                "error": "Unable to fetch any stock data. Please try again later.",
-                "sectors": {}
-            }, status=503)
-        
-        # Add performance metrics to response
-        response_data = sector_data.copy()
-        response_data["_metadata"] = {
-            "processing_time_seconds": round(processing_time, 2),
-            "total_sectors": len(SECTORS),
-            "total_stocks_requested": total_stocks,
-            "total_stocks_fetched": total_fetched_stocks,
-            "success_rate_percent": round(success_rate, 1),
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        return JsonResponse(response_data)
+        return JsonResponse(fresh_data)
         
     except Exception as e:
         logger.error(f"Critical error in sector_overview_api: {str(e)}")
+        
+        # Even on error, try to return cached data if available
+        cached_data = get_cached_sector_data()
+        if cached_data:
+            print(" Error occurred, but returning cached data as fallback")
+            cached_data['_metadata']['error_fallback'] = True
+            cached_data['_metadata']['error_message'] = str(e)
+            return JsonResponse(cached_data)
+        
         return JsonResponse({
             "error": f"Failed to fetch sector data: {str(e)}",
-            "sectors": {}
+            "sectors": {},
+            "from_cache": False
         }, status=500)
 
 @csrf_exempt
 def health_check(request):
-    """Enhanced health check that tests yfinance"""
+    """Enhanced health check that tests yfinance and shows cache status"""
     try:
         # Test yfinance connection
         test_result = test_yfinance_connection()
+        
+        # Check cache status
+        cache_timestamp = cache.get(CACHE_KEYS['CACHE_TIMESTAMP'])
+        cache_status = "empty"
+        cache_age = None
+        
+        if cache_timestamp:
+            cache_age = time.time() - cache_timestamp
+            if cache_age < CACHE_DURATION:
+                cache_status = "fresh"
+            else:
+                cache_status = "expired"
         
         return JsonResponse({
             "status": "healthy" if test_result else "degraded",
             "message": "Backend is running" if test_result else "Backend running but yfinance connection failed",
             "yfinance_connected": test_result,
+            "cache_status": cache_status,
+            "cache_age_seconds": round(cache_age, 2) if cache_age else None,
+            "cache_duration_minutes": CACHE_DURATION // 60,
             "timestamp": datetime.now().isoformat(),
             "sectors_configured": len(SECTORS),
             "total_stocks": sum(len(tickers) for tickers in SECTORS.values())
@@ -375,6 +469,7 @@ def health_check(request):
             "status": "unhealthy",
             "message": f"Health check failed: {str(e)}",
             "yfinance_connected": False,
+            "cache_status": "unknown",
             "timestamp": datetime.now().isoformat()
         }, status=503)
 
@@ -385,8 +480,67 @@ def available_sectors_api(request):
         "sectors": list(SECTORS.keys()),
         "total_stocks": sum(len(tickers) for tickers in SECTORS.values()),
         "data_source": "yfinance Real-time Data",
-        "processing": "parallel_optimized"
+        "caching_enabled": True,
+        "cache_refresh_minutes": CACHE_DURATION // 60,
+        "processing": "parallel_optimized_with_caching"
     })
+
+@csrf_exempt
+def force_refresh_api(request):
+    """
+    Force refresh the cache (admin/development endpoint)
+    """
+    # Optional: Add authentication here if needed
+    if request.method != 'POST':
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+    
+    print(" Manual cache refresh requested")
+    
+    # Clear existing cache
+    cache.delete(CACHE_KEYS['SECTOR_DATA'])
+    cache.delete(CACHE_KEYS['CACHE_TIMESTAMP'])
+    
+    # Fetch fresh data
+    fresh_data = fetch_fresh_sector_data()
+    
+    if fresh_data and 'error' not in fresh_data:
+        set_cached_sector_data(fresh_data)
+        return JsonResponse({
+            "status": "success",
+            "message": "Cache refreshed successfully",
+            "data": fresh_data
+        })
+    else:
+        return JsonResponse({
+            "status": "error",
+            "message": "Failed to refresh cache",
+            "error": fresh_data.get('error', 'Unknown error')
+        }, status=500)
+
+@csrf_exempt
+def cache_status_api(request):
+    """Get current cache status"""
+    cache_timestamp = cache.get(CACHE_KEYS['CACHE_TIMESTAMP'])
+    cached_data = cache.get(CACHE_KEYS['SECTOR_DATA'])
+    
+    status = {
+        "cache_enabled": True,
+        "cache_duration_minutes": CACHE_DURATION // 60,
+        "has_cached_data": cached_data is not None,
+        "cache_timestamp": cache_timestamp,
+        "cache_age_seconds": round(time.time() - cache_timestamp, 2) if cache_timestamp else None,
+        "cache_status": "fresh" if cache_timestamp and (time.time() - cache_timestamp) < CACHE_DURATION else "expired" if cache_timestamp else "empty",
+        "current_time": time.time()
+    }
+    
+    if cached_data and '_metadata' in cached_data:
+        status.update({
+            "cached_stocks_count": cached_data['_metadata'].get('total_stocks_fetched', 0),
+            "cached_sectors_count": cached_data['_metadata'].get('total_sectors', 0),
+            "last_processing_time": cached_data['_metadata'].get('processing_time_seconds', 0)
+        })
+    
+    return JsonResponse(status)
 
 # CORS middleware
 def cors_middleware(get_response):
@@ -402,3 +556,5 @@ def cors_middleware(get_response):
 sector_overview_api = cors_middleware(sector_overview_api)
 health_check = cors_middleware(health_check)
 available_sectors_api = cors_middleware(available_sectors_api)
+force_refresh_api = cors_middleware(force_refresh_api)
+cache_status_api = cors_middleware(cache_status_api)
