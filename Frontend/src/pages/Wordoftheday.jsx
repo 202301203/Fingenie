@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom"; 
-import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen,Cpu,GitCompare,CheckCircle, XCircle, UploadCloud, FileText, ArrowLeft } from "lucide-react";
+import { User, LogOut, History, Settings, Wrench, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare } from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png'; 
 
 // --- COLOR DEFINITIONS (Consistent with previous successful versions) ---
@@ -395,7 +395,7 @@ const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, se
                 <Wrench size={24} color="black" style={styles.userIcon} />
 
                 {showToolsDropdown && (
-                    <div style={styles.dropdown}>
+                    <div style={styles.HFdropdown}>
                         <div style={styles.dropdownItem}>
                             <TrendingUp size={16} />
                             <span>Debt Ratings</span>
@@ -425,42 +425,41 @@ const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, se
                     </div>
                 )}
             </div>
-          )}
-        </div>
 
-        <div
-          style={styles.userMenu}
-          onClick={() => setShowDropdown(prev => !prev)} 
-        >
-          <User size={24} color="black" style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}
-              onClick={() => navigate("/Profile_page")}   
-              >
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                }}>
-                <LogOut size={16} />
-                <span>Sign Out</span>
-              </div>
+            <div
+              style={styles.userMenu}
+              onClick={() => setShowDropdown(prev => !prev)} 
+            >
+              <User size={24} color="black" style={styles.userIcon} />
+              {showDropdown && (
+                <div style={styles.HFdropdown}>
+                  <div style={styles.dropdownItem}
+                  onClick={() => navigate("/Profile_page")}   
+                  >
+                    <User size={16} />
+                    <span>Profile</span>
+                  </div>
+                  <div style={styles.dropdownItem}>
+                    <History size={16} />
+                    <span>History</span>
+                  </div>
+                  <div style={styles.dropdownItem}>
+                    <Settings size={16} />
+                    <span>Settings</span>
+                  </div>
+                  <div style={styles.dropdownItem}
+                    onClick={() => {
+                      // (Optional) clear user data or tokens here
+                      navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                    }}>
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </nav>
+        </nav>
+      </div>
     </header>
   );
 

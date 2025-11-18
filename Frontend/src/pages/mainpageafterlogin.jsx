@@ -356,6 +356,18 @@ const FinGenieLanding = () => {
           Chatbot
         </span>
 
+          {/* --- WordOfTheDay --- */}
+          <span
+              className="nav-link"
+              style={{
+                ...styles.navLink,
+                borderBottom:
+                  location.pathname === "/wordOfTheDay" ? "2px solid black" : "none",
+              }}
+              onClick={() => navigate("/wordOfTheDay")}
+          >
+              Word of the Day
+          </span>
         <span
           className="nav-link"
           style={{
@@ -564,104 +576,6 @@ const FinGenieLanding = () => {
           }
         `}
       </style>
-
-      {/* Navbar */}
-      <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img
-            src={fglogo_Wbg}
-            style={{ height: "80px", width: "auto" }}
-            alt="logo"
-          />
-        </div>
-      </div>
-      <nav style={styles.nav}>
-        <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom: isHomeActive ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-
-          {/* News */}
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/NewsPage" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
-            News
-          </span>
-
-          {/* --- WordOfTheDay --- */}
-          <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-                borderBottom:
-                  location.pathname === "/wordOfTheDay" ? "2px solid black" : "none",
-              }}
-              onClick={() => navigate("/wordOfTheDay")}
-          >
-              Word of the Day
-          </span>
-
-          {/* About */}
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-        
-        <div
-          style={styles.toolsMenu}
-          onMouseEnter={() => setShowToolsDropdown(true)}
-          onMouseLeave={() => setShowToolsDropdown(false)}
-        >
-          <Wrench size={24} color="black" style={styles.userIcon} />
-          {showToolsDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Activity size={16} />
-                <span>Charts & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-            </div>
-          )}
-        </div>
 
       {/* Hero Section 
         {/*<RotatingCircles />*/}
