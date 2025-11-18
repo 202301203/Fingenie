@@ -49,149 +49,139 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
-    position: 'relative',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
-    backdropFilter: 'blur(10px)',            // Blur background
-    WebkitBackdropFilter: 'blur(10px)',      // Safari support
-    borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
-    borderBottom: '2px solid black',
-
-    color: 'white',
-    },
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
     
-    logo: {
-    width: '40px',
-    height: '40px',
+    border: '1px solid #000000ff',
     borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+
+  nav: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    },
+    gap: '2rem'
+  },
 
-
-    brandName: {
-        fontWeight: '600'
-    },
-
-    nav: {
-        display: 'flex',
-        gap: '1.5rem',
-        marginTop: '10px',
-    },
-    
-    navLink: {
-        cursor: 'pointer',
-        color: '#000000',
-        textDecoration: 'none',
-        fontSize: '14px',
-        fontWeight: '500',
-        transition: 'opacity 0.3s',
-    },
-
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-        color: 'Black'
-    },
-
-    userIcon: {
-        transition: 'color 0.2s'
-    },
-    
-    dropdown: {
-        position: 'absolute',
-        right: '0',
-        top: '32px',
-        backgroundColor: '#D9D9D9',
-        borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-        padding: '0.5rem',
-        minWidth: '120px',
-        zIndex: 1000
-    },
-
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.5rem',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '14px'
-    },
-    
+  navLink: {
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
+  },
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
     toolsMenu: {
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-        marginLeft: "1rem", 
-        color: "Black"
-    },
-
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  HFdropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    zIndex: 1000
+  },
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '0.95rem'
+  },
     
     // --- FOOTER STYLES ---
     footer: {
-        backgroundColor: '#4D5C61',
-        color: '#FFFFFF',
-        padding: '2rem 4rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginTop: '4rem',
-        position: 'relative',
-        zIndex: 5,
-    },
+    backgroundColor: '#4D5C61',
+    color: '#FFFFFF',
+    padding: '2rem 4rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: '4rem',
+    position: 'relative',
+    zIndex: 5,
+  },
 
-    footerLeft: {
-        flex: 1,
-        alignItems: 'center',
-    },
+  footerLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  copyright: {
+    fontSize: '0.9rem',
+    color: '#cbd5e0',
+    margin: 0
+  },
+  footerLink: {
+    color: '#FFFFFF',
+    textDecoration: 'none',
+    transition: 'opacity 0.3s',
+  },
 
-    copyright: {
-        fontSize: '13px',
-        marginBottom: 0,
-        lineHeight: 1.8,
-    },
+  footerRight: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  functionsTitle: {
+    fontSize: '14px',
+    fontWeight: '700',
+    marginRight: '8rem',
+  },
 
-    footerLink: {
-        color: '#FFFFFF',
-        textDecoration: 'none',
-        transition: 'opacity 0.3s',
-    },
-
-    footerRight: {
-        flex: 1,
-        textAlign: 'right',
-    },
-
-    functionsTitle: {
-        fontSize: '14px',
-        fontWeight: '700',
-        marginRight: '8rem',
-    },
-
-    functionsList: {
-        listStyle: 'none',
-        margin: 0,
-        padding: 0,
-        display: 'grid',
-        gridTemplateColumns: '3.5fr 1fr',
-        textAlign: 'right', 
-        gap: '6px 0px',
-    },
-
-    functionsItem: {
-        fontSize: '13px',
-        margin: 0,
-        textTransform: "capitalize",
-        whiteSpace: 'nowrap'
-    },
+  functionsList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right',
+    gap: '6px 0px',
+  },
+  functionsItem: {
+    fontSize: '13px',
+    margin: 0,
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
+  },
     
 
     // --- QUIZ CONTENT LAYOUT (MODIFIED FOR SEPARATE BLOCKS) ---
@@ -207,7 +197,7 @@ const styles = {
     contentCard1: {
         width: '100%',
         maxWidth: '1200px',
-        backgroundColor: '#D1DFDF',
+        backgroundColor: '#d9dfb766',
         borderRadius: '24px',
         boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
         padding: '40px',
@@ -345,22 +335,18 @@ const styles = {
         border: `1px solid ${COLORS.Error}`,
     }
 };
-
+ 
 // --- Header component (Updated to accept props) ---
-const Header = () => {
-    const navigate = useNavigate();
-        const [showDropdown, setShowDropdown] = useState(false);
-        const [showToolsDropdown, setShowToolsDropdown] = useState(false);
-        return (
+const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
+    
     <header style={styles.header}>
-        <div style={styles.headerLeft}>
-            <div style={styles.logo}>
-                <img
-                    src={fglogo_Wbg}
-                    style={{ height: "80px", width: "auto" }}
-                    alt="logo"
-                />
-            </div>
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+          <img
+            src={fglogo_Wbg}
+            style={{ height: "80px", width: "auto" }}
+            alt="logo"
+          />
         </div>
 
         <nav style={styles.nav}>
@@ -439,79 +425,79 @@ const Header = () => {
                     </div>
                 )}
             </div>
+          )}
+        </div>
 
-            {/* User Menu */}
-            <div
-                style={styles.userMenu}
-                onMouseEnter={() => setShowDropdown(true)}
-                onMouseLeave={() => setShowDropdown(false)}
-            >
-                <User size={24} color="black" style={styles.userIcon} />
-
-                {showDropdown && (
-                    <div style={styles.dropdown}>
-                        <div style={styles.dropdownItem}>
-                            <User size={16} />
-                            <span>Profile</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <History size={16} />
-                            <span>History</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Settings size={16} />
-                            <span>Settings</span>
-                        </div>
-
-                        {/* Sign out */}
-                        <div
-                            style={styles.dropdownItem}
-                            onClick={() => {
-                                // (Optional) clear user data or tokens here
-                                navigate("/homepage_beforelogin"); // Redirect to dashboard on logout
-                            }}
-                        >
-                            <LogOut size={16} />
-                            <span>Sign out</span>
-                        </div>
-                    </div>
-                )}
+        <div
+          style={styles.userMenu}
+          onClick={() => setShowDropdown(prev => !prev)} 
+        >
+          <User size={24} color="black" style={styles.userIcon} />
+          {showDropdown && (
+            <div style={styles.HFdropdown}>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/Profile_page")}   
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => {
+                  // (Optional) clear user data or tokens here
+                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                }}>
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </div>
             </div>
-        </nav>
+          )}
+        </div>
+      </nav>
     </header>
-    );
-};
+  );
 
-// --- COMPONENT: Footer ---
-const Footer = () => (
+  const Footer = () => (
     <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-                © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-            </p>
-        </div>
+      <div style={styles.footerLeft}>
+        <p style={styles.copyright}>
+          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+        </p>
+      </div>
 
-        <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>Functions</h4>
-            <ul style={styles.functionsList}>
-                <li style={styles.functionsItem}>AI summary</li>
-                <li style={styles.functionsItem}>stock graphs</li>
-                <li style={styles.functionsItem}>Debt ratings</li>
-                <li style={styles.functionsItem}>search companies</li>
-                <li style={styles.functionsItem}>Blog Page</li>
-                <li style={styles.functionsItem}>Charts & KPIs</li>
-            </ul>
-        </div>
+      <div style={styles.footerRight}>
+        <h4 style={styles.functionsTitle}>Functions</h4>
+        <ul style={styles.functionsList}>
+          <li style={styles.functionsItem}>AI summary</li>
+          <li style={styles.functionsItem}>Sector View</li>
+          <li style={styles.functionsItem}>search companies</li>
+          <li style={styles.functionsItem}>Blog Page</li>
+          <li style={styles.functionsItem}>Trends & KPIs</li>
+          <li style={styles.functionsItem}>Compare companies</li>
+        </ul>
+      </div>
     </footer>
-);
+  );
 // --- MAIN QUIZ APPLICATION COMPONENT ---
 export default function QuizPage() {
+    const navigate = useNavigate(); // FIX 1: Define useNavigate hook
     const [selectedOption, setSelectedOption] = useState(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [hoveredOption, setHoveredOption] = useState(null);
     const [errorMsg, setErrorMsg] = useState(''); // New state for error message
+    // FIX 2 & 3: Define state for dropdown menus
+    const [showDropdown, setShowDropdown] = useState(false); 
+    const [showToolsDropdown, setShowToolsDropdown] = useState(false); 
+
     const data = mockQuizData; // Use mock data for now, replace with API fetch later
- 
+    
     const handleSubmit = () => {
         if (selectedOption !== null) {
             setIsSubmitted(true);
@@ -574,7 +560,13 @@ export default function QuizPage() {
 
     return (
         <div style={styles.appWrapper}>
-            <Header />
+            <Header 
+              navigate={navigate} // Pass navigate
+              showDropdown={showDropdown} // Pass state
+              setShowDropdown={setShowDropdown} // Pass setter
+              showToolsDropdown={showToolsDropdown} // Pass state
+              setShowToolsDropdown={setShowToolsDropdown} // Pass setter
+            />
             <div style={styles.mainContent}>
                 
                 {/* --- 1. WORD OF THE DAY BLOCK (New Separate Block) --- */}
@@ -599,7 +591,7 @@ export default function QuizPage() {
                             <div
                                 key={index}
                                 style={getOptionStyle(option)}
-                                onClick={() => !isSubmitted && setSelectedOption(option)}
+                                onClick={() => !isSubmitted && handleOptionSelect(option)} // Updated to use handler
                                 onMouseEnter={() => setHoveredOption(option)}
                                 onMouseLeave={() => setHoveredOption(null)}
                             >

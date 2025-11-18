@@ -101,144 +101,173 @@ const NewsPage = () => {
 
   //  Check if we are on News page (for underline)
   const isNewsActive = location.pathname === "/NewsPage";
-
+   const Header = () => (
+       <header style={styles.header}>
+         <div style={styles.headerLeft}>
+           <div style={styles.logo}>
+             <img
+               src={fglogo_Wbg}
+               style={{ height: "80px", width: "auto" }}
+               alt="logo"
+             />
+           </div>
+         </div>
+         <nav style={styles.nav}>
+           <span
+             className="nav-link"
+             style={{
+               ...styles.navLink,
+                borderBottom: 
+                location.pathname === "/mainpageafterlogin" ? "2px solid black" : "none",
+             }}
+             onClick={() => navigate("/mainpageafterlogin")}
+           >
+             Home
+           </span>
+           <span
+             className="nav-link"
+             style={{
+               ...styles.navLink,
+               borderBottom: isNewsActive ? "2px solid black" : "none",
+             }}
+             onClick={() => navigate("/NewsPage")}
+           >
+             News
+           </span>
+   
+           <span
+             className="nav-link"
+             style={{
+               ...styles.navLink,
+               borderBottom:
+                 location.pathname === "/Chatbot" ? "2px solid black" : "none",
+             }}
+             onClick={() => navigate("/Chatbot")}
+           >
+             Chatbot
+           </span>
+   
+           <span
+             className="nav-link"
+             style={{
+               ...styles.navLink,
+               borderBottom:
+                 location.pathname === "/About_us" ? "2px solid black" : "none",
+             }}
+             onClick={() => navigate("/About_us")}
+           >
+             About us
+           </span>
+   
+           <div
+             style={styles.toolsMenu}
+              onClick={() => setShowToolsDropdown(prev => !prev)} 
+           >
+             <Wrench size={24} color="black" style={styles.userIcon} />
+             {showToolsDropdown && (
+               <div style={styles.HFdropdown}>
+                 
+                 <div style={styles.dropdownItem}>
+                   <Search size={16} />
+                   <span>Search Companies</span>
+                 </div>
+                 <div style={styles.dropdownItem}
+                   onClick={() => navigate("/Trends_KPI")}
+                 >
+                   <Activity size={16} />
+                   <span>Trends & KPIs</span>
+                 </div>
+                 <div style={styles.dropdownItem}
+                   onClick={() => navigate("/blogPage")}
+                 >
+                   <BookOpen size={16} />
+                   <span>Blog Page</span>
+                 </div>
+                 <div style={styles.dropdownItem}
+                    onClick={() => navigate("/FileUploadApp")}
+                 >
+                   <Cpu size={16} />
+                   <span>AI Summary</span>
+                 </div>
+                 <div style={styles.dropdownItem}>
+                   <GitCompare size={16} />
+                   <span>Comparison</span>
+                 </div>
+                 <div style={styles.dropdownItem}
+                    onClick={() => navigate("/sectorOverview")}
+                 >
+                   <GitCompare size={16} />
+                   <span>Sector Overview</span>
+                 </div>
+               </div>
+             )}
+           </div>
+   
+           <div
+             style={styles.userMenu}
+             onClick={() => setShowDropdown(prev => !prev)} 
+           >
+             <User size={24} color="black" style={styles.userIcon} />
+             {showDropdown && (
+               <div style={styles.HFdropdown}>
+                 <div style={styles.dropdownItem}
+                 onClick={() => navigate("/Profile_page")}   
+                 >
+                   <User size={16} />
+                   <span>Profile</span>
+                 </div>
+                 <div style={styles.dropdownItem}>
+                   <History size={16} />
+                   <span>History</span>
+                 </div>
+                 <div style={styles.dropdownItem}>
+                   <Settings size={16} />
+                   <span>Settings</span>
+                 </div>
+                 <div style={styles.dropdownItem}
+                   onClick={() => {
+                     // (Optional) clear user data or tokens here
+                     navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                   }}>
+                   <LogOut size={16} />
+                   <span>Sign Out</span>
+                 </div>
+               </div>
+             )}
+           </div>
+         </nav>
+       </header>
+     );
+   
+     const Footer = () => (
+       <footer style={styles.footer}>
+         <div style={styles.footerLeft}>
+           <p style={styles.copyright}>
+             © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+           </p>
+         </div>
+   
+         <div style={styles.footerRight}>
+           <h4 style={styles.functionsTitle}>Functions</h4>
+           <ul style={styles.functionsList}>
+             <li style={styles.functionsItem}>AI summary</li>
+             <li style={styles.functionsItem}>Sector View</li>
+             <li style={styles.functionsItem}>search companies</li>
+             <li style={styles.functionsItem}>Blog Page</li>
+             <li style={styles.functionsItem}>Trends & KPIs</li>
+             <li style={styles.functionsItem}>Compare companies</li>
+           </ul>
+         </div>
+       </footer>
+     );
   return (
     <>
       {/*  HEADER SECTION */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <img
-              src={fglogo_Wbg}
-              style={{ height: "80px", width: "auto" }}
-              alt="logo"
-            />
-          </div>
-        </div>
-
-        <nav style={styles.nav}>
-          {/* Home */}
-          <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/mainpageafterlogin" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-
-          {/* News */}
-          <span
-            style={{
-              ...styles.navLink,
-              borderBottom: isNewsActive ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
-            News
-          </span>
-
-          {/* About */}
-           <span
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-
-            {/* Tools Menu */}
-            <div
-            style={styles.toolsMenu}
-            onMouseEnter={() => setShowToolsDropdown(true)}
-            onMouseLeave={() => setShowToolsDropdown(false)}
-            >
-            <Wrench size={24} color="black" style={styles.userIcon} /> 
-            {/* <span style={{ marginLeft: "0px", fontWeight: "500" }}>Tools</span> */}
-
-            {showToolsDropdown && (
-                <div style={styles.dropdown}>
-                <div style={styles.dropdownItem}>
-                      <TrendingUp size={16} />
-                    <span>Debt Ratings</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                    <Search size={16} />
-                    <span>Search Companies</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                    <Activity size={16} />
-                    <span>Charts & KPIs</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                    <BookOpen size={16} />
-                    <span>Blog Page</span>
-                </div>
-                    <div style={styles.dropdownItem}
-                    onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/FileUploadApp"); // Redirect to dashboard on logout
-                }}
-                    >
-                        <Cpu size={16} />
-                        <span>AI Summary</span>
-                    </div>
-                    <div style={styles.dropdownItem}>
-                        <GitCompare size={16} />
-                        <span>Comparison</span>
-                    </div>
-                </div>
-            )}
-            </div>
-
-          {/* User Menu */}
-          <div
-            style={styles.userMenu}
-            onMouseEnter={() => setShowDropdown(true)}
-            onMouseLeave={() => setShowDropdown(false)}
-          >
-            <User size={24} color="black" style={styles.userIcon} />
-
-            {showDropdown && (
-              <div style={styles.dropdown}>
-                <div style={styles.dropdownItem}>
-                  <User size={16} />
-                  <span>Profile</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <History size={16} />
-                  <span>History</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </div>
-
-               {/* Sign out */}
-                 <div
-                 style={styles.dropdownItem}
-                 onClick={() => {
-                   // (Optional) clear user data or tokens here
-                   navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                 }}
-               >
-                 <LogOut size={16} />
-                 <span>Sign out</span>
-               </div>
-              </div>
-            )}
-          </div>
-        </nav>
-      </header>
+      <Header />
 
       {/* 📰 MAIN NEWS SECTION */}
       <div style={styles.container}>
-        <h1 style={styles.heading}>Latest News</h1>
+        
 
         {/* Search Bar */}
         <div style={{ position: "relative", width: "900px" }}>
@@ -263,7 +292,7 @@ const NewsPage = () => {
                 }}
             />
             </div>
-
+<h1 style={styles.heading}>Latest News</h1>
 
         {/* News Grid */}
         <div style={styles.grid}>
@@ -297,112 +326,96 @@ const NewsPage = () => {
           ))}
         </div>
       </div>
-      <footer style={styles.footer}>
-  <div style={styles.footerLeft}>
-    <p style={styles.copyright}>
-            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-          </p>
-  </div>
-
-  <div style={styles.footerRight}>
-    <h4 style={styles.functionsTitle}>Functions</h4>
-    <ul style={styles.functionsList}>
-      <li style={styles.functionsItem}>AI summary</li>
-      <li style={styles.functionsItem}>stock graphs</li>
-      <li style={styles.functionsItem}>Debt ratings</li>
-      <li style={styles.functionsItem}>search companies</li>
-      <li style={styles.functionsItem}>Blog Page</li>
-      <li style={styles.functionsItem}>Charts & KPIs</li>
-    </ul>
-  </div>
-</footer>
+<Footer />
     </>
   );
 };
 
-export default NewsPage;
 
 /* CSS */
 const styles = {
- header: {
+   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '2rem 4rem',
-    position: 'relative',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
-    backdropFilter: 'blur(10px)',            // Blur background
-    WebkitBackdropFilter: 'blur(10px)',      // Safari support
-    borderRadius: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
-    boxShadow: '0 8px 32px 0 rgba(255, 255, 255, 0.1)', // Soft glow shadow
-    borderBottom: '2px solid black',
-
-    color: 'white',
-    },
-
-
- logo: {
-    width: '40px',
-    height: '40px',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
     borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   },
-
-
-  brandName: {
-    fontWeight: '600'
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
   },
 
   nav: {
     display: 'flex',
-    gap: '1.5rem',
-    marginTop: '10px',
+    alignItems: 'center',
+    gap: '2rem'
   },
 
- navLink: {
-    cursor: 'pointer',
-    color: '#000000',
-    textDecoration: 'none',
-    fontSize: '14px',
+  navLink: {
+    fontSize: '0.95rem',
     fontWeight: '500',
-    transition: 'opacity 0.3s',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
   },
-
-  userMenu: {
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
+    toolsMenu: {
     position: 'relative',
     cursor: 'pointer',
-    color: 'Black'
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
   },
-
-  userIcon: {
-    transition: 'color 0.2s'
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
   },
-
-  dropdown: {
+  HFdropdown: {
     position: 'absolute',
-    right: '0',
-    top: '32px',
-    backgroundColor: '#D9D9D9',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(245, 238, 238, 0.2)',
-    padding: '0.5rem',
-    minWidth: '120px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
     zIndex: 1000
   },
-
   dropdownItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    fontSize: '14px'
+    fontSize: '0.95rem'
   },
   
   container: {
@@ -430,11 +443,12 @@ const styles = {
     gap: "1.5rem",
   },
   card: {
-    backgroundColor: "#fff",
+    background: "linear-gradient(135deg, #e6ecf7ff, #ffffff)",
     borderRadius: "10px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     padding: "1rem",
     transition: "transform 0.2s",
+    border: "1px solid #1e1e1eff",
   },
   image: {
     width: "100%",
@@ -478,13 +492,11 @@ const styles = {
     flex: 1,
     alignItems: 'center',
   },
-
   copyright: {
-    fontSize: '13px',
-    marginBottom: 0,
-    lineHeight: 1.8,
+    fontSize: '0.9rem',
+    color: '#cbd5e0',
+    margin: 0
   },
-
   footerLink: {
     color: '#FFFFFF',
     textDecoration: 'none',
@@ -495,38 +507,27 @@ const styles = {
     flex: 1,
     textAlign: 'right',
   },
-
   functionsTitle: {
     fontSize: '14px',
     fontWeight: '700',
     marginRight: '8rem',
   },
 
- functionsList: {
-  listStyle: 'none',
-  margin: 0,
-  padding: 0,
-  display: 'grid',
-  gridTemplateColumns: '3.5fr 1fr',
-  textAlign: 'right', 
-  gap: '6px 0px',
-},
-
+  functionsList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right',
+    gap: '6px 0px',
+  },
   functionsItem: {
     fontSize: '13px',
     margin: 0,
     textTransform: "capitalize",
     whiteSpace: 'nowrap'
   },
-  
-  toolsMenu: {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-  cursor: "pointer",
-  marginLeft: "1rem", 
-  color: "Black"
-},
-
 };
 
+export default NewsPage;

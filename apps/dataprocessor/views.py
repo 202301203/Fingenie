@@ -39,7 +39,10 @@ def process_financial_statements_api(request):
     os.makedirs(temp_dir, exist_ok=True)
     temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}.pdf")
 
-    google_api_key = getattr(settings, "GOOGLE_API_KEY", None)
+    google_api_key = request.POST.get('api_key')  
+    
+    if not google_api_key:
+        return JsonResponse({'error': 'Missing API key'}, status=500)
     if not google_api_key:
         return JsonResponse({'error': 'Missing Google API key'}, status=500)
 

@@ -1,5 +1,5 @@
 // Configuration
-const RAW_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const RAW_BASE = 'https://fingenie-sz41.onrender.com/';
 const BASE = RAW_BASE.replace(/\/$/, '');
 const DJANGO_API_BASE = BASE;
 const API_BASE_URL = BASE;

@@ -1,15 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useNavigate } from "react-router-dom"; 
-import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare, CheckCircle, XCircle, UploadCloud, FileText, ArrowLeft } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare, CheckCircle, XCircle, UploadCloud, FileText, X } from "lucide-react";
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import api from '../api';
+
 
 // --- STYLING CONSTANTS ---
 const styles = {
     dashboardWrapper: {
         minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#f4f7f9',
+        background: '#f8f8f8',
+        fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
     },
     detailPanel: {
         display: 'flex',
@@ -17,15 +19,10 @@ const styles = {
         gap: '20px',
     },
     dashboardContainer: {
-        maxWidth: '1400px',
-        margin: '20px auto',
-        borderRadius: '24px',
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        backgroundColor: '#ffffff',
-        color: '#000000',
-        padding: '20px',
-        flexGrow: 1,
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        minHeight: '100vh',
+        background: '#f8f8f8',
+        fontFamily: '"Bricolage Grotesque", Arial, sans-serif',
+        margin: '0 auto'
     },
     dashboardHeaderMain: {
         borderBottom: '2px solid #ddd',
@@ -39,88 +36,162 @@ const styles = {
     colorGrey: '#6c757d',
     colorTextStable: '#6c757d',
     colorActiveRow: '#e6f7ff',
+
+   header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
     
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '1rem 2rem',
-        backgroundColor: '#ffffff',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        borderBottom: '2px solid #007bff',
-    },
-    logo: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '8px',
-    },
-    nav: {
-        display: 'flex',
-        gap: '1.5rem',
-        alignItems: 'center',
-    },
-    navLink: {
-        cursor: 'pointer',
-        color: '#000000',
-        textDecoration: 'none',
-        fontSize: '14px',
-        fontWeight: '500',
-        transition: 'opacity 0.3s',
-    },
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-    },
-    dropdown: {
-        position: 'absolute',
-        right: '0',
-        top: '32px',
-        backgroundColor: '#ffffff',
-        borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-        padding: '0.5rem',
-        minWidth: '120px',
-        zIndex: 1000,
-        border: '1px solid #ddd',
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.5rem',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '14px',
-    },
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2rem'
+  },
+
+  navLink: {
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
+  },
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
     toolsMenu: {
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-    },
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  HFdropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    zIndex: 1000
+  },
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '0.95rem'
+  },
+   // --- FOOTER STYLES ---
     footer: {
-        backgroundColor: '#4D5C61',
-        color: '#FFFFFF',
-        padding: '2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginTop: '4rem',
-    },
+    backgroundColor: '#4D5C61',
+    color: '#FFFFFF',
+    padding: '2rem 4rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: '4rem',
+    position: 'relative',
+    zIndex: 5,
+  },
+
+  footerLeft: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  copyright: {
+    fontSize: '0.9rem',
+    color: '#cbd5e0',
+    margin: 0
+  },
+  footerLink: {
+    color: '#FFFFFF',
+    textDecoration: 'none',
+    transition: 'opacity 0.3s',
+  },
+
+  footerRight: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  functionsTitle: {
+    fontSize: '14px',
+    fontWeight: '700',
+    marginRight: '8rem',
+  },
+
+  functionsList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'grid',
+    gridTemplateColumns: '3.5fr 1fr',
+    textAlign: 'right',
+    gap: '6px 0px',
+  },
+  functionsItem: {
+    fontSize: '13px',
+    margin: 0,
+    textTransform: "capitalize",
+    whiteSpace: 'nowrap'
+  },
+    
+
     summaryCard: {
         background: '#fff',
         borderRadius: '8px',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)',
         padding: '20px',
         marginBottom: '30px',
+        width: '70%'
     },
     trendsListContainer: {
-        background: '#fff',
+        background: '#fafafaff',
         borderRadius: '8px',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)',
         padding: '20px',
         overflowX: 'auto',
+        width: '95%',
+        margin: '20px auto',
+        border: '1px solid #000000'
     },
     mainContentGrid: {
         display: 'grid',
@@ -133,6 +204,7 @@ const styles = {
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)',
         padding: '20px',
         textAlign: 'center',
+        border: '1px solid #171717ff'
     },
     detailsCard: {
         background: '#fff',
@@ -141,40 +213,41 @@ const styles = {
         padding: '20px',
     },
     fileUploadContainer: {
-        maxWidth: '800px',
+        width: '50%',
         margin: '50px auto',
-        padding: '30px',
+        padding: '15px',
         borderRadius: '24px',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-        backgroundColor: '#61627b',
+        boxShadow: '0 30px 50px rgba(0, 0, 0, 0.1)',
+        background: "linear-gradient(135deg, #CAD3E7, #a6b1caff)",
         flexGrow: 1,
+        border: '1px solid #000000'
     },
     dropZone: {
-        border: '3px dashed #ffffff',
+        border: '3px dashed #636363ff',
         borderRadius: '8px',
         padding: '40px 20px',
         textAlign: 'center',
         cursor: 'pointer',
         transition: 'background-color 0.3s',
         marginBottom: '20px',
-        color: 'white'
+        color: 'white',
+        backgroundColor: '#f0f3f9ff'
     },
     badge: {
         padding: '3px 8px',
         borderRadius: '12px',
         fontSize: '0.75em',
         fontWeight: '600',
-        color: 'white',
         display: 'inline-block',
     },
-    badgeGreen: { backgroundColor: '#28a745' },
-    badgeYellow: { backgroundColor: '#ffc107', color: '#333' },
-    badgeRed: { backgroundColor: '#dc3545' },
+    badgeGreen: { color: '#28a745' },
+    badgeYellow: { color: '#ffc107', color: '#333' },
+    badgeRed: { color: '#dc3545' },
     blockquote: {
         margin: '10px 0 10px 10px',
         padding: '10px 15px',
-        borderLeft: '4px solid #007bff',
-        background: '#f0f8ff',
+        borderLeft: '4px solid #16212cff',
+        
         fontStyle: 'italic',
         borderRadius: '4px',
     },
@@ -247,125 +320,162 @@ function getCSRFToken() {
     }
 }
 
+
 // --- Header Component ---
-const Header = () => {
-    const navigate = useNavigate();
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
     
-    return (
-        <header style={styles.header}>
-            <div style={styles.headerLeft}>
-                <div style={styles.logo}>
-                    <span style={{ fontSize: '24px', fontWeight: 'bold', color: styles.colorBlue }}>
-                        FinGenie
-                    </span>
-                </div>
-            </div>
-
-            <nav style={styles.nav}>
-                <span style={styles.navLink} onClick={() => navigate("/mainpageafterlogin")}>
-                    Home
-                </span>
-                <span style={styles.navLink} onClick={() => navigate("/NewsPage")}>
-                    News
-                </span>
-                <span style={styles.navLink} onClick={() => navigate("/AboutUs")}>
-                    About us
-                </span>
-
-                {/* Tools Menu */}
-                <div
-                    style={styles.toolsMenu}
-                    onMouseEnter={() => setShowToolsDropdown(true)}
-                    onMouseLeave={() => setShowToolsDropdown(false)}
-                >
-                    <Wrench size={24} color="black" style={{ marginRight: '5px' }} />
-                    <span style={styles.navLink}>Tools</span>
-                    {showToolsDropdown && (
-                        <div style={styles.dropdown}>
-                            <div style={styles.dropdownItem}>
-                                <TrendingUp size={16} />
-                                <span>Debt Ratings</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <Search size={16} />
-                                <span>Search Companies</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <Activity size={16} />
-                                <span>Trends & KPIs</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <BookOpen size={16} />
-                                <span>Blog Page</span>
-                            </div>
-                            <div style={styles.dropdownItem} onClick={() => navigate("/FileUploadApp")}>
-                                <Cpu size={16} />
-                                <span>AI Summary</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <GitCompare size={16} />
-                                <span>Comparison</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* User Menu */}
-                <div
-                    style={styles.userMenu}
-                    onMouseEnter={() => setShowDropdown(true)}
-                    onMouseLeave={() => setShowDropdown(false)}
-                >
-                    <User size={24} color="black" />
-                    {showDropdown && (
-                        <div style={styles.dropdown}>
-                            <div style={styles.dropdownItem}>
-                                <User size={16} />
-                                <span>Profile</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <History size={16} />
-                                <span>History</span>
-                            </div>
-                            <div style={styles.dropdownItem}>
-                                <Settings size={16} />
-                                <span>Settings</span>
-                            </div>
-                            <div style={styles.dropdownItem} onClick={() => navigate("/homepage_beforelogin")}>
-                                <LogOut size={16} />
-                                <span>Sign out</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </nav>
-        </header>
-    );
-};
-
-// --- Footer Component ---
-const Footer = () => (
-    <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-            <p style={{ margin: 0, fontSize: '14px' }}>
-                © 2025 FinGenie | <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none' }}>About</a> | <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none' }}>Privacy Policy</a> | <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none' }}>Contact</a>
-            </p>
+    <header style={styles.header}>
+      <div style={styles.headerLeft}>
+        <div style={styles.logo}>
+          <img
+            src={fglogo_Wbg}
+            style={{ height: "80px", width: "auto" }}
+            alt="logo"
+          />
         </div>
-        <div style={styles.footerRight}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Functions</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '5px', fontSize: '14px' }}>
-                <span>AI summary</span>
-                <span>Stock graphs</span>
-                <span>Debt ratings</span>
-                <span>Search companies</span>
+      </div>
+      <nav style={styles.nav}>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/mainpageafterlogin")}
+        >
+          Home
+        </span>
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/NewsPage")}
+        >
+          News
+        </span>
+
+        <span
+          className="nav-link"
+          style={{
+            ...styles.navLink,
+          }}
+          onClick={() => navigate("/Chatbot")}
+        >
+          Chatbot
+        </span>
+
+        <span
+          className="nav-link"
+          style={{...styles.navLink,
+          }}
+          onClick={() => navigate("/About_us")}
+        >
+          About us
+        </span>
+
+        <div
+          style={styles.toolsMenu}
+           onClick={() => setShowToolsDropdown(prev => !prev)} 
+        >
+          <Wrench size={24} color="black" style={styles.userIcon} />
+          {showToolsDropdown && (
+            <div style={styles.HFdropdown}>
+              
+              <div style={styles.dropdownItem}>
+                <Search size={16} />
+                <span>Search Companies</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/Trends_KPI")}
+              >
+                <Activity size={16} />
+                <span>Trends & KPIs</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => navigate("/blogPage")}
+              >
+                <BookOpen size={16} />
                 <span>Blog Page</span>
-                <span>Charts & KPIs</span>
+              </div>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/FileUploadApp")}
+              >
+                <Cpu size={16} />
+                <span>AI Summary</span>
+              </div>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/comparison")}
+              >
+                <GitCompare size={16} />
+                <span>Comparison</span>
+              </div>
+              <div style={styles.dropdownItem}
+                 onClick={() => navigate("/sectorOverview")}
+              >
+                <GitCompare size={16} />
+                <span>Sector Overview</span>
+              </div>
             </div>
+          )}
         </div>
+
+        <div
+          style={styles.userMenu}
+          onClick={() => setShowDropdown(prev => !prev)} 
+        >
+          <User size={24} color="black" style={styles.userIcon} />
+          {showDropdown && (
+            <div style={styles.HFdropdown}>
+              <div style={styles.dropdownItem}
+              onClick={() => navigate("/Profile_page")}   
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <History size={16} />
+                <span>History</span>
+              </div>
+              <div style={styles.dropdownItem}>
+                <Settings size={16} />
+                <span>Settings</span>
+              </div>
+              <div style={styles.dropdownItem}
+                onClick={() => {
+                  // (Optional) clear user data or tokens here
+                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
+                }}>
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+    </header>
+  );
+
+  const Footer = () => (
+    <footer style={styles.footer}>
+      <div style={styles.footerLeft}>
+        <p style={styles.copyright}>
+          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
+        </p>
+      </div>
+
+      <div style={styles.footerRight}>
+        <h4 style={styles.functionsTitle}>Functions</h4>
+        <ul style={styles.functionsList}>
+          <li style={styles.functionsItem}>AI summary</li>
+          <li style={styles.functionsItem}>Sector View</li>
+          <li style={styles.functionsItem}>search companies</li>
+          <li style={styles.functionsItem}>Blog Page</li>
+          <li style={styles.functionsItem}>Trends & KPIs</li>
+          <li style={styles.functionsItem}>Compare companies</li>
+        </ul>
+      </div>
     </footer>
-);
+  );
 
 // --- FILE UPLOAD PAGE ---
 const FileUploadPage = ({ onUploadSuccess }) => {
@@ -373,7 +483,13 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [validationError, setValidationError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const navigate = useNavigate();
+    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const location = useLocation();
+    const [apiKey, setApiKey] = useState('');
     
+
     const MIN_FILES = 3;
     const MAX_FILES = 10;
     const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
@@ -393,12 +509,12 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                 error = `File "${file.name}" has unsupported format. Please upload PDF or Excel files.`;
                 break;
             }
-            
+
             if (file.size > MAX_FILE_SIZE_BYTES) {
                 error = `File "${file.name}" exceeds the 20MB limit.`;
                 break;
             }
-            
+
             if (!newFileList.some(existingFile => existingFile.name === file.name && existingFile.size === file.size)) {
                 newFileList.push(file);
             }
@@ -447,16 +563,16 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 
         try {
             const formData = new FormData();
-            
+
             // Add files to FormData
             files.forEach(file => {
                 formData.append('files', file);
             });
 
             // Add API key if needed
-            formData.append('api_key', 'AIzaSyC5pZMfa-VQtcq2iuQ-KoQVSWbIuVPvVEs'); // Replace with actual API key
+            formData.append('api_key', 'AIzaSyDTz-Yi25lpP-foIQJkn2FpJEOMxO3kUFg'); // Replace with actual API key
 
-            const response = await fetch('http://localhost:8000/trends/api/process-financial-statements/', {
+            const response = await fetch('/trends/api/process-financial-statements/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken(),
@@ -477,7 +593,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
             }
 
             const result = await response.json();
-            
+
             if (result.success) {
                 onUploadSuccess(files, result);
             } else {
@@ -494,11 +610,78 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 
     return (
         <div style={styles.dashboardWrapper}>
-            <Header />
+
+            <Header
+                navigate={navigate}
+                location={location}
+                setShowToolsDropdown={setShowToolsDropdown}
+                showToolsDropdown={showToolsDropdown}
+                setShowDropdown={setShowDropdown}
+                showDropdown={showDropdown}
+            />
             <div style={styles.fileUploadContainer}>
-                <h2 style={{ color: 'white', textAlign: 'center', marginBottom: '20px' }}>Upload Financial Documents</h2>
-                
-                <div style={{ backgroundColor: '#D1DFDF', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h2 style={{ color: 'Black', textAlign: 'center', marginBottom: '20px' }}>Upload Financial Documents</h2>
+
+                 <div style={{ 
+                margin: '1rem 0', 
+                textAlign: 'left',
+                padding: '1rem', // Added padding and background for better appearance
+                backgroundColor: '#a6b1caff',
+                borderRadius: '12px',
+                border: '1px solid #9ea8b8',
+            }}>
+    {/* Container for Label and Button */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <label style={{ 
+            display: 'block', 
+            color: '#0b0b0bff', 
+            fontWeight: '600', 
+            fontSize: '14px',
+            margin: 0,
+        }}>
+            LLM API Key (optional)
+        </label>
+        
+        {/* New Button */}
+        <button 
+             onClick={() => navigate("/API_key")}
+            style={{
+                backgroundColor: '#64748b', // Darker color for button
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '0.3rem 0.6rem',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                transition: 'background-color 0.2s',
+            }}
+            title="Click for instructions"
+        >
+            how to get API key? <span style={{fontSize: '14px'}}>🤔</span>
+        </button>
+    </div>
+    
+    {/* Input Field */}
+    <input 
+        type="text" 
+        value={apiKey} 
+        onChange={(e) => setApiKey(e.target.value)} 
+        placeholder="Paste API key here if you want to use a custom key" 
+        style={{ 
+            width: '100%', 
+            padding: '0.65rem', 
+            borderRadius: '8px', 
+            border: '1px solid #a7a7a7',
+            boxSizing: 'border-box'
+        }} 
+    />
+</div>
+
+                <div style={{ backgroundColor: '#ba8686ff', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                     <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Upload Requirements:</p>
                     <ul style={{ margin: 0, paddingLeft: '20px' }}>
                         <li style={{ fontSize: '0.9em' }}>Minimum {MIN_FILES} files, Maximum {MAX_FILES} files.</li>
@@ -506,19 +689,21 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         <li style={{ fontSize: '0.9em' }}>Supported files: PDF, Excel files.</li>
                     </ul>
                 </div>
-                
-                <div 
-                    style={{ 
-                        ...styles.dropZone, 
-                        ...(isDragging ? { backgroundColor: 'rgba(255, 255, 255, 0.1)' } : {}) 
+
+                <div
+                    style={{
+                        ...styles.dropZone,
+                        ...(isDragging ? { backgroundColor: 'rgba(255, 255, 255, 0.1)' } : {})
                     }}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                     onClick={() => document.getElementById('file-input').click()}
                 >
-                    <UploadCloud size={48} color="white" style={{ marginBottom: '10px' }} />
-                    <p>Drag & drop your files here, or click to browse.</p>
+                    <UploadCloud size={48} color="#3e3e3eff" style={{ marginBottom: '10px' }} />
+                    <p style={{ color: "#3e3e3eff" }}>
+                        Drag & drop your files here, or click to browse.
+                    </p>
                     <input
                         type="file"
                         id="file-input"
@@ -534,7 +719,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         {validationError}
                     </p>
                 )}
-                
+
                 {files.length > 0 && (
                     <div>
                         <h3 style={{ borderBottom: '1px solid #ddd', paddingBottom: '10px', color: 'white' }}>
@@ -542,27 +727,27 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         </h3>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                             {files.map((file, index) => (
-                                <li key={index} style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between', 
+                                <li key={index} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
                                     alignItems: 'center',
                                     padding: '10px',
                                     borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
                                     color: 'white'
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <FileText size={16} color='white' />
-                                        <span>{file.name}</span>
-                                        <span style={{ fontSize: '0.8em', color: '#cccccc' }}>
+                                        <FileText size={16} color='black' />
+                                        <span style={{ color: '#000000' }}>{file.name}</span>
+                                        <span style={{ fontSize: '0.8em', color: '#565656ff' }}>
                                             ({formatFileSize(file.size)})
                                         </span>
                                     </div>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.name); }} 
-                                        style={{ 
-                                            background: 'none', 
-                                            border: 'none', 
-                                            color: styles.colorRed, 
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.name); }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: styles.colorRed,
                                             cursor: 'pointer',
                                             opacity: isUploading ? 0.5 : 1
                                         }}
@@ -575,7 +760,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         </ul>
                     </div>
                 )}
-                
+
                 <button
                     onClick={handleSubmit}
                     disabled={!isReadyToSubmit || isUploading}
@@ -583,8 +768,8 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         width: '100%',
                         padding: '12px',
                         fontSize: '1.1em',
-                        backgroundColor: (isReadyToSubmit && !isUploading) ? '#D1DFDF' : styles.colorTextStable,
-                        color: 'black',
+                        backgroundColor: (isReadyToSubmit && !isUploading) ? '#414355ff' : styles.colorTextStable,
+                        color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         cursor: (isReadyToSubmit && !isUploading) ? 'pointer' : 'not-allowed',
@@ -611,10 +796,10 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 // Summary Card Component
 const SummaryCard = ({ summary, metadata, styles }) => (
     <div style={{ ...styles.trendsListContainer, marginBottom: '20px' }}>
-        <h3 style={{ color: styles.colorBlue, borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
-            {metadata.company_name || (metadata.file_summaries && metadata.file_summaries[0]?.company_name) || 'Company'} - Executive Summary 
-        </h3>
-        
+        <h2 style={{ color: "#23214eff", borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
+            {metadata.company_name || (metadata.file_summaries && metadata.file_summaries[0]?.company_name) || 'Company'} - Executive Summary
+        </h2>
+
         <p style={{ fontWeight: 'bold', fontSize: '1.1em', marginBottom: '10px' }}>
             Overall Assessment:
         </p>
@@ -624,25 +809,45 @@ const SummaryCard = ({ summary, metadata, styles }) => (
 
         {summary.executive_summary && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginTop: '20px' }}>
-                
-                {/* Key Strengths */}
-                <div>
-                    <h4 style={{ color: styles.colorGreen, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                        <CheckCircle size={18} style={{ marginRight: '5px' }}/>Key Strengths
-                    </h4>
-                    <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                        {summary.executive_summary.key_strengths && summary.executive_summary.key_strengths.length > 0 ? (
-                            summary.executive_summary.key_strengths.map((item, index) => <li key={index}>{item}</li>)
-                        ) : (
-                            <li>No significant strengths noted.</li>
-                        )}
-                    </ul>
-                </div>
 
+                {/* Key Strengths */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg, #DEE6E6, #fafafaff)",
+                        padding: "10px 15px",
+                        borderRadius: "8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px"
+                    }}
+                >
+                    <div>
+                        <h4 style={{ color: styles.colorGreen, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
+                            <CheckCircle size={18} style={{ marginRight: '5px' }} />Key Strengths
+                        </h4>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                            {summary.executive_summary.key_strengths && summary.executive_summary.key_strengths.length > 0 ? (
+                                summary.executive_summary.key_strengths.map((item, index) => <li key={index}>{item}</li>)
+                            ) : (
+                                <li>No significant strengths noted.</li>
+                            )}
+                        </ul>
+                    </div>
+                </div>
                 {/* Major Concerns */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg, #DEE6E6, #fafafaff)",
+                        padding: "10px 15px",
+                        borderRadius: "8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px"
+                    }}
+                >
                 <div>
                     <h4 style={{ color: styles.colorRed, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                        <XCircle size={18} style={{ marginRight: '5px' }}/>Major Concerns
+                        <XCircle size={18} style={{ marginRight: '5px' }} />Major Concerns
                     </h4>
                     <ul style={{ paddingLeft: '20px', margin: 0 }}>
                         {summary.executive_summary.major_concerns && summary.executive_summary.major_concerns.length > 0 ? (
@@ -652,11 +857,21 @@ const SummaryCard = ({ summary, metadata, styles }) => (
                         )}
                     </ul>
                 </div>
-
+                        </div>
                 {/* Strategic Recommendations */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg, #DEE6E6, #fafafaff)",
+                        padding: "10px 15px",
+                        borderRadius: "8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px"
+                    }}
+                >
                 <div>
                     <h4 style={{ color: styles.colorBlue, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                        <TrendingUp size={18} style={{ marginRight: '5px' }}/>Recommendations
+                        <TrendingUp size={18} style={{ marginRight: '5px' }} />Recommendations
                     </h4>
                     <ul style={{ paddingLeft: '20px', margin: 0 }}>
                         {summary.executive_summary.strategic_recommendations && summary.executive_summary.strategic_recommendations.length > 0 ? (
@@ -665,6 +880,7 @@ const SummaryCard = ({ summary, metadata, styles }) => (
                             <li>No specific recommendations.</li>
                         )}
                     </ul>
+                </div>
                 </div>
             </div>
         )}
@@ -676,7 +892,7 @@ const SummaryCard = ({ summary, metadata, styles }) => (
 );
 
 // Trends List Component
-const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetricName }) => { 
+const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetricName }) => {
     const [sortBy, setSortBy] = useState('importance_score');
     const [sortDirection, setSortDirection] = useState('desc');
     const [hoveredRow, setHoveredRow] = useState(null);
@@ -690,7 +906,7 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
     }, [trends, search]);
 
     const sortedTrends = useMemo(() => {
-        const sortableTrends = [...filteredTrends]; 
+        const sortableTrends = [...filteredTrends];
         sortableTrends.sort((a, b) => {
             let valA = a[sortBy];
             let valB = b[sortBy];
@@ -705,7 +921,7 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
             return 0;
         });
         return sortableTrends;
-    }, [filteredTrends, sortBy, sortDirection]); 
+    }, [filteredTrends, sortBy, sortDirection]);
 
     const handleSort = (key) => {
         if (sortBy === key) {
@@ -732,9 +948,9 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
                     placeholder="Search metrics..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    style={{ 
-                        padding: '8px 12px', 
-                        borderRadius: '4px', 
+                    style={{
+                        padding: '8px 12px',
+                        borderRadius: '4px',
                         border: '1px solid #ccc',
                         width: '40%'
                     }}
@@ -743,56 +959,56 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr>
-                        <th 
-                            style={{ 
-                                backgroundColor: '#e9ecef', 
-                                padding: '12px', 
-                                textAlign: 'left', 
+                        <th
+                            style={{
+                                backgroundColor: '#e9ecef',
+                                padding: '12px',
+                                textAlign: 'left',
                                 cursor: 'pointer',
                                 borderBottom: '2px solid #ddd'
-                            }} 
+                            }}
                             onClick={() => handleSort('metric')}
                         >
                             Metric {getSortIndicator('metric')}
                         </th>
-                        <th 
-                            style={{ 
-                                backgroundColor: '#e9ecef', 
-                                padding: '12px', 
-                                textAlign: 'right', 
+                        <th
+                            style={{
+                                backgroundColor: '#e9ecef',
+                                padding: '12px',
+                                textAlign: 'right',
                                 cursor: 'pointer',
                                 borderBottom: '2px solid #ddd'
-                            }} 
+                            }}
                             onClick={() => handleSort('growth_rate')}
                         >
                             Growth Rate {getSortIndicator('growth_rate')}
                         </th>
-                        <th 
-                            style={{ 
-                                backgroundColor: '#e9ecef', 
-                                padding: '12px', 
+                        <th
+                            style={{
+                                backgroundColor: '#e9ecef',
+                                padding: '12px',
                                 textAlign: 'left',
                                 borderBottom: '2px solid #ddd'
                             }}
                         >
                             Trend
                         </th>
-                        <th 
-                            style={{ 
-                                backgroundColor: '#e9ecef', 
-                                padding: '12px', 
-                                textAlign: 'right', 
+                        <th
+                            style={{
+                                backgroundColor: '#e9ecef',
+                                padding: '12px',
+                                textAlign: 'right',
                                 cursor: 'pointer',
                                 borderBottom: '2px solid #ddd'
-                            }} 
+                            }}
                             onClick={() => handleSort('importance_score')}
                         >
                             Importance {getSortIndicator('importance_score')}
                         </th>
-                        <th 
-                            style={{ 
-                                backgroundColor: '#e9ecef', 
-                                padding: '12px', 
+                        <th
+                            style={{
+                                backgroundColor: '#e9ecef',
+                                padding: '12px',
                                 textAlign: 'left',
                                 borderBottom: '2px solid #ddd'
                             }}
@@ -805,9 +1021,9 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
                     {sortedTrends.map((trend, index) => {
                         const isSelected = trend.metric === selectedMetricName;
                         return (
-                            <tr 
-                                key={index} 
-                                onClick={() => setSelectedMetric(trend.metric)} 
+                            <tr
+                                key={index}
+                                onClick={() => setSelectedMetric(trend.metric)}
                                 onMouseEnter={() => setHoveredRow(index)}
                                 onMouseLeave={() => setHoveredRow(null)}
                                 style={{
@@ -844,7 +1060,7 @@ const TrendsList = ({ trends, setSelectedMetric, search, setSearch, selectedMetr
 const TrendChart = ({ trend }) => {
     // Debug logging
     console.log('TrendChart received trend:', trend);
-    
+
     if (!trend) {
         return (
             <div style={styles.chartContainer}>
@@ -866,9 +1082,9 @@ const TrendChart = ({ trend }) => {
 
     // Transform data for Recharts
     const chartData = Object.entries(trend.yearly_values)
-        .map(([year, value]) => ({ 
-            year: year.toString(), 
-            value: parseFloat(value) || 0 
+        .map(([year, value]) => ({
+            year: year.toString(),
+            value: parseFloat(value) || 0
         }))
         .sort((a, b) => parseInt(a.year) - parseInt(b.year));
 
@@ -879,41 +1095,41 @@ const TrendChart = ({ trend }) => {
             <h3>Trend Analysis: {trend.metric}</h3>
             <div style={{ height: '300px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart 
-                        data={chartData} 
+                    <LineChart
+                        data={chartData}
                         margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis 
-                            dataKey="year" 
+                        <XAxis
+                            dataKey="year"
                             stroke="#333"
                             label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
                         />
-                        <YAxis 
-                            tickFormatter={formatValue} 
+                        <YAxis
+                            tickFormatter={formatValue}
                             stroke="#333"
-                            label={{ 
-                                value: 'Value', 
-                                angle: -90, 
+                            label={{
+                                value: 'Value',
+                                angle: -90,
                                 position: 'insideLeft',
-                                style: { textAnchor: 'middle' } 
+                                style: { textAnchor: 'middle' }
                             }}
                         />
-                        <Tooltip 
-                            formatter={(value) => [`${formatValue(value)}`, 'Value']} 
+                        <Tooltip
+                            formatter={(value) => [`${formatValue(value)}`, 'Value']}
                             labelFormatter={(label) => `Year: ${label}`}
-                            contentStyle={{ 
-                                backgroundColor: 'white', 
+                            contentStyle={{
+                                backgroundColor: 'white',
                                 border: '1px solid #ccc',
                                 borderRadius: '4px'
                             }}
                         />
-                        <Line 
-                            type="monotone" 
-                            dataKey="value" 
+                        <Line
+                            type="monotone"
+                            dataKey="value"
                             stroke={getGrowthColor(trend.growth_rate)}
-                            strokeWidth={2} 
-                            dot={{ r: 4, fill: getGrowthColor(trend.growth_rate) }} 
+                            strokeWidth={2}
+                            dot={{ r: 4, fill: getGrowthColor(trend.growth_rate) }}
                             activeDot={{ r: 6, fill: getGrowthColor(trend.growth_rate) }}
                             name={trend.metric}
                         />
@@ -931,6 +1147,7 @@ const TrendChart = ({ trend }) => {
 
 // Metric Details Card Component
 const MetricDetailsCard = ({ trend }) => {
+
     if (!trend) return (
         <div style={styles.detailsCard}>
             <p>Select a metric to view detailed analysis.</p>
@@ -941,12 +1158,12 @@ const MetricDetailsCard = ({ trend }) => {
 
     return (
         <div style={styles.detailsCard}>
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '10px', 
-                paddingBottom: '15px', 
-                marginBottom: '15px', 
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1.5fr 1fr',
+                gap: '10px',
+                paddingBottom: '15px',
+                marginBottom: '15px',
                 borderBottom: '1px dashed #ddd',
                 textAlign: 'center'
             }}>
@@ -969,7 +1186,7 @@ const MetricDetailsCard = ({ trend }) => {
                     <div style={{ fontSize: '0.85em', color: '#555', marginTop: '5px' }}>Data Quality</div>
                 </div>
             </div>
-            
+
             <div style={{ marginBottom: '15px' }}>
                 <h4 style={{ color: styles.colorBlue, marginTop: '10px', marginBottom: '5px' }}>Interpretation</h4>
                 <p style={{ margin: 0 }}>{trend.interpretation}</p>
@@ -977,12 +1194,12 @@ const MetricDetailsCard = ({ trend }) => {
 
             <div>
                 <h4 style={{ color: styles.colorBlue, marginTop: '10px', marginBottom: '5px' }}>Strategic Indication</h4>
-                <blockquote style={{ 
-                    margin: '10px 0 10px 10px', 
-                    padding: '10px 15px', 
-                    borderLeft: `4px solid ${growthColor}`, 
-                    background: '#f0f8ff', 
-                    fontStyle: 'italic', 
+                <blockquote style={{
+                    margin: '10px 0 10px 10px',
+                    padding: '10px 15px',
+                    borderLeft: `4px solid ${growthColor}`,
+                    background: '#f0f8ff',
+                    fontStyle: 'italic',
                     borderRadius: '4px',
                     color: growthColor
                 }}>
@@ -995,61 +1212,99 @@ const MetricDetailsCard = ({ trend }) => {
 
 // --- Dashboard Component ---
 function FinancialTrendsDashboard({ uploadedFiles, backendData, onGoBack }) {
-    const [search, setSearch] = useState(''); 
-    
+    const [search, setSearch] = useState('');
+    const navigate = useNavigate();
+    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const location = useLocation();
     // Use backend data instead of hardcoded data
     const trends = backendData?.trends?.financial_trends || [];
     const initialMetric = trends.length > 0 ? trends[0].metric : null;
     const [selectedMetricName, setSelectedMetricName] = useState(initialMetric);
-    
+
     const selectedTrend = trends.find(t => t.metric === selectedMetricName);
 
     return (
         <div style={styles.dashboardWrapper}>
-            <Header />
-            
+            <Header
+                navigate={navigate}
+                location={location}
+                setShowToolsDropdown={setShowToolsDropdown}
+                showToolsDropdown={showToolsDropdown}
+                setShowDropdown={setShowDropdown}
+                showDropdown={showDropdown}
+            />
+
             <div style={styles.dashboardContainer}>
-                <header style={styles.dashboardHeaderMain}>
-                    <h1 style={{ margin: '0 0 10px 0' }}>Critical Financial Trends Dashboard</h1>
-                    <p style={{ margin: '0 0 20px 0', color: styles.colorGrey }}>Analyzed {uploadedFiles.length} files from upload.</p>
-                    <button 
-                        onClick={onGoBack}
-                        style={{
-                            padding: '8px 15px', 
-                            backgroundColor: styles.colorGrey, 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '6px', 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#5a6268'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = styles.colorGrey}
-                    >
-                        <ArrowLeft size={16} /> Back to Upload
-                    </button>
+                <header style={{
+                    display: "flex",               // ⭐ Fix spacing
+    justifyContent: "space-between", // ⭐ Spread h1 and button evenly
+    alignItems: "center",   
+                    width:'97%',
+                    margin: "0 auto",     // centers header content
+                }}>
+                    <h1>Critical Financial Trends Dashboard</h1>
+                <button
+                onClick={onGoBack}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px",
+                    backgroundColor: "#e4e4e4ff",
+                    color: 'black',
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    width: "40px",
+                    height: "40px",
+                    transition: "width 0.3s ease, background-color 0.2s ease",
+                    whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.width = "170px";
+                    e.currentTarget.style.backgroundColor = "#a5a9b9ff";
+                    e.currentTarget.querySelector(".btn-text").style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.width = "40px";
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.querySelector(".btn-text").style.opacity = "0";
+                }}
+                >
+                <X size={16} color='#000000' style={{ flexShrink: 0 }} />
+                <span
+                    className="btn-text"
+                    style={{
+                    opacity: 0,
+                    transition: "opacity 0.2s ease",
+                    }} 
+                >
+                    Back to Upload
+                </span>
+                </button>
+
+
                 </header>
 
                 {backendData ? (
                     <>
-                        <SummaryCard 
-                            summary={backendData.summary} 
-                            metadata={backendData.metadata} 
-                            styles={styles} 
+                        <SummaryCard
+                            summary={backendData.summary}
+                            metadata={backendData.metadata}
+                            styles={styles}
                         />
-                        
+
                         <div style={styles.mainContentGrid}>
-                            <TrendsList 
-                                trends={trends} 
-                                setSelectedMetric={setSelectedMetricName} 
+                            <TrendsList
+                                trends={trends}
+                                setSelectedMetric={setSelectedMetricName}
                                 search={search}
                                 setSearch={setSearch}
                                 selectedMetricName={selectedMetricName}
                             />
-                            
+
                             <div style={styles.detailPanel}>
                                 <TrendChart trend={selectedTrend} />
                                 <MetricDetailsCard trend={selectedTrend} />
@@ -1069,14 +1324,14 @@ function FinancialTrendsDashboard({ uploadedFiles, backendData, onGoBack }) {
 
 // --- Main App Flow Component ---
 function AppFlow() {
-    const [page, setPage] = useState('upload'); 
+    const [page, setPage] = useState('upload');
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [backendData, setBackendData] = useState(null);
 
     const handleUploadSuccess = (files, result) => {
         setUploadedFiles(files);
         setBackendData(result);
-        setPage('dashboard'); 
+        setPage('dashboard');
     };
 
     if (page === 'upload') {
@@ -1085,14 +1340,14 @@ function AppFlow() {
 
     if (page === 'dashboard') {
         return (
-            <FinancialTrendsDashboard 
-                uploadedFiles={uploadedFiles} 
+            <FinancialTrendsDashboard
+                uploadedFiles={uploadedFiles}
                 backendData={backendData}
                 onGoBack={() => setPage('upload')}
             />
         );
     }
-    
+
     return <div style={{ padding: '20px', textAlign: 'center' }}>Loading application...</div>;
 }
 
