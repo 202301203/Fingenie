@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Chatbot from '../components/chatbot.jsx';
 import {
   Download,
   User,
@@ -47,6 +48,13 @@ export default function FinGenieApp() {
   const [companyData, setCompanyData] = useState(null);
   const [financialRatios, setFinancialRatios] = useState([]);
   const [stockData, setStockData] = useState(null);
+  // Attempt to load stored API key (user may have saved it earlier on API key page)
+  const [apiKey, setApiKey] = useState(() => (
+    localStorage.getItem('groq_api_key') ||
+    localStorage.getItem('userApiKey') ||
+    localStorage.getItem('GENAI_API_KEY') ||
+    ''
+  ));
 
   // Enhanced authentication check
   const checkAuthentication = async () => {
@@ -712,6 +720,8 @@ if (financialRatios.length > 0) {
 
       <Footer />
       {showDetailedRatios && <DetailedRatiosModal />}
+      {/* Floating Chatbot mounted globally on summary page */}
+      <Chatbot reportId={companyData?.report_id} apiKey={apiKey} />
     </div>
   );
 }

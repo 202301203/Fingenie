@@ -1,7 +1,7 @@
 # dataprocessor/views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # retained for potential future use but not applied now
 from django.conf import settings
 import os
 import uuid
@@ -86,13 +86,17 @@ def process_financial_statements_api(request):
 
         # Step 5: Save to DB using your model's setter methods - NOW WITH USER LINK
         report_id = str(uuid.uuid4())
+        # Remove user linkage: allow creation without authentication.
+        # If you later want optional linkage, use:
+        # user_obj = request.user if getattr(request.user, 'is_authenticated', False) else None
+        # and pass user=user_obj.
         report = FinancialReport.objects.create(
             report_id=report_id,
             company_name=extracted_data.get("company_name", "Unknown Company"),
             ticker_symbol=extracted_data.get("ticker_symbol", ""),
-            user=request.user,  # CRITICAL: Link to current user
-            uploaded_pdf=uploaded_file,  # Save the uploaded file
-            pdf_original_name=uploaded_file.name,  # Save original filename
+            user=None,  # No user association
+            uploaded_pdf=uploaded_file,
+            pdf_original_name=uploaded_file.name,
         )
         
         # Use the setter methods from your model
@@ -127,12 +131,11 @@ def process_financial_statements_api(request):
         return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
 @csrf_exempt
-@login_required
 def get_report_by_id_api(request, report_id):
     try:
         print(f" Looking for report: {report_id}")
-        # Only allow users to access their own reports
-        report = FinancialReport.objects.get(report_id=report_id, user=request.user)
+        # Public access: fetch by report_id only (no user restriction)
+        report = FinancialReport.objects.get(report_id=report_id)
         print(f" Found report: {report.company_name}")
         
         # Debug: Check what data we have
@@ -173,12 +176,11 @@ def get_report_by_id_api(request, report_id):
         return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
 @csrf_exempt
-@login_required
 def get_latest_report_api(request):
     try:
         print(" Looking for latest report...")
-        # Only get latest report for current user
-        report = FinancialReport.objects.filter(user=request.user).order_by('-created_at').first()
+        # Public: latest overall report (no user filter)
+        report = FinancialReport.objects.order_by('-created_at').first()
         if not report:
             print(" No reports found for user")
             return JsonResponse({'error': 'No reports found'}, status=404)
@@ -212,11 +214,10 @@ def get_latest_report_api(request):
 # ============================================
 
 @csrf_exempt
-@login_required
 def user_summary_history(request):
-    """Get user's financial analysis history for profile page"""
+    """Get public financial analysis history (all reports)."""
     try:
-        reports = FinancialReport.objects.filter(user=request.user).order_by('-created_at')
+        reports = FinancialReport.objects.order_by('-created_at')
         
         reports_data = []
         for report in reports:
@@ -246,15 +247,14 @@ def user_summary_history(request):
         }, status=500)
 
 @csrf_exempt
-@login_required
 def delete_report_api(request, report_id):
-    """Delete a user's financial report"""
+    """Delete a report by id (public). WARNING: consider re-adding auth for production."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
     
     try:
-        # Only allow users to delete their own reports
-        report = FinancialReport.objects.get(report_id=report_id, user=request.user)
+        # Public delete by id (no user filter)
+        report = FinancialReport.objects.get(report_id=report_id)
         company_name = report.company_name
         report.delete()
         
@@ -270,12 +270,11 @@ def delete_report_api(request, report_id):
         return JsonResponse({'error': 'Failed to delete report'}, status=500)
 
 @csrf_exempt
-@login_required
 def get_recent_analyses(request):
-    """Get recent analyses for dashboard/activity feed"""
+    """Get recent analyses (public feed)."""
     try:
         limit = request.GET.get('limit', 5)
-        reports = FinancialReport.objects.filter(user=request.user).order_by('-created_at')[:int(limit)]
+        reports = FinancialReport.objects.order_by('-created_at')[:int(limit)]
         
         analyses_data = []
         for report in reports:

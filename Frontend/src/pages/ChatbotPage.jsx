@@ -1,12 +1,11 @@
 // src/pages/ChatbotPage.jsx
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   User,
   History,
   Settings,
   LogOut,
   Wrench,
-  TrendingUp,
   Search,
   Activity,
   BookOpen,
@@ -92,6 +91,9 @@ export default function ChatbotPage() {
 
   const [currentChatId, setCurrentChatId] = useState(chats[0].id);
   const [inputText, setInputText] = useState("");
+  // API key (persist locally) + sending state
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('GENAI_API_KEY') || '');
+  const [isSending, setIsSending] = useState(false);
 
   // Chat body scrolling ref
   const chatBodyRef = useRef(null);
@@ -131,37 +133,83 @@ export default function ChatbotPage() {
   }
 
   // Send message + demo bot reply
-  function sendMessage() {
+  // Build history helper (exclude the latest message we're sending)
+  function buildHistory(messages) {
+    return messages
+      .slice(0, -1)
+      .map((m) => ({
+        role: m.sender === "user" ? "user" : "model",
+        text: m.text,
+      }));
+  }
+
+  // Send message -> displays the user's message immediately, then calls backend and appends bot reply
+  async function sendMessage() {
     const text = inputText.trim();
     if (!text) return;
 
+    // Require API key before sending
+    if (!apiKey.trim()) {
+      const missingKeyMsg = {
+        sender: 'bot',
+        text: 'Please enter your Gemini API key above before sending questions.',
+        ts: Date.now(),
+        liked: false,
+        disliked: false,
+      };
+      setChats(prev => prev.map(c => c.id !== currentChatId ? c : { ...c, messages: [...c.messages, missingKeyMsg] }));
+      return;
+    }
+
+    const currentChat = getChat(currentChatId);
+    if (!currentChat) return;
+
+    // show user message immediately
+    const userMsg = { sender: "user", text, ts: Date.now() };
     setChats((prev) =>
-      prev.map((c) => {
-        if (c.id !== currentChatId) return c;
-
-        const userMsg = { sender: "user", text, ts: Date.now() };
-        const botMsg = {
-          sender: "bot",
-          text: `Demo reply: I heard "${text}".`,
-          ts: Date.now() + 5,
-          liked: false,
-          disliked: false,
-        };
-
-        return { ...c, messages: [...c.messages, userMsg, botMsg], updatedAt: Date.now() };
-      })
+      prev.map((c) =>
+        c.id !== currentChatId ? c : { ...c, messages: [...c.messages, userMsg], updatedAt: Date.now() }
+      )
     );
-
     setInputText("");
 
+    // scroll down
     requestAnimationFrame(() => {
       try {
         const el = chatBodyRef.current;
         if (el) el.scrollTop = el.scrollHeight;
       } catch {}
     });
-  }
 
+    const history = buildHistory([...currentChat.messages, userMsg]);
+
+    const API_URL = "http://127.0.0.1:8000/api/insights/chat/"; // backend endpoint
+    setIsSending(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text, history, api_key: apiKey.trim() }),
+      });
+
+      const data = await response.json();
+      const botReplyText = response.ok ? (data.answer || "No answer returned.") : `Error: ${data.error || response.statusText}`;
+
+      const botMsg = { sender: "bot", text: botReplyText, ts: Date.now() + 50, liked: false, disliked: false };
+
+      setChats((prev) =>
+        prev.map((c) => (c.id !== currentChatId ? c : { ...c, messages: [...c.messages, botMsg], updatedAt: Date.now() + 50 }))
+      );
+    } catch (err) {
+      console.error("API error", err);
+      const errorMsg = { sender: "bot", text: "Network error: unable to reach server.", ts: Date.now() + 50, liked: false, disliked: false };
+      setChats((prev) =>
+        prev.map((c) => (c.id !== currentChatId ? c : { ...c, messages: [...c.messages, errorMsg], updatedAt: Date.now() + 50 }))
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }
   // Copy message
   async function copyToClipboard(text, chatId, msgIndex) {
     try {
@@ -515,6 +563,30 @@ export default function ChatbotPage() {
                 </div>
               </div>
             </div>
+            {/* API KEY INPUT */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="password"
+                placeholder="Enter Gemini API Key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                onBlur={() => {
+                  if (apiKey.trim()) {
+                    localStorage.setItem('GENAI_API_KEY', apiKey.trim());
+                  } else {
+                    localStorage.removeItem('GENAI_API_KEY');
+                  }
+                }}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #ccc',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  width: 240,
+                  background: '#fff'
+                }}
+              />
+            </div>
           </div>
 
           {/* CHAT MESSAGES */}
@@ -626,23 +698,30 @@ export default function ChatbotPage() {
             )}
           </div>
 
-          {/* INPUT FIELD */}
+          {/* INPUT AREA */}
           <div style={styles.inputArea}>
             <input
+              type="text"
+              placeholder="Type your message..."
               style={styles.input}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Ask anything"
-              aria-label="Chat input"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              disabled={isSending}
             />
-
             <button
-              style={styles.sendButton}
+              style={{ ...styles.sendButton, opacity: isSending ? 0.6 : 1, cursor: isSending ? 'not-allowed' : 'pointer' }}
               onClick={sendMessage}
+              title="Send"
               aria-label="Send message"
+              disabled={isSending}
             >
-              Send
+              {isSending ? 'Sending...' : 'Send'}
             </button>
           </div>
         </div>

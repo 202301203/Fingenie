@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/chat/', include('apps.chatbot.urls')), #Link Chatbot app
     path('api/learning/', include('apps.learning.urls')),# Link quiz learning app
     path('api/insights/', include('apps.ai_insights.urls')), # Link AI insights app
+    path('news/', include('apps.news.urls')),
 ]
 
 # Serve media files during development

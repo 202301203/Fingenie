@@ -24,12 +24,12 @@ import api from '../api';
 
 const FileUploadApp = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+
   
   const [currentPage, setCurrentPage] = useState('first'); 
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('groq_api_key') || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -408,6 +408,7 @@ const FileUploadApp = () => {
                         // Add API key to form data if provided
                         if (apiKey?.trim()) {
                           formData.append('api_key', apiKey.trim());
+                          localStorage.setItem('groq_api_key', apiKey.trim());
                         }
 
                         const json = await api.postExtract(formData);
@@ -417,8 +418,10 @@ const FileUploadApp = () => {
                         // Store API key in localStorage if provided
                         if (apiKey?.trim()) {
                           localStorage.setItem('userApiKey', apiKey.trim());
+                          localStorage.setItem('groq_api_key', apiKey.trim());
                         } else if (json?.api_key) {
                           localStorage.setItem('userApiKey', json.api_key);
+                          localStorage.setItem('groq_api_key', json.api_key);
                         }
 
                         navigate('/summary_page', { state: json });
