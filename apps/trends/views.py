@@ -15,14 +15,14 @@ from django.conf import settings
 from pydantic import BaseModel, Field
 
 from langchain_core.documents import Document
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 # FIXED: Import from services instead of views
 from apps.dataprocessor.services import (
     extract_raw_financial_data,
     load_financial_document,
     prepare_context_smart,
-    create_gemini_llm
+    create_groq_llm
 )
 
 # ------------------------------
@@ -222,17 +222,7 @@ CRITICAL_METRICS = {
         'category': 'liquidity'
     }
 }
-
-API_KEYS = [
-    "AIzaSyD0pGRXvQDkI3UwhgSN5RQd8rvOxFVpKwE",
-    "AIzaSyBB6BtF8azY7cCoK5mC2paEEVElVZdUGBk", 
-    "AIzaSyCIRHpXUyG_f99tMI4sWFdWs4-gMLV-K1U",
-    "AIzaSyB4uWtqC6L9U9UBaIftFvkBNJ9gY6-TNN0",
-    "AIzaSyCbioN-X1Kt4PoxivCIPraU3dm6HzcfpKg",
-    "AIzaSyC5pZMfa-VQtcq2iuQ-KoQVSWbIuVPvVEs",
-    "AIzaSyCS-EkVLA4lodlh47c_rQ1Yh8td8rVBGDA",
-    "AIzaSyB3u4M9AyfNvxgfjFS8uN35y36Sa9R5s0A"
-]
+# API_KEYS = getattr()
 
 def extract_all_years_data(extraction: Dict[str, Any], year: str) -> Dict[str, Dict[str, float]]:
     """
@@ -840,7 +830,7 @@ def generate_trends_from_data(financial_items: List[Dict[str, Any]], api_key: st
         
         # Try LLM analysis
         try:
-            llm = create_gemini_llm(api_key, "trends")
+            llm = create_groq_llm(api_key, "trends")
             if not llm:
                 raise Exception("Failed to initialize Gemini LLM")
             
