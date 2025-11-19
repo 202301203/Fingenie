@@ -234,14 +234,7 @@ const features = [
     bordercolor: '#515266',
     route: '/blogPage'
   },
-  {
-    title: 'Debt Ratings',
-    description: 'Get accurate and transparent debt analysis for smarter investment decisions.',
-    icon: Award,
-    bgColor: '#DCDCE0',
-    bordercolor: '#515266',
-    route: '/debtRatings'
-  },
+
   {
     title: 'Sector Overview',
     description: 'Analyze industry sectors with comprehensive data and insights.',
@@ -369,10 +362,7 @@ const FinGenieLanding = () => {
           <Wrench size={24} color="black" style={styles.userIcon} />
           {showToolsDropdown && (
             <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
-              </div>
+              
               <div style={styles.dropdownItem}>
                 <Search size={16} />
                 <span>Search Companies</span>
@@ -448,7 +438,6 @@ const FinGenieLanding = () => {
         <ul style={styles.functionsList}>
           <li style={styles.functionsItem}>AI summary</li>
           <li style={styles.functionsItem}>Sector View</li>
-          <li style={styles.functionsItem}>Debt ratings</li>
           <li style={styles.functionsItem}>search companies</li>
           <li style={styles.functionsItem}>Blog Page</li>
           <li style={styles.functionsItem}>Trends & KPIs</li>
@@ -568,14 +557,17 @@ const FinGenieLanding = () => {
       </div>
 
       {/* Features Grid */}
-      <section style={styles.featuresSection} className="features-section">
+<section style={styles.featuresSection} className="features-section">
 
   <div style={styles.featuresGrid} className="features-grid">
-    {features.slice(0, 3).map((feature, index) => (
+    {features.map((feature, index) => (
       <FeatureCard key={index} feature={feature} index={index} />
     ))}
   </div>
-    <div style={styles.fullWidthBox}>
+
+</section>
+
+<div style={styles.fullWidthBox}>
 
   {/* 🔥 Curved animation here */}
 
@@ -586,14 +578,6 @@ const FinGenieLanding = () => {
   </div>
 
 </div>
-
-  <div style={styles.featuresGrid} className="features-grid">
-    {features.slice(3).map((feature, index) => (
-      <FeatureCard key={index} feature={feature} index={index + 3} />
-    ))}
-  </div>
-
-</section>
 
 
       {/* Footer */}
@@ -661,11 +645,7 @@ const styles = {
     alignItems: 'center',
     gap: '2rem'
   },
-  navCenter: {
-    display: 'flex',
-    gap: '2.5rem',
-    alignItems: 'center'
-  },
+
   navLink: {
     fontSize: '0.95rem',
     fontWeight: '500',

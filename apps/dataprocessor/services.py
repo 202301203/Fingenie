@@ -196,7 +196,7 @@ def create_gemini_llm(api_key: str, purpose: str = "extraction"):
     temperature = 0.1 if purpose == "extraction" else 0.2
     
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-pro",
         google_api_key=api_key,
         temperature=temperature,
         max_tokens=8192,  # Increased for better responses
@@ -525,7 +525,7 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
                 "file_type": detect_file_type(file_path),
                 "content_length": len(context_text),
                 "items_extracted": len(extraction_result.get("financial_items", [])),
-                "ai_model": "gemini-2.5-flash"
+                "ai_model": "gemini-pro"
             }
         }
         
