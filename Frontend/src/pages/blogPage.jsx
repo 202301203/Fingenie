@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Filter, PenTool, User, ChevronDown, ArrowLeft, 
-  Heart, Share2, Bookmark, X, LogOut, History, Settings,
-  Wrench, TrendingUp, Activity, BookOpen, Cpu, GitCompare,
+  Heart, Share2, Bookmark,
   Loader
 } from 'lucide-react';
-import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import { useNavigate } from "react-router-dom";
 import { blogService } from '../api/index';
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 
 
@@ -344,110 +343,7 @@ const FinanceBlog = () => {
   return (
     <div style={styles.container}>
       {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <img
-              src={fglogo_Wbg}
-              style={{ height: "80px", width: "auto" }}
-              alt="logo"
-            />
-          </div>
-        </div>
-
-        <nav style={styles.nav}>
-          {/* Home */}
-          <span
-            style={
-              styles.navLink
-              }
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-
-          <span style={styles.navLink} onClick={() => navigate("/NewsPage")}>
-            News
-          </span>
-
-          {/* About */}
-           <span
-            style={
-              styles.navLink}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-
-          {/* Tools Menu */}
-          <div
-            style={styles.toolsMenu}
-            onMouseEnter={() => setShowToolsDropdown(true)}
-            onMouseLeave={() => setShowToolsDropdown(false)}
-          >
-            <Wrench size={24} color="black" style={styles.userIcon} />
-            {showToolsDropdown && (
-              <div style={styles.dropdown}>
-                <div style={styles.dropdownItem}>
-                  <TrendingUp size={16} />
-                  <span>Debt Ratings</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Search size={16} />
-                  <span>Search Companies</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Activity size={16} />
-                  <span>Charts & KPIs</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <BookOpen size={16} />
-                  <span>Blog Page</span>
-                </div>
-                <div style={styles.dropdownItem} onClick={() => navigate("/FileUploadApp")}>
-                  <Cpu size={16} />
-                  <span>AI Summary</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Comparison</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Menu */}
-          <div
-            style={styles.userMenu}
-            onMouseEnter={() => setShowDropdown(true)}
-            onMouseLeave={() => setShowDropdown(false)}
-          >
-            <User size={24} color="black" style={styles.userIcon} />
-
-            {showDropdown && (
-              <div style={styles.dropdown}>
-                <div style={styles.dropdownItem}>
-                  <User size={16} />
-                  <span>Profile</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <History size={16} />
-                  <span>History</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </div>
-
-                <div style={styles.dropdownItem} onClick={() => navigate("/homepage_beforelogin")}>
-                  <LogOut size={16} />
-                  <span>Sign out</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </nav>
-      </header>
+     <Header/>
 
       {/* Notification */}
       {notification && (
@@ -822,28 +718,9 @@ const FinanceBlog = () => {
       )}
 
       {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerContent}>
-          <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-              © 2025 FinGenie | 
-              <a href="#" style={styles.footerLink}> About</a> | 
-              <a href="#" style={styles.footerLink}> Blog</a> | 
-              <a href="#" style={styles.footerLink}> Privacy Policy</a> | 
-              <a href="#" style={styles.footerLink}> Contact</a>
-            </p>
-          </div>
-          <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>functions</h4>
-            <div style={styles.functionLinks}>
-              <a href="#" style={styles.functionLink}>AI summary</a>
-              <a href="#" style={styles.functionLink}>stock graphs</a>
-              <a href="#" style={styles.functionLink}>Debt ratings</a>
-              <a href="#" style={styles.functionLink}>search companies</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+       <Footer/>
+
+
     </div>
   );
 };
@@ -858,64 +735,86 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.2rem 3rem',
-    backgroundColor: '#ffffffff',
-    borderBottom: '1px solid #000000ff',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   },
   headerLeft: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
+    alignItems: 'center'
   },
+  logo: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+
   nav: {
     display: 'flex',
-    gap: '40px',
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: '2rem'
   },
+
   navLink: {
-    background: 'none',
-    border: 'none',
-    color: '#3a3f44',
-    fontSize: '15px',
-    cursor: 'pointer',
-    padding: '8px 0',
+    fontSize: '0.95rem',
     fontWeight: '500',
-    transition: 'color 0.2s',
-  },
-  toolsMenu: {
-    position: 'relative',
+    color: '#4a5568',
     cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
   },
-  userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
   },
   userIcon: {
     cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
   },
-  dropdown: {
+    toolsMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  HFdropdown: {
     position: 'absolute',
-    right: '0',
     top: '100%',
-    backgroundColor: '#D9D9D9',
+    right: 0,
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-    padding: '0.5rem',
-    minWidth: '160px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
     zIndex: 1000
   },
   dropdownItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    fontSize: '14px'
+    fontSize: '0.95rem'
   },
+
   filterBar: {
     backgroundColor: '#ffffff',
     borderBottom: '1px solid #dee2e6',
@@ -1345,54 +1244,8 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
-  footer: {
-    backgroundColor: '#3a3f44',
-    padding: '32px 0',
-    marginTop: 'auto',
-  },
-  footerContent: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '0 32px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  footerLeft: {
-    flex: 1,
-  },
-  copyright: {
-    fontSize: '13px',
-    color: '#ffffff',
-    margin: '0',
-  },
-  footerLink: {
-    color: '#ffffff',
-    textDecoration: 'none',
-    transition: 'opacity 0.2s',
-  },
-  footerRight: {
-    textAlign: 'right',
-  },
-  functionsTitle: {
-    fontSize: '13px',
-    color: '#ffffff',
-    fontWeight: '600',
-    marginTop: '0',
-    marginBottom: '12px',
-    textTransform: 'lowercase',
-  },
-  functionLinks: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  functionLink: {
-    fontSize: '13px',
-    color: '#ffffff',
-    textDecoration: 'none',
-    transition: 'opacity 0.2s',
-  },
+
+
 };
 
 // Add CSS for spinner animation

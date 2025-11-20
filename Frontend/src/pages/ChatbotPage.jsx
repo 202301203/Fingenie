@@ -1,17 +1,6 @@
 // src/pages/ChatbotPage.jsx
 import React, { useState, useRef, useEffect } from "react";
 import {
-  User,
-  History,
-  Settings,
-  LogOut,
-  Wrench,
-  TrendingUp,
-  Search,
-  Activity,
-  BookOpen,
-  Cpu,
-  GitCompare,
   Plus,
   Copy,
   ThumbsUp,
@@ -21,9 +10,10 @@ import {
   X,
   Menu,
 } from "lucide-react";
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import fglogo_Wbg from "../images/fglogo_Wbg.png";
-import { useNavigate, useLocation } from "react-router-dom";
+import {useLocation } from "react-router-dom";
 
 // Format timestamps
 function fmtTime(ts = Date.now()) {
@@ -40,11 +30,7 @@ function confirmAction(message) {
 }
 
 export default function ChatbotPage() {
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [copiedMap, setCopiedMap] = useState({});
 
@@ -232,138 +218,7 @@ export default function ChatbotPage() {
     }
   }
 
-  /* --------------------------------
-     HEADER COMPONENT
-  -------------------------------- */
-  const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img src={fglogo_Wbg} style={{ height: "80px" }} alt="logo" />
-        </div>
-      </div>
-
-      <nav style={styles.nav}>
-        <span style={styles.navLink} onClick={() => navigate("/mainpageafterlogin")}>
-          Home
-        </span>
-        <span style={styles.navLink} onClick={() => navigate("/NewsPage")}>
-          News
-        </span>
-        <span style={styles.navLink} onClick={() => navigate("/AboutUs")}>
-          About us
-        </span>
-
-        {/* Tools */}
-        <div
-          style={styles.toolsMenu}
-          onMouseEnter={() => setShowToolsDropdown(true)}
-          onMouseLeave={() => setShowToolsDropdown(false)}
-        >
-          <Wrench size={24} color="black" />
-
-          {showToolsDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
-                <TrendingUp size={16} />
-                <span>Debt Ratings</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Activity size={16} />
-                <span>Trends & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem} onClick={() => navigate("/FileUploadApp")}>
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* User */}
-        <div
-          style={styles.userMenu}
-          onMouseEnter={() => setShowDropdown(true)}
-          onMouseLeave={() => setShowDropdown(false)}
-        >
-          <User size={24} color="black" />
-
-          {showDropdown && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropdownItem}>
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div style={styles.dropdownItem} onClick={() => navigate("/homepage_beforelogin")}>
-                <LogOut size={16} />
-                <span>Sign out</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
-  );
-
-  /* --------------------------------
-     FOOTER COMPONENT
-  -------------------------------- */
-  const Footer = () => (
-    <footer style={styles.footer}>
-      <div style={styles.footerContent}>
-        <div style={styles.footerLeft}>
-          <p style={styles.copyright}>
-            © 2025 FinGenie |{" "}
-            <a href="#about" style={styles.footerLink}>
-              About
-            </a>{" "}
-            |{" "}
-            <a href="#blog" style={styles.footerLink}>
-              Blog
-            </a>{" "}
-            |{" "}
-            <a href="#privacy" style={styles.footerLink}>
-              Privacy Policy
-            </a>{" "}
-            |{" "}
-            <a href="#contact" style={styles.footerLink}>
-              Contact
-            </a>
-          </p>
-        </div>
-
-        <div style={styles.footerRight}>
-          <h4 style={styles.functionsTitle}>functions</h4>
-          <ul style={styles.functionsList}>
-            <li style={styles.functionsItem}>AI summary</li>
-            <li style={styles.functionsItem}>Debt ratings</li>
-            <li style={styles.functionsItem}>stock graphs</li>
-            <li style={styles.functionsItem}>search companies</li>
-          </ul>
-        </div>
-      </div>
-    </footer>
-  );
+ 
   const activeChat = getChat(currentChatId) || null;
 
   /* --------------------------------
@@ -377,7 +232,7 @@ export default function ChatbotPage() {
         }
       `}</style>
 
-      <Header />
+      <Header/>
 
       <div style={styles.mainArea}>
         {sidebarVisible ? (
@@ -633,78 +488,87 @@ const styles = {
 
   /* HEADER */
   header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "2rem 4rem",
-    position: "relative",
-    zIndex: 10,
-    background: "rgba(255,255,255,0.2)",
-    backdropFilter: "blur(10px)",
-    WebkitBackdropFilter: "blur(10px)",
-    borderRadius: "15px",
-    border: "1px solid rgba(255,255,255,0.3)",
-    boxShadow: "0 8px 32px rgba(255,255,255,0.1)",
-    borderBottom: "2px solid black",
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   },
-
-  headerLeft: { display: "flex", alignItems: "center" },
-
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center'
+  },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    display: 'flex',
+    alignItems: 'center'
   },
 
   nav: {
-    display: "flex",
-    gap: "1.5rem",
-    marginTop: 10,
-    alignItems: "center",
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2rem'
   },
 
   navLink: {
-    cursor: "pointer",
-    color: "#000",
-    fontSize: 14,
-    fontWeight: 500,
-    textDecoration: "none",
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+    textDecoration: 'none',
+    position: 'relative'
   },
-
-  userMenu: { position: "relative", cursor: "pointer" },
-  userIcon: { transition: "color 0.2s" },
-
-  dropdown: {
-    position: "absolute",
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  userIcon: {
+    cursor: 'pointer',
+    color: '#4a5568',
+    transition: 'color 0.3s ease'
+  },
+    toolsMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+      userMenu: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  HFdropdown: {
+    position: 'absolute',
+    top: '100%',
     right: 0,
-    top: 32,
-    backgroundColor: "#D9D9D9",
-    borderRadius: 8,
-    padding: "0.5rem",
-    minWidth: 120,
-    zIndex: 1000,
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+    marginTop: '0.5rem',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '200px',
+    zIndex: 1000
   },
-
   dropdownItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    padding: "0.5rem",
-    cursor: "pointer",
-    borderRadius: 4,
-    fontSize: 14,
-  },
-
-  toolsMenu: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    marginLeft: "1rem",
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: '0.95rem'
   },
 
   /* MAIN LAYOUT */
@@ -805,7 +669,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     padding: "1rem",
-    background: "#DCE5F5",
+    background: "#a6b1caff",
     borderBottom: "1px solid #ccc",
   },
 
@@ -876,53 +740,13 @@ const styles = {
     padding: "0.6rem 1rem",
     borderRadius: 8,
     border: "1px solid #cfcfcf",
-    background: "#1d4ed8",
+    background: "#515266",
     color: "white",
     cursor: "pointer",
     fontWeight: 700,
   },
 
-  /* FOOTER */
-  footer: {
-    backgroundColor: "#2d3748",
-    color: "#e2e8f0",
-    padding: "3rem",
-    marginTop: "auto",
-  },
 
-  footerContent: {
-    maxWidth: "1400px",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: "2rem",
-  },
+    
 
-  footerLeft: { flex: 1 },
-
-  footerLink: {
-    color: "#81e6d9",
-    textDecoration: "none",
-  },
-
-  footerRight: {
-    flex: 1,
-    maxWidth: 250,
-  },
-
-  functionsTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    marginBottom: "1rem",
-  },
-
-  functionsList: { listStyle: "none", padding: 0, margin: 0 },
-
-  functionsItem: {
-    fontSize: 14,
-    marginBottom: "0.5rem",
-    paddingLeft: "1rem",
-    position: "relative",
-  },
 };

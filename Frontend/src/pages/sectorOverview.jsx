@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, use } from 'react';
 import { Search, Wrench, User, ChevronDown, Plus, X, TrendingUp, Activity, BookOpen, Cpu, GitCompare, History, Settings, LogOut, RefreshCw } from 'lucide-react';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
+import { useNavigate } from "react-router-dom";
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -12,7 +13,8 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,116 +24,7 @@ ChartJS.register(
   Legend
 );
 
-// Define Header component at the top level, before SectorOverviewDashboard
-const Header = ({ showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
-  <header style={styles.header}>
-    <div style={styles.headerLeft}>
-      <div style={styles.logo}>
-        <img
-          src={fglogo_Wbg}
-          style={{ height: "80px", width: "auto" }}
-          alt="logo"
-        />
-      </div>
-    </div>
-    <nav style={styles.nav}>
-      <span style={styles.navLink}>Home</span>
-      <span style={styles.navLink}>News</span>
-      <span style={styles.navLink}>About us</span>
-      
-      <div
-        style={styles.toolsMenu}
-        onMouseEnter={() => setShowToolsDropdown(true)}
-        onMouseLeave={() => setShowToolsDropdown(false)}
-      >
-        <Wrench size={24} color="black" style={styles.userIcon} />
-        {showToolsDropdown && (
-          <div style={styles.HFdropdown}>
-            <div style={styles.dropdownItem}>
-              <TrendingUp size={16} />
-              <span>Debt Ratings</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <Search size={16} />
-              <span>Search Companies</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <Activity size={16} />
-              <span>Charts & KPIs</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <BookOpen size={16} />
-              <span>Blog Page</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <Cpu size={16} />
-              <span>AI Summary</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <GitCompare size={16} />
-              <span>Comparison</span>
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div
-        style={styles.userMenu}
-        onMouseEnter={() => setShowDropdown(true)}
-        onMouseLeave={() => setShowDropdown(false)}
-      >
-        <User size={24} color="black" style={styles.userIcon} />
-        {showDropdown && (
-          <div style={styles.HFdropdown}>
-            <div style={styles.dropdownItem}>
-              <User size={16} />
-              <span>Profile</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <History size={16} />
-              <span>History</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <Settings size={16} />
-              <span>Settings</span>
-            </div>
-            <div style={styles.dropdownItem}>
-              <LogOut size={16} />
-              <span>Sign out</span>
-            </div>
-          </div>
-        )}
-      </div>
-    </nav>
-  </header>
-);
-
-// Define Footer component
-const Footer = ({ lastUpdated }) => (
-  <footer style={styles.footer}>
-    <div style={styles.footerLeft}>
-      <p style={styles.copyright}>
-        © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-      </p>
-      {lastUpdated && (
-        <p style={styles.lastUpdated}>
-          Last updated: {lastUpdated}
-        </p>
-      )}
-    </div>
-    <div style={styles.footerRight}>
-      <h4 style={styles.functionsTitle}>Functions</h4>
-      <ul style={styles.functionsList}>
-        <li style={styles.functionsItem}>AI summary</li>
-        <li style={styles.functionsItem}>stock graphs</li>
-        <li style={styles.functionsItem}>Debt ratings</li>
-        <li style={styles.functionsItem}>search companies</li>
-        <li style={styles.functionsItem}>Blog Page</li>
-        <li style={styles.functionsItem}>Charts & KPIs</li>
-      </ul>
-    </div>
-  </footer>
-);
 
 const SectorChart = ({ companies }) => {
   // Check if we have valid data
@@ -236,6 +129,7 @@ const SectorChart = ({ companies }) => {
 };
 
 const SectorOverviewDashboard = () => {
+  const navigate = useNavigate();
   const [sectors, setSectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -366,12 +260,7 @@ const SectorOverviewDashboard = () => {
   if (loading) {
     return (
       <div style={styles.page}>
-        <Header 
-          showDropdown={showDropdown}
-          setShowDropdown={setShowDropdown}
-          showToolsDropdown={showToolsDropdown}
-          setShowToolsDropdown={setShowToolsDropdown}
-        />
+        <Header />
         <div style={styles.loadingContainer}>
           <div style={styles.spinner}></div>
           <h3 style={styles.loadingText}>Loading Real-Time Market Data...</h3>
@@ -385,12 +274,7 @@ const SectorOverviewDashboard = () => {
   if (error) {
     return (
       <div style={styles.page}>
-        <Header 
-          showDropdown={showDropdown}
-          setShowDropdown={setShowDropdown}
-          showToolsDropdown={showToolsDropdown}
-          setShowToolsDropdown={setShowToolsDropdown}
-        />
+        <Header />
         <div style={styles.errorContainer}>
           <h3 style={styles.errorTitle}>⚠️ Unable to Load Market Data</h3>
           <p style={styles.errorText}>{error}</p>
@@ -408,12 +292,7 @@ const SectorOverviewDashboard = () => {
 
   return (
     <div style={styles.page}>
-      <Header 
-        showDropdown={showDropdown}
-        setShowDropdown={setShowDropdown}
-        showToolsDropdown={showToolsDropdown}
-        setShowToolsDropdown={setShowToolsDropdown}
-      />
+      <Header />
 
       <div style={styles.controlsBar}>
         <div style={styles.searchContainer}>
@@ -707,122 +586,13 @@ const styles = {
     fontSize: '1rem',
     fontWeight: '500'
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-  navLink: {
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '500',
-    color: '#070d1fff',
-    transition: 'color 0.2s'
-  },
-  toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  userIcon: {
-    cursor: 'pointer'
-  },
-  HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
-  },
-  footer: {
-    backgroundColor: '#4D5C61',
-    color: '#ffffff',
-    padding: '2rem',
-    marginTop: 'auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: '2rem'
-  },
-  footerLeft: {
-    flex: 1
-  },
-  copyright: {
-    margin: 0,
-    fontSize: '0.9rem',
-    color: '#d1d5db'
-  },
+ 
   lastUpdated: {
     margin: '0.5rem 0 0 0',
     fontSize: '0.8rem',
     color: '#9ca3af'
   },
-  footerLink: {
-    color: '#60a5fa',
-    textDecoration: 'none'
-  },
-  footerRight: {
-    flex: 1
-  },
-  functionsTitle: {
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    marginBottom: '1rem',
-    color: '#ffffff'
-  },
-  functionsList: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0
-  },
-  functionsItem: {
-    fontSize: '0.9rem',
-    color: '#d1d5db',
-    marginBottom: '0.5rem'
-  },
+
   controlsBar: {
     backgroundColor: '#ffffff',
     padding: '1.5rem 2rem',

@@ -3,7 +3,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare, CheckCircle, XCircle, UploadCloud, FileText, X } from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
-
+import api from '../api';
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 // --- STYLING CONSTANTS ---
 const styles = {
@@ -12,6 +14,23 @@ const styles = {
         background: '#f8f8f8',
         fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
     },
+      mainContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'calc(110vh - 80px)',
+    //marginTop: '-70px'
+    flexDirection: 'column',
+  },
+    aiWarning: {
+    marginTop: '1rem',
+    padding: '1rem',
+    backgroundColor: '#fff3cd',
+    border: '1px solid #ffeeba',
+    borderRadius: '8px',
+    color: '#856404',
+    fontSize: '14px'
+  },
     detailPanel: {
         display: 'flex',
         flexDirection: 'column',
@@ -36,123 +55,6 @@ const styles = {
     colorTextStable: '#6c757d',
     colorActiveRow: '#e6f7ff',
 
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0.5rem 2rem',
-        backgroundColor: '#DEE6E6',
-
-        border: '1px solid #000000ff',
-        borderRadius: '8px',
-
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-    },
-    headerLeft: {
-        display: 'flex',
-        alignItems: 'center'
-    },
-    toolsMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-    },
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-    },
-    HFdropdown: {
-        position: 'absolute',
-        top: '100%',
-        right: 0,
-        marginTop: '0.5rem',
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        minWidth: '200px',
-        zIndex: 1000
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.75rem 1rem',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '0.95rem'
-    },
-    hamburger: {
-        display: 'none',
-        cursor: 'pointer',
-        color: '#4a5568'
-    },
-    logo: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '8px',
-    },
-    nav: {
-        display: 'flex',
-        gap: '1.5rem',
-        alignItems: 'center',
-    },
-    navLink: {
-        cursor: 'pointer',
-        color: '#000000',
-        textDecoration: 'none',
-        fontSize: '14px',
-        fontWeight: '500',
-        transition: 'opacity 0.3s',
-    },
-    userMenu: {
-        position: 'relative',
-        cursor: 'pointer',
-    },
-    dropdown: {
-        position: 'absolute',
-        right: '0',
-        top: '32px',
-        backgroundColor: '#ffffff',
-        borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-        padding: '0.5rem',
-        minWidth: '120px',
-        zIndex: 1000,
-        border: '1px solid #ddd',
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.5rem',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        fontSize: '14px',
-    },
-    toolsMenu: {
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-    },
-    footer: {
-        backgroundColor: '#4D5C61',
-        color: '#FFFFFF',
-        padding: '2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginTop: '4rem',
-    },
     summaryCard: {
         background: '#fff',
         borderRadius: '8px',
@@ -191,8 +93,8 @@ const styles = {
         padding: '20px',
     },
     fileUploadContainer: {
-        width: '50%',
-        margin: '50px auto',
+        width: '70%',
+        margin: '20px auto',
         padding: '15px',
         borderRadius: '24px',
         boxShadow: '0 30px 50px rgba(0, 0, 0, 0.1)',
@@ -225,7 +127,7 @@ const styles = {
         margin: '10px 0 10px 10px',
         padding: '10px 15px',
         borderLeft: '4px solid #16212cff',
-        
+
         fontStyle: 'italic',
         borderRadius: '4px',
     },
@@ -299,147 +201,6 @@ function getCSRFToken() {
 }
 
 
-// --- Header Component ---
-const Header = ({ navigate, location, setShowToolsDropdown, showToolsDropdown, setShowDropdown, showDropdown }) => (
-    <header style={styles.header}>
-        <div style={styles.headerLeft}>
-            <div style={styles.logo}>
-                <img
-                    src={fglogo_Wbg}
-                    style={{ height: "80px", width: "auto" }}
-                    alt="logo"
-                />
-            </div>
-        </div>
-        <nav style={styles.nav}>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                }}
-                onClick={() => navigate("/mainpageafterlogin")}
-            >
-                Home
-            </span>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                    borderBottom:
-                        location.pathname === "/NewsPage" ? "2px solid black" : "none",
-                }}
-                onClick={() => navigate("/NewsPage")}
-            >
-                News
-            </span>
-            <span
-                className="nav-link"
-                style={{
-                    ...styles.navLink,
-                    borderBottom:
-                        location.pathname === "/AboutUs" ? "2px solid black" : "none",
-                }}
-                onClick={() => navigate("/AboutUs")}
-            >
-                About us
-            </span>
-
-            <div
-                style={styles.toolsMenu}
-                onClick={() => setShowToolsDropdown(prev => !prev)}
-            >
-                <Wrench size={24} color="black" style={styles.userIcon} />
-                {showToolsDropdown && (
-                    <div style={styles.HFdropdown}>
-                        <div style={styles.dropdownItem}>
-                            <TrendingUp size={16} />
-                            <span>Debt Ratings</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Search size={16} />
-                            <span>Search Companies</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Activity size={16} />
-                            <span>Trends & KPIs</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <BookOpen size={16} />
-                            <span>Blog Page</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Cpu size={16} />
-                            <span>AI Summary</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <GitCompare size={16} />
-                            <span>Comparison</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <GitCompare size={16} />
-                            <span>Sector Overview</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div
-                style={styles.userMenu}
-                onClick={() => setShowDropdown(prev => !prev)}
-            >
-                <User size={24} color="black" style={styles.userIcon} />
-                {showDropdown && (
-                    <div style={styles.HFdropdown}>
-                        <div style={styles.dropdownItem}>
-                            <User size={16} />
-                            <span>Profile</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <History size={16} />
-                            <span>History</span>
-                        </div>
-                        <div style={styles.dropdownItem}>
-                            <Settings size={16} />
-                            <span>Settings</span>
-                        </div>
-                        <div style={styles.dropdownItem}
-                            onClick={() => {
-                                // (Optional) clear user data or tokens here
-                                navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                            }}>
-                            <LogOut size={16} />
-                            <span>Sign Out</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </nav>
-    </header>
-);
-
-const Footer = () => (
-    <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-                © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-            </p>
-        </div>
-
-        <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>Functions</h4>
-            <ul style={styles.functionsList}>
-                <li style={styles.functionsItem}>AI summary</li>
-                <li style={styles.functionsItem}>Sector View</li>
-                <li style={styles.functionsItem}>Debt ratings</li>
-                <li style={styles.functionsItem}>search companies</li>
-                <li style={styles.functionsItem}>Blog Page</li>
-                <li style={styles.functionsItem}>Trends & KPIs</li>
-                <li style={styles.functionsItem}>Compare companies</li>
-            </ul>
-        </div>
-    </footer>
-);
-
 // --- FILE UPLOAD PAGE ---
 const FileUploadPage = ({ onUploadSuccess }) => {
     const [files, setFiles] = useState([]);
@@ -447,9 +208,10 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     const [validationError, setValidationError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const navigate = useNavigate();
-    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
     const location = useLocation();
+    const [apiKey, setApiKey] = useState('');
+
+
     const MIN_FILES = 3;
     const MAX_FILES = 10;
     const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
@@ -511,6 +273,12 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     };
 
     const handleSubmit = async () => {
+        // 🚨 API key must be filled
+        if (!apiKey.trim()) {
+            setValidationError("API key is required before analysis.");
+            return;
+        }
+
         if (!isReadyToSubmit) {
             if (files.length < MIN_FILES) {
                 setValidationError(`You must upload a minimum of ${MIN_FILES} files.`);
@@ -524,15 +292,14 @@ const FileUploadPage = ({ onUploadSuccess }) => {
         try {
             const formData = new FormData();
 
-            // Add files to FormData
             files.forEach(file => {
                 formData.append('files', file);
             });
 
-            // Add API key if needed
-            formData.append('api_key', 'AIzaSyDTz-Yi25lpP-foIQJkn2FpJEOMxO3kUFg'); // Replace with actual API key
+            // ⛔ API KEY NOW MANDATORY
+            formData.append('api_key', apiKey.trim());
 
-            const response = await fetch('http://localhost:8000/trends/api/process-financial-statements/', {
+            const response = await fetch('/trends/api/process-financial-statements/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken(),
@@ -568,19 +335,74 @@ const FileUploadPage = ({ onUploadSuccess }) => {
         }
     };
 
+
     return (
         <div style={styles.dashboardWrapper}>
 
-            <Header
-                navigate={navigate}
-                location={location}
-                setShowToolsDropdown={setShowToolsDropdown}
-                showToolsDropdown={showToolsDropdown}
-                setShowDropdown={setShowDropdown}
-                showDropdown={showDropdown}
-            />
+            <Header />
+        <div style={styles.mainContent}>
+
             <div style={styles.fileUploadContainer}>
                 <h2 style={{ color: 'Black', textAlign: 'center', marginBottom: '20px' }}>Upload Financial Documents</h2>
+
+                <div style={{
+                    margin: '1rem 0',
+                    textAlign: 'left',
+                    padding: '1rem', // Added padding and background for better appearance
+                    backgroundColor: '#a6b1caff',
+                    borderRadius: '12px',
+                    border: '1px solid #9ea8b8',
+                }}>
+                    {/* Container for Label and Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <label style={{
+                            display: 'block',
+                            color: '#0b0b0bff',
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            margin: 0,
+                        }}>
+                            API Key
+                        </label>
+
+                        {/* New Button */}
+                        <button
+                            onClick={() => navigate("/API_key")}
+                            style={{
+                                backgroundColor: '#64748b', // Darker color for button
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '13px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                transition: 'background-color 0.2s',
+                            }}
+                            title="Click for instructions"
+                        >
+                            how to get API key? <span style={{ fontSize: '14px' }}>🤔</span>
+                        </button>
+                    </div>
+
+                    {/* Input Field */}
+                    <input
+                        type="text"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="Paste API key here"
+                        style={{
+                            width: '100%',
+                            padding: '0.65rem',
+                            borderRadius: '8px',
+                            border: '1px solid #a7a7a7',
+                            boxSizing: 'border-box'
+                        }}
+                    />
+                </div>
 
                 <div style={{ backgroundColor: '#ba8686ff', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                     <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Upload Requirements:</p>
@@ -664,16 +486,22 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 
                 <button
                     onClick={handleSubmit}
-                    disabled={!isReadyToSubmit || isUploading}
+                    disabled={!isReadyToSubmit || isUploading || !apiKey.trim()}
                     style={{
                         width: '100%',
                         padding: '12px',
                         fontSize: '1.1em',
-                        backgroundColor: (isReadyToSubmit && !isUploading) ? '#414355ff' : styles.colorTextStable,
+                        backgroundColor:
+                            (!isReadyToSubmit || isUploading || !apiKey.trim())
+                                ? styles.colorTextStable
+                                : '#414355ff',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
-                        cursor: (isReadyToSubmit && !isUploading) ? 'pointer' : 'not-allowed',
+                        cursor:
+                            (!isReadyToSubmit || isUploading || !apiKey.trim())
+                                ? 'not-allowed'
+                                : 'pointer',
                         transition: 'background-color 0.3s',
                         marginTop: '20px'
                     }}
@@ -686,7 +514,12 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                         `Upload ${Math.max(0, MIN_FILES - files.length)} more file${MIN_FILES - files.length !== 1 ? 's' : ''} to proceed`
                     )}
                 </button>
+                
             </div>
+            <div style={styles.aiWarning}>
+            <strong>Note:</strong> AI-generated summaries may contain inaccuracies. Always cross-verify with original documents.
+          </div>
+          </div>
             <Footer />
         </div>
     );
@@ -746,19 +579,19 @@ const SummaryCard = ({ summary, metadata, styles }) => (
                         gap: "8px"
                     }}
                 >
-                <div>
-                    <h4 style={{ color: styles.colorRed, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                        <XCircle size={18} style={{ marginRight: '5px' }} />Major Concerns
-                    </h4>
-                    <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                        {summary.executive_summary.major_concerns && summary.executive_summary.major_concerns.length > 0 ? (
-                            summary.executive_summary.major_concerns.map((item, index) => <li key={index}>{item}</li>)
-                        ) : (
-                            <li>No major concerns noted.</li>
-                        )}
-                    </ul>
+                    <div>
+                        <h4 style={{ color: styles.colorRed, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
+                            <XCircle size={18} style={{ marginRight: '5px' }} />Major Concerns
+                        </h4>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                            {summary.executive_summary.major_concerns && summary.executive_summary.major_concerns.length > 0 ? (
+                                summary.executive_summary.major_concerns.map((item, index) => <li key={index}>{item}</li>)
+                            ) : (
+                                <li>No major concerns noted.</li>
+                            )}
+                        </ul>
+                    </div>
                 </div>
-                        </div>
                 {/* Strategic Recommendations */}
                 <div
                     style={{
@@ -770,18 +603,18 @@ const SummaryCard = ({ summary, metadata, styles }) => (
                         gap: "8px"
                     }}
                 >
-                <div>
-                    <h4 style={{ color: styles.colorBlue, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                        <TrendingUp size={18} style={{ marginRight: '5px' }} />Recommendations
-                    </h4>
-                    <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                        {summary.executive_summary.strategic_recommendations && summary.executive_summary.strategic_recommendations.length > 0 ? (
-                            summary.executive_summary.strategic_recommendations.map((item, index) => <li key={index}>{item}</li>)
-                        ) : (
-                            <li>No specific recommendations.</li>
-                        )}
-                    </ul>
-                </div>
+                    <div>
+                        <h4 style={{ color: styles.colorBlue, marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
+                            <TrendingUp size={18} style={{ marginRight: '5px' }} />Recommendations
+                        </h4>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                            {summary.executive_summary.strategic_recommendations && summary.executive_summary.strategic_recommendations.length > 0 ? (
+                                summary.executive_summary.strategic_recommendations.map((item, index) => <li key={index}>{item}</li>)
+                            ) : (
+                                <li>No specific recommendations.</li>
+                            )}
+                        </ul>
+                    </div>
                 </div>
             </div>
         )}
@@ -1127,64 +960,57 @@ function FinancialTrendsDashboard({ uploadedFiles, backendData, onGoBack }) {
 
     return (
         <div style={styles.dashboardWrapper}>
-            <Header
-                navigate={navigate}
-                location={location}
-                setShowToolsDropdown={setShowToolsDropdown}
-                showToolsDropdown={showToolsDropdown}
-                setShowDropdown={setShowDropdown}
-                showDropdown={showDropdown}
-            />
+            <Header />
 
             <div style={styles.dashboardContainer}>
                 <header style={{
                     display: "flex",               // ⭐ Fix spacing
-    justifyContent: "space-between", // ⭐ Spread h1 and button evenly
-    alignItems: "center",   
-                    width:'97%',
+                    justifyContent: "space-between", // ⭐ Spread h1 and button evenly
+                    alignItems: "center",
+                    width: '97%',
                     margin: "0 auto",     // centers header content
                 }}>
                     <h1>Critical Financial Trends Dashboard</h1>
-                <button
-                onClick={onGoBack}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px",
-                    backgroundColor: "#e4e4e4ff",
-                    color: 'black',
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    overflow: "hidden",
-                    width: "40px",
-                    height: "40px",
-                    transition: "width 0.3s ease, background-color 0.2s ease",
-                    whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                    e.currentTarget.style.width = "170px";
-                    e.currentTarget.style.backgroundColor = "#a5a9b9ff";
-                    e.currentTarget.querySelector(".btn-text").style.opacity = "1";
-                }}
-                onMouseLeave={(e) => {
-                    e.currentTarget.style.width = "40px";
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.querySelector(".btn-text").style.opacity = "0";
-                }}
-                >
-                <X size={16} color='#000000' style={{ flexShrink: 0 }} />
-                <span
-                    className="btn-text"
-                    style={{
-                    opacity: 0,
-                    transition: "opacity 0.2s ease",
-                    }} 
-                >
-                    Back to Upload
-                </span>
-                </button>
+                    <button
+                        onClick={onGoBack}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px",
+                            backgroundColor: "#e4e4e4ff",
+                            color: 'black',
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            overflow: "hidden",
+                            width: "40px",
+                            height: "40px",
+                            transition: "width 0.3s ease, background-color 0.2s ease",
+                            whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.width = "170px";
+                            e.currentTarget.style.backgroundColor = "#a5a9b9ff";
+                            e.currentTarget.querySelector(".btn-text").style.opacity = "1";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.width = "40px";
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.querySelector(".btn-text").style.opacity = "0";
+                        }}
+                    >
+                        <X size={16} color='#000000' style={{ flexShrink: 0 }} />
+                        <span
+                            className="btn-text"
+                            style={{
+                                opacity: 0,
+                                transition: "opacity 0.2s ease",
+                            }}
+                        >
+                            Back to Upload
+                        </span>
+                    </button>
 
 
                 </header>
