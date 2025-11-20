@@ -8,13 +8,12 @@ import {
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from '../api';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 const FileUploadApp = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showApiPopup, setShowApiPopup] = useState(false);
 
   const [currentPage, setCurrentPage] = useState('first');
@@ -816,4 +815,5 @@ const popupStyles = {
 };
 
 export default FileUploadApp;
+
 
