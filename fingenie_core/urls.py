@@ -17,6 +17,7 @@ Including another URLconf
 # financial_extractor/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from apps.news import views as news_views
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -33,7 +34,8 @@ urlpatterns = [
     path('api/chat/', include('apps.chatbot.urls')), #Link Chatbot app
     path('api/learning/', include('apps.learning.urls')),# Link quiz learning app
     path('api/insights/', include('apps.ai_insights.urls')), # Link AI insights app
-    path('news/', include('apps.news.urls')),
+    # Provide articles endpoint directly (frontend uses /api/articles/)
+    path('api/articles/', news_views.article_api, name='article_api'),
 ]
 
 # Serve media files during development

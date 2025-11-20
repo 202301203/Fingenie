@@ -47,11 +47,11 @@ import { User, LogOut, Settings, History, Wrench, Search, Activity, BookOpen, Cp
           style={{
             ...styles.navLink,
             borderBottom:
-              currentPath === "/Chatbot" ? "2px solid black" : "none",
+              currentPath === "/AiInsights" ? "2px solid black" : "none",
           }}
-          onClick={() => navigate("/Chatbot")}
+          onClick={() => navigate("/AiInsights")}
         >
-          Chatbot
+          Ai Insights
         </span>
 
           {/* --- WordOfTheDay --- */}
