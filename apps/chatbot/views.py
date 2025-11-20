@@ -76,6 +76,9 @@ def chatbot_api_view(request):
         return "\n".join(f"- {p}" for p in points if p)
 
     document_context = f"""
+Company Name: {getattr(doc, 'company_name', 'Unknown')}
+Ticker Symbol: {getattr(doc, 'ticker_symbol', '') or 'N/A'}
+
 Pros:
 {format_points(pros_list) or 'No pros found.'}
 
@@ -109,4 +112,8 @@ Overall Financial Health Summary:
     except Exception as e:
         return JsonResponse({'error': f'Groq generation failed: {e}'}, status=500)
 
-    return JsonResponse({'answer': answer})
+    return JsonResponse({
+        'answer': answer,
+        'company_name': getattr(doc, 'company_name', None),
+        'ticker_symbol': getattr(doc, 'ticker_symbol', None)
+    })

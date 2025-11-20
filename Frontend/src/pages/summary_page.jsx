@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import Chatbot from '../components/chatbot.jsx';
 import {
   Download,
@@ -26,6 +28,9 @@ import {
   getLatestReport, 
   getReport 
 } from '../api/index'; // Import the corrected functions
+
+// Register Chart.js components (after all imports, before component definitions)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
@@ -562,15 +567,46 @@ if (financialRatios.length > 0) {
 
   // Summary Page
   const SummaryPage = () => {
-    if (loading) return <div style={styles.loading}>Loading company data...</div>;
-    if (error) return <div style={styles.error}>{error}</div>;
-    if (!companyData) return <div style={styles.noData}>No company data available. Please upload a balance sheet to get started.</div>;
-
-    // Safely access the data with fallbacks
-    const summary = companyData.summary || {};
+    // Derive data first (Hooks must appear before any early returns)
+    const summary = companyData?.summary || {};
     const pros = summary.pros || [];
     const cons = summary.cons || [];
     const financialHealthSummary = summary.financial_health_summary || 'No financial health summary available.';
+
+    // Prepare stock chart data (hooks before returns)
+    const pricePoints = useMemo(() => {
+      const raw = Array.isArray(stockData?.data) ? stockData.data : Array.isArray(stockData) ? stockData : [];
+      return raw.slice(-60);
+    }, [stockData]);
+
+    const chartData = useMemo(() => ({
+      labels: pricePoints.map(p => {
+        if (!p.timestamp && !p.date) return '';
+        const d = new Date(p.timestamp || p.date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [
+        {
+          label: 'Price',
+          data: pricePoints.map(p => p.price || p.close || 0),
+          borderColor: '#0A2540',
+          backgroundColor: 'rgba(10,37,64,0.2)',
+          tension: 0.25,
+          pointRadius: 0,
+          fill: true,
+        }
+      ]
+    }), [pricePoints]);
+
+    const latestPrice = pricePoints.length ? (pricePoints[pricePoints.length - 1].price || pricePoints[pricePoints.length - 1].close) : null;
+    const prevPrice = pricePoints.length > 1 ? (pricePoints[pricePoints.length - 2].price || pricePoints[pricePoints.length - 2].close) : null;
+    const priceDelta = (latestPrice != null && prevPrice != null) ? (latestPrice - prevPrice) : null;
+    const priceDeltaPct = (priceDelta != null && prevPrice) ? (priceDelta / prevPrice) * 100 : null;
+
+    // Early returns AFTER hooks
+    if (loading) return <div style={styles.loading}>Loading company data...</div>;
+    if (error) return <div style={styles.error}>{error}</div>;
+    if (!companyData) return <div style={styles.noData}>No company data available. Please upload a balance sheet to get started.</div>;
 
     return (
       <>
@@ -579,38 +615,72 @@ if (financialRatios.length > 0) {
           {companyData.ticker_symbol && (
             <p style={styles.tickerSymbol}>Ticker: {companyData.ticker_symbol}</p>
           )}
-          
         </div>
 
         <div style={styles.contentBox}>
-  <div style={styles.contentGrid}>
+          <div style={styles.contentGrid}>
+            <div style={{ ...styles.financialHealthSummarySec, gridArea: 'summary' }}>
+              <h3 style={styles.prosTitle}>Financial Health Summary</h3>
+              <h4 style={{ color: '#3d3d3dff' }}>Overview</h4>
+              <p style={styles.financialSummary}>{financialHealthSummary}</p>
+            </div>
+            <div style={{ ...styles.consSection, gridArea: 'cons' }}>
+              <h3 style={styles.prosTitle}>Cons</h3>
+              <ul style={styles.prosList}>
+                {cons.length > 0 ? cons.map((con, i) => <li key={i}>{con}</li>) : <li>No cons data available</li>}
+              </ul>
+            </div>
+            <div style={{ ...styles.prosSection, gridArea: 'pros' }}>
+              <h3 style={styles.prosTitle}>Pros</h3>
+              <ul style={styles.prosList}>
+                {pros.length > 0 ? pros.map((pro, i) => <li key={i}>{pro}</li>) : <li>No pros data available</li>}
+              </ul>
+            </div>
+          </div>
+        </div>
 
-    {/* SUMMARY (FULL WIDTH) */}
-    <div style={{ ...styles.financialHealthSummarySec, gridArea: "summary" }}>
-      <h3 style={styles.prosTitle}>Financial Health Summary</h3>
-      <h4 style={{ color: '#3d3d3dff' }}>Overview</h4>
-      <p style={styles.financialSummary}>{financialHealthSummary}</p>
-    </div>
-
-    {/* CONS (LEFT BOX) */}
-    <div style={{ ...styles.consSection, gridArea: "cons" }}>
-      <h3 style={styles.prosTitle}>Cons</h3>
-      <ul style={styles.prosList}>
-        {cons.length > 0 ? cons.map((con, i) => <li key={i}>{con}</li>) : <li>No cons data available</li>}
-      </ul>
-    </div>
-
-    {/* PROS (RIGHT BOX) */}
-    <div style={{ ...styles.prosSection, gridArea: "pros" }}>
-      <h3 style={styles.prosTitle}>Pros</h3>
-      <ul style={styles.prosList}>
-        {pros.length > 0 ? pros.map((pro, i) => <li key={i}>{pro}</li>) : <li>No pros data available</li>}
-      </ul>
-    </div>
-
-  </div>
-</div>
-
+        {companyData.ticker_symbol && (
+          <div style={{ ...styles.contentBox, marginTop: '2rem', backgroundColor: '#ffffff' }}>
+            <h3 style={{ ...styles.prosTitle, marginBottom: '0.5rem' }}>Stock Price Trend</h3>
+            <p style={{ color: '#444', marginTop: 0, marginBottom: '1rem' }}>
+              {companyData.ticker_symbol} recent price movement
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={styles.chartContainer}>
+                {pricePoints.length > 1 ? (
+                  <Line
+                    data={chartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false }, title: { display: false } },
+                      scales: {
+                        x: { ticks: { maxTicksLimit: 6, color: '#333', font: { size: 11 } }, grid: { display: false } },
+                        y: { ticks: { color: '#333', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                      }
+                    }}
+                  />
+                ) : (
+                  <div style={{ color: '#555', padding: '1rem' }}>No price data available.</div>
+                )}
+              </div>
+              <div style={{ minWidth: 180 }}>
+                <h4 style={{ margin: '0 0 0.5rem', color: '#1a1a1a' }}>Current Price</h4>
+                {latestPrice != null ? (
+                  <div style={{ fontSize: '28px', fontWeight: '600', color: '#0A2540' }}>${latestPrice.toFixed(2)}</div>
+                ) : (
+                  <div style={{ color: '#666' }}>N/A</div>
+                )}
+                {priceDelta != null && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '14px', fontWeight: '500', color: priceDelta >= 0 ? '#0b6e2b' : '#b30000' }}>
+                    {priceDelta >= 0 ? '+' : ''}{priceDelta.toFixed(2)} ({priceDeltaPct >= 0 ? '+' : ''}{priceDeltaPct.toFixed(2)}%)
+                  </div>
+                )}
+                <div style={{ marginTop: '1rem', fontSize: '12px', color: '#777' }}>Data points: {pricePoints.length || 0}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   };

@@ -19,6 +19,9 @@ from .services import (
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from decimal import Decimal
+import datetime
+import time
+import yfinance as yf
 
 class CustomJSONEncoder(DjangoJSONEncoder):
     def default(self, obj):
@@ -301,13 +304,99 @@ def get_recent_analyses(request):
 
 @csrf_exempt
 def get_stock_data_api(request, ticker_symbol, period='1M'):
+    """Return recent stock price data for the given ticker.
+
+    Supports URL period or query param `?period=`. Period examples: 1D, 5D, 1M, 3M, 6M, 1Y.
+    Maps to yfinance periods: 1d, 5d, 1mo, 3mo, 6mo, 1y.
     """
-    Mock stock data endpoint - you'll want to integrate with a real API
-    """
-    # This might not need authentication if it's public data
-    return JsonResponse({
-        'success': True,
-        'ticker': ticker_symbol,
-        'period': period,
-        'data': []  # Mock data - integrate with real API
-    })
+    try:
+        qp_period = request.GET.get('period')
+        sel_period = (qp_period or period or '1M').upper()
+        period_map = {
+            '1D': '1d', '5D': '5d',
+            '1M': '1mo', '3M': '3mo', '6M': '6mo',
+            '1Y': '1y', '2Y': '2y', '5Y': '5y', '10Y': '10y'
+        }
+        yf_period = period_map.get(sel_period, '1mo')
+
+        # Choose interval based on period length
+        interval = '1d'
+        if yf_period in ('1d', '5d'):
+            interval = '30m'
+        elif yf_period in ('1mo', '3mo'):
+            interval = '1d'
+        else:
+            interval = '1wk'
+
+        ticker = ticker_symbol.strip()
+        # Helper with retry & fallback
+        def fetch_history():
+            last_exception = None
+            for attempt in range(3):
+                try:
+                    df = yf.download(ticker, period=yf_period, interval=interval, progress=False, auto_adjust=False, threads=False)
+                    if df is not None and not df.empty:
+                        return df
+                except Exception as e:
+                    last_exception = e
+                # Fallback to Ticker.history
+                try:
+                    tk = yf.Ticker(ticker)
+                    df2 = tk.history(period=yf_period, interval=interval)
+                    if df2 is not None and not df2.empty:
+                        return df2
+                except Exception as e2:
+                    last_exception = e2
+                time.sleep(1)  # brief backoff
+            if last_exception:
+                print(f"Stock fetch failed for {ticker}: {last_exception}")
+            return None
+
+        df = fetch_history()
+
+        if df is None or df.empty:
+            return JsonResponse({
+                'success': True,
+                'ticker': ticker,
+                'period': sel_period,
+                'interval': interval,
+                'data': [],
+                'note': 'No data returned from provider'
+            })
+
+        # Build list of points: date/time + close price
+        points = []
+        for idx, row in df.iterrows():
+            # idx can be pandas Timestamp
+            ts = idx.to_pydatetime() if hasattr(idx, 'to_pydatetime') else idx
+            # prefer Close; fallback to Adj Close
+            price = None
+            if 'Close' in row and not (row['Close'] is None):
+                try:
+                    price = float(row['Close'])
+                except Exception:
+                    price = None
+            if price is None and 'Adj Close' in row and not (row['Adj Close'] is None):
+                try:
+                    price = float(row['Adj Close'])
+                except Exception:
+                    price = None
+            if price is None:
+                continue
+            points.append({
+                'timestamp': ts.isoformat(),
+                'price': price
+            })
+
+        return JsonResponse({
+            'success': True,
+            'ticker': ticker,
+            'period': sel_period,
+            'interval': interval,
+            'point_count': len(points),
+            'data': points
+        })
+
+    except Exception as e:
+        print(f"Error fetching stock data for {ticker_symbol}: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to fetch stock data'}, status=500)

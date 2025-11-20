@@ -15,7 +15,7 @@ import CompanySearch from "./pages/CompanySerach"
 import Wodroftheday from "./pages/Wordoftheday";
 import API_key from "./pages/API_key.jsx"; 
 import About_us from "./pages/About_us.jsx";
-import Chatbot from "./pages/ChatbotPage.jsx";
+import AiInsights from "./pages/AiInsights.jsx";
 import ComparisonPage from "./pages/comparison.jsx"; 
 import ProfilePage from "./pages/Profile_page.jsx";
 function App() {
@@ -38,7 +38,7 @@ function App() {
       <Route path="/wordoftheday" element={<Wodroftheday/>}/>
       <Route path="/API_key" element={<API_key/>} /> 
       <Route path="/About_us" element={<About_us/>} /> 
-      <Route path="/Chatbot" element={<Chatbot/>} />
+      <Route path="/AiInsights" element={<AiInsights/>} />
       <Route path="/comparison" element={<ComparisonPage />} />
       <Route path="/Profile_page" element={<ProfilePage />} />
     </Routes>
