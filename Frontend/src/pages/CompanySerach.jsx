@@ -1,27 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Search, 
-  TrendingUp, 
-  BarChart3, 
   Building2, 
-  ArrowRight, 
   AreaChart,
   Star, 
   Loader2, 
   DollarSign, 
   Users,
   TrendingDown,
-  GitCompare,
-  User,
   Building,
   AlertCircle,
   CheckCircle2,
   FileText,
   CreditCard,
-  PieChart,
   LineChart,
-  BarChart
+  BarChart,
+  TrendingUp, PieChart, Search, BookOpen, Award, User,  Activity, Cpu, GitCompare, History, Settings, LogOut, Wrench, BarChart3,ArrowRight 
 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LineChart as RechartsLine, 
   BarChart as RechartsBar, 
@@ -39,7 +34,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { companySearchService, testAuthStatus } from '../api/index';
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 const CompanySearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -72,9 +68,9 @@ const CompanySearch = () => {
   const [selectedPeers, setSelectedPeers] = useState([]);
   const [peerSuggestions, setPeerSuggestions] = useState([]);
   const [showPeerSuggestions, setShowPeerSuggestions] = useState(false);
-
-
-
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   // Enhanced popular stocks list
   const enhancedPopularStocks = [
     { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ' },
@@ -906,8 +902,7 @@ const renderPeerAnalysisTab = () => {
         </p>
         
         {/* Custom Search Section */}
-        // Update the search box in renderPeerAnalysisTab
-        // In your renderPeerAnalysisTab function, update the search section:
+        
         <div style={styles.searchSection}>
           <div style={styles.searchBox}>
             <div style={styles.searchInputContainer}>
@@ -931,7 +926,7 @@ const renderPeerAnalysisTab = () => {
               disabled={isSearchingPeers || !customPeerSearch.trim()}
               style={{
                 ...styles.searchButton,
-                backgroundColor: isSearchingPeers || !customPeerSearch.trim() ? '#a0aec0' : '#4a90e2'
+                backgroundColor: isSearchingPeers || !customPeerSearch.trim() ? '#a0aec0' : '#5D5F89'
               }}
             >
               {isSearchingPeers ? 'Adding...' : 'Add to Comparison'}
@@ -966,7 +961,7 @@ const renderPeerAnalysisTab = () => {
             onClick={() => setActiveComparisonMetric(key)}
             style={{
               ...styles.metricButton,
-              backgroundColor: activeComparisonMetric === key ? '#4a90e2' : 'white',
+              backgroundColor: activeComparisonMetric === key ? '#5D5F89' : 'white',
               color: activeComparisonMetric === key ? 'white' : '#4a5568'
             }}
           >
@@ -990,7 +985,7 @@ const renderPeerAnalysisTab = () => {
               <Legend />
               <Bar 
                 dataKey="value" 
-                fill="#4a90e2" 
+                fill="#5D5F89" 
                 name={comparisonMetrics[activeComparisonMetric]}
               />
             </RechartsBar>
@@ -1042,7 +1037,6 @@ const renderPeerAnalysisTab = () => {
                 </div>
               </div>
               
-              // In your peer card, update the button:
               <button
                 onClick={() => handlePeerClick(peer.symbol, peer.name)}
                 style={styles.viewPeerButton}
@@ -1384,7 +1378,7 @@ const hash = (str) => {
             onClick={() => setChartType('line')}
             style={{
               ...styles.chartControlButton,
-              backgroundColor: chartType === 'line' ? '#4a90e2' : 'white',
+              backgroundColor: chartType === 'line' ? '#5D5F89' : 'white',
               color: chartType === 'line' ? 'white' : '#4a5568'
             }}
           >
@@ -1395,7 +1389,7 @@ const hash = (str) => {
             onClick={() => setChartType('area')}
             style={{
               ...styles.chartControlButton,
-              backgroundColor: chartType === 'area' ? '#4a90e2' : 'white',
+              backgroundColor: chartType === 'area' ? '#5D5F89' : 'white',
               color: chartType === 'area' ? 'white' : '#4a5568'
             }}
           >
@@ -1406,7 +1400,7 @@ const hash = (str) => {
             onClick={() => setChartType('bar')}
             style={{
               ...styles.chartControlButton,
-              backgroundColor: chartType === 'bar' ? '#4a90e2' : 'white',
+              backgroundColor: chartType === 'bar' ? '#5D5F89' : 'white',
               color: chartType === 'bar' ? 'white' : '#4a5568'
             }}
           >
@@ -1425,7 +1419,7 @@ const hash = (str) => {
               }}
               style={{
                 ...styles.periodButton,
-                backgroundColor: chartPeriod === period ? '#4a90e2' : 'white',
+                backgroundColor: chartPeriod === period ? '#5D5F89' : 'white',
                 color: chartPeriod === period ? 'white' : '#4a5568'
               }}
             >
@@ -1466,7 +1460,7 @@ const hash = (str) => {
                 <Line 
                   type="monotone" 
                   dataKey="price" 
-                  stroke="#4a90e2" 
+                  stroke="#5D5F89" 
                   strokeWidth={2}
                   dot={false}
                   name="Price"
@@ -1499,8 +1493,8 @@ const hash = (str) => {
                 <Area 
                   type="monotone" 
                   dataKey="price" 
-                  stroke="#4a90e2" 
-                  fill="#4a90e2"
+                  stroke="#5D5F89" 
+                  fill="#5D5F89"
                   fillOpacity={0.3}
                   name="Price"
                 />
@@ -1531,7 +1525,7 @@ const hash = (str) => {
                 <Legend />
                 <Bar 
                   dataKey="price" 
-                  fill="#4a90e2" 
+                  fill="#5D5F89" 
                   name="Price"
                 />
               </RechartsBar>
@@ -1626,7 +1620,7 @@ const hash = (str) => {
                 onClick={() => setActiveFinancialChart(metric)}
                 style={{
                   ...styles.financialChartTab,
-                  backgroundColor: activeFinancialChart === metric ? '#4a90e2' : 'white',
+                  backgroundColor: activeFinancialChart === metric ? '#5D5F89' : 'white',
                   color: activeFinancialChart === metric ? 'white' : '#4a5568'
                 }}
               >
@@ -1649,7 +1643,7 @@ const hash = (str) => {
                     formatter={(value) => [`$${(value / 1e6).toFixed(2)}M`, 'Value']}
                   />
                   <Legend />
-                  <Bar dataKey="revenue" fill="#4a90e2" name="Revenue" />
+                  <Bar dataKey="revenue" fill="#5D5F89" name="Revenue" />
                   <Bar dataKey="grossProfit" fill="#38a169" name="Gross Profit" />
                   <Bar dataKey="operatingIncome" fill="#d69e2e" name="Operating Income" />
                 </RechartsBar>
@@ -1667,7 +1661,7 @@ const hash = (str) => {
                     formatter={(value) => [`$${(value / 1e6).toFixed(2)}M`, 'Value']}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="netIncome" stroke="#4a90e2" strokeWidth={2} name="Net Income" />
+                  <Line type="monotone" dataKey="netIncome" stroke="#5D5F89" strokeWidth={2} name="Net Income" />
                   <Line type="monotone" dataKey="operatingIncome" stroke="#38a169" strokeWidth={2} name="Operating Income" />
                   <Line type="monotone" dataKey="eps" stroke="#d69e2e" strokeWidth={2} name="EPS" />
                 </RechartsLine>
@@ -1685,7 +1679,7 @@ const hash = (str) => {
                     formatter={(value) => [`$${(value / 1e6).toFixed(2)}M`, 'Value']}
                   />
                   <Legend />
-                  <Area type="monotone" dataKey="operating" stackId="1" stroke="#4a90e2" fill="#4a90e2" name="Operating" />
+                  <Area type="monotone" dataKey="operating" stackId="1" stroke="#5D5F89" fill="#5D5F89" name="Operating" />
                   <Area type="monotone" dataKey="investing" stackId="1" stroke="#e53e3e" fill="#e53e3e" name="Investing" />
                   <Area type="monotone" dataKey="financing" stackId="1" stroke="#d69e2e" fill="#d69e2e" name="Financing" />
                 </AreaChart>
@@ -1698,7 +1692,7 @@ const hash = (str) => {
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="peRatio" stroke="#4a90e2" strokeWidth={2} name="P/E Ratio" />
+                  <Line type="monotone" dataKey="peRatio" stroke="#5D5F89" strokeWidth={2} name="P/E Ratio" />
                   <Line type="monotone" dataKey="roe" stroke="#38a169" strokeWidth={2} name="ROE (%)" />
                   <Line type="monotone" dataKey="profitMargin" stroke="#d69e2e" strokeWidth={2} name="Profit Margin (%)" />
                   <Line type="monotone" dataKey="debtToEquity" stroke="#e53e3e" strokeWidth={2} name="Debt/Equity (%)" />
@@ -1779,27 +1773,7 @@ const recalculateComparisons = (currentAnalysis, updatedPeers) => {
   // Debug panel to see requests
   const renderDebugPanel = () => {
     if (process.env.NODE_ENV === 'development') {
-      return (
-        <div style={styles.debugPanel}>
-          <h4>API Request Log (Last 10)</h4>
-          <div style={styles.requestLog}>
-            {requestLog.map((log, index) => (
-              <div key={index} style={styles.requestLogEntry}>
-                <span style={styles.requestTime}>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                <span style={styles.requestMethod}>{log.method}</span>
-                <span style={styles.requestEndpoint}>{log.endpoint}</span>
-                <span style={{
-                  ...styles.requestStatus,
-                  color: log.status === 'success' ? '#10b981' : 
-                         log.status === 'error' ? '#ef4444' : '#f59e0b'
-                }}>
-                  {log.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
+      
     }
     return null;
   };
@@ -1807,66 +1781,11 @@ const recalculateComparisons = (currentAnalysis, updatedPeers) => {
   return (
     <div style={styles.pageContainer}>
       {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <a href="/" style={styles.logo}>
-            Fingenie
-          </a>
-        </div>
-        
-        <nav style={styles.nav}>
-          <div style={styles.navCenter}>
-            <a href="/" style={styles.navLink}>Home</a>
-            <a href="/features" style={styles.navLink}>Features</a>
-            <div 
-              ref={toolsMenuRef}
-              style={styles.toolsMenu}
-              onMouseEnter={() => setShowToolsDropdown(true)}
-              onMouseLeave={() => setShowToolsDropdown(false)}
-            >
-              <span style={styles.navLink}>Tools</span>
-              {showToolsDropdown && (
-                <div style={styles.dropdown}>
-                  <div style={styles.dropdownItem}>
-                    <BarChart3 size={16} />
-                    <span>Financial Analysis</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <GitCompare size={16} />
-                    <span>Company Comparison</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <TrendingUp size={16} />
-                    <span>Market Trends</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <a href="/about" style={styles.navLink}>About</a>
-          </div>
-          
-          <div style={styles.navRight}>
-            <User style={styles.userIcon} size={20} />
-          </div>
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section style={styles.heroSection}>
         <div style={styles.heroContent}>
-          <h1 style={styles.heroLogo}>Fingenie</h1>
-          <p style={styles.heroSubtitle}>Advanced Company Financial Analysis</p>
-          
-          {/* Backend Status */}
-          {renderBackendStatus()}
-          
-          {/* Error Message */}
-          {error && (
-            <div style={styles.errorContainer}>
-              <AlertCircle size={16} style={{ marginRight: '0.5rem' }} />
-              {error}
-            </div>
-          )}
           
           {/* Search Container */}
           <div style={styles.searchContainer}>
@@ -1892,7 +1811,7 @@ const recalculateComparisons = (currentAnalysis, updatedPeers) => {
                   disabled={isLoading || !searchQuery.trim()}
                   style={{
                     ...styles.searchButton,
-                    backgroundColor: isLoading || !searchQuery.trim() ? '#a0aec0' : '#4a90e2'
+                    backgroundColor: isLoading || !searchQuery.trim() ? '#a0aec0' : '#5D5F89'
                   }}
                 >
                   {isLoading ? <Loader2 size={16} /> : <Search size={16} />}
@@ -1985,7 +1904,7 @@ const recalculateComparisons = (currentAnalysis, updatedPeers) => {
                   onClick={() => setActiveTab(tab)}
                   style={{
                     ...styles.tabButton,
-                    backgroundColor: activeTab === tab ? '#4a90e2' : 'transparent',
+                    backgroundColor: activeTab === tab ? '#5D5F89' : 'transparent',
                     color: activeTab === tab ? 'white' : '#718096'
                   }}
                   type="button"
@@ -2089,65 +2008,10 @@ const recalculateComparisons = (currentAnalysis, updatedPeers) => {
       )}
 
       {/* Features Section */}
-      <section style={styles.featuresSection}>
-        <div style={styles.featuresGrid}>
-          <div style={styles.featureCard}>
-            <div style={styles.cardContent}>
-              <div style={styles.cardIcon}>
-                <FileText size={32} style={{ color: '#4a90e2' }} />
-              </div>
-              <h3 style={styles.cardTitle}>Financial Statements</h3>
-              <p style={styles.cardDescription}>
-                Access complete balance sheets, income statements, and cash flow statements with detailed financial metrics.
-              </p>
-            </div>
-          </div>
-          
-          <div style={styles.featureCard}>
-            <div style={styles.cardContent}>
-              <div style={styles.cardIcon}>
-                <GitCompare size={32} style={{ color: '#4a90e2' }} />
-              </div>
-              <h3 style={styles.cardTitle}>Company Comparison</h3>
-              <p style={styles.cardDescription}>
-                Compare multiple companies side by side with comprehensive financial ratios and performance metrics.
-              </p>
-            </div>
-          </div>
-          
-          <div style={styles.featureCard}>
-            <div style={styles.cardContent}>
-              <div style={styles.cardIcon}>
-                <TrendingUp size={32} style={{ color: '#4a90e2' }} />
-              </div>
-              <h3 style={styles.cardTitle}>Market Analysis</h3>
-              <p style={styles.cardDescription}>
-                Get real-time market data, analyst recommendations, and investment insights for informed decisions.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerContent}>
-          <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-              © 2024 Fingenie. All rights reserved.
-            </p>
-          </div>
-          <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>Financial Tools</h4>
-            <ul style={styles.functionsList}>
-              <li style={styles.functionsItem}>Balance Sheet Analysis</li>
-              <li style={styles.functionsItem}>Income Statement Review</li>
-              <li style={styles.functionsItem}>Cash Flow Analysis</li>
-              <li style={styles.functionsItem}>Investment Research</li>
-            </ul>
-          </div>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 };
@@ -2337,7 +2201,7 @@ const RatiosTab = ({ ratiosData }) => {
 
 // Add the missing styles
 const styles = {
-  // ... (all your existing styles remain the same)
+  // Analysis Sections
   analysisSections: {
     display: 'flex',
     flexDirection: 'column',
@@ -2346,10 +2210,10 @@ const styles = {
   },
   
   analysisSection: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   analysisSectionTitle: {
@@ -2361,15 +2225,17 @@ const styles = {
   
   analysisText: {
     fontSize: '0.95rem',
-    color: '#718096',
+    color: '#4a5568',
     lineHeight: '1.6',
     margin: 0
   },
+
+  // Chart Styles
   chartContainer: {
     backgroundColor: 'white',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     marginBottom: '2rem'
   },
   
@@ -2392,11 +2258,12 @@ const styles = {
     alignItems: 'center',
     gap: '0.5rem',
     padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.9rem',
-    transition: 'all 0.3s ease'
+    transition: 'all 0.3s ease',
+    backgroundColor: 'white'
   },
   
   periodSelector: {
@@ -2406,12 +2273,13 @@ const styles = {
   
   periodButton: {
     padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: '500',
-    transition: 'all 0.3s ease'
+    transition: 'all 0.3s ease',
+    backgroundColor: 'white'
   },
   
   chartWrapper: {
@@ -2436,7 +2304,7 @@ const styles = {
   
   metricLabel: {
     fontSize: '0.8rem',
-    color: '#718096',
+    color: '#4a5568',
     fontWeight: '500'
   },
   
@@ -2461,7 +2329,7 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   financialChartTabs: {
@@ -2476,7 +2344,7 @@ const styles = {
     alignItems: 'center',
     gap: '0.5rem',
     padding: '0.75rem 1.5rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '0.9rem',
@@ -2493,7 +2361,7 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '1rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   recommendationText: {
@@ -2517,7 +2385,7 @@ const styles = {
   
   quarterlyTable: {
     backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     overflow: 'hidden'
   },
@@ -2535,7 +2403,7 @@ const styles = {
   
   ratiosGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
     gap: '1rem'
   },
   
@@ -2543,15 +2411,15 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '8px',
     padding: '1rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #2b2b2bff'
   },
   
   ratioLabel: {
     fontSize: '0.9rem',
-    color: '#718096',
+    color: '#4a5568',
     fontWeight: '500'
   },
   
@@ -2561,151 +2429,17 @@ const styles = {
     color: '#2d3748'
   },
   
-  // ... (include all your existing styles here - they remain unchanged)
-  debugPanel: {
-    marginTop: '2rem',
-    padding: '1rem',
-    backgroundColor: '#f7fafc',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '0.8rem'
-  },
-  
-  requestLog: {
-    maxHeight: '200px',
-    overflowY: 'auto'
-  },
-  
-  requestLogEntry: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 2fr 1fr',
-    gap: '0.5rem',
-    padding: '0.25rem 0',
-    borderBottom: '1px solid #e5e7eb'
-  },
-  
-  requestTime: {
-    color: '#718096',
-    fontSize: '0.7rem'
-  },
-  
-  requestMethod: {
-    fontWeight: '600',
-    color: '#4a90e2'
-  },
-  
-  requestEndpoint: {
-    color: '#2d3748'
-  },
-  
-  requestStatus: {
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    fontSize: '0.7rem'
-  },
+  // Page Layout
   pageContainer: {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
     fontFamily: "'Montserrat', 'Inter', sans-serif",
-    backgroundColor: '#F8F8F8',
-    color: '#2d3748'
+    backgroundColor: '#f8f8f8ff',
+    color: '#1e2635ff'
   },
   
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderBottom: '1px solid #000000',
-    position: 'relative',
-    top: 0,
-    width: '100%',
-    zIndex: 999,
-    padding: '1rem 3rem'
-  },
-  
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: '#4a90e2',
-    textDecoration: 'none'
-  },
-  
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-  
-  navCenter: {
-    display: 'flex',
-    gap: '2.5rem',
-    alignItems: 'center'
-  },
-  
-  navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
-  },
-  
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  
-  toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  
-  userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
-  },
-  
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem',
-    color: '#4a5568'
-  },
-  
+ 
   heroSection: {
     position: 'relative',
     display: 'flex',
@@ -2715,7 +2449,7 @@ const styles = {
     minHeight: '60vh',
     padding: '2rem',
     overflow: 'hidden',
-    backgroundColor: '#F8F8F8'
+    backgroundColor: '#f8f8f8ff'
   },
   
   heroContent: {
@@ -2729,26 +2463,25 @@ const styles = {
   heroLogo: {
     fontSize: '4rem',
     fontWeight: '700',
-    color: '#4a90e2',
+    color: '#5D5F89',
     marginBottom: '0.5rem',
     letterSpacing: '-0.03em'
   },
   
   heroSubtitle: {
     fontSize: '1.35rem',
-    color: '#718096',
+    color: '#4a5568',
     fontWeight: '400',
     marginBottom: '3rem'
   },
 
-  
   statusIndicator: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0.75rem 1rem',
-    backgroundColor: '#f7fafc',
-    border: '1px solid #e5e7eb',
+    backgroundColor: '#f0f4f4ff',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     fontSize: '0.9rem',
     marginBottom: '1rem',
@@ -2773,11 +2506,11 @@ const styles = {
   },
   
   searchContainer: {
-    backgroundColor: '#ffffff',
+  background: 'linear-gradient(180deg, #e3e8f1ff, #CAD3E7)',
     borderRadius: '16px',
     padding: '2.5rem',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    border: '1px solid #ffffff',
+    border: '1px solid #191919ff',
     maxWidth: '800px',
     margin: '0 auto',
     position: 'relative'
@@ -2793,7 +2526,7 @@ const styles = {
   
   searchSubtitle: {
     textAlign: 'center',
-    color: '#718096',
+    color: '#4a5568',
     marginBottom: '1.5rem',
     fontSize: '1rem',
     lineHeight: '1.5'
@@ -2812,7 +2545,7 @@ const styles = {
   searchInput: {
     width: '100%',
     padding: '1rem 3rem 1rem 1rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     fontSize: '1rem',
     fontFamily: 'inherit',
@@ -2825,7 +2558,7 @@ const styles = {
     right: '0.5rem',
     top: '50%',
     transform: 'translateY(-50%)',
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#5D5F89',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -2846,7 +2579,7 @@ const styles = {
     left: 0,
     right: 0,
     backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     zIndex: 1001,
@@ -2862,7 +2595,7 @@ const styles = {
     padding: '0.75rem 1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    borderBottom: '1px solid #f3f4f6',
+    borderBottom: '1px solid #f0f4f4ff',
     border: 'none',
     backgroundColor: 'white',
     width: '100%',
@@ -2877,7 +2610,7 @@ const styles = {
   },
   
   suggestionName: {
-    color: '#718096',
+    color: '#4a5568',
     fontSize: '0.9rem',
     flex: 1,
     overflow: 'hidden',
@@ -2925,8 +2658,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    backgroundColor: '#f7fafc',
-    border: '1px solid #e5e7eb',
+    backgroundColor: '#fefefeff',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     padding: '0.5rem 1rem',
     cursor: 'pointer',
@@ -2937,21 +2670,21 @@ const styles = {
     flexDirection: 'column',
     minWidth: '120px'
   },
-  
-  resultsSection: {
-    padding: '2rem 3rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    width: '100%'
-  },
-  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    resultsSection: {
+  padding: '2rem 3rem',
+  maxWidth: '1200px',
+  marginLeft: 'auto',
+  marginRight: 'auto',
+  display: 'block'
+},  
   companyCard: {
     backgroundColor: '#ffffff',
     borderRadius: '16px',
     padding: '2.5rem',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    border: '1px solid #ffffff',
-    marginBottom: '2rem'
+    border: '1px solid #000000ff',
+    marginBottom: '2rem',
   },
   
   companyHeader: {
@@ -2976,19 +2709,19 @@ const styles = {
   
   companySymbol: {
     fontSize: '1.25rem',
-    color: '#718096',
+    color: '#4a5568',
     marginBottom: '0.5rem'
   },
   
   companyMeta: {
     fontSize: '0.95rem',
-    color: '#718096',
+    color: '#4a5568',
     marginBottom: '0.25rem'
   },
   
   companyEmployees: {
     fontSize: '0.9rem',
-    color: '#718096'
+    color: '#4a5568'
   },
   
   priceSection: {
@@ -3013,14 +2746,14 @@ const styles = {
   
   marketCap: {
     fontSize: '0.9rem',
-    color: '#718096'
+    color: '#4a5568'
   },
   
   tabNavigation: {
     display: 'flex',
     gap: '0.5rem',
     marginBottom: '2rem',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid #7d7e81ff',
     paddingBottom: '1rem',
     flexWrap: 'wrap'
   },
@@ -3029,7 +2762,7 @@ const styles = {
     padding: '0.75rem 1.5rem',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#718096',
+    color: '#4a5568',
     cursor: 'pointer',
     borderRadius: '8px',
     fontFamily: 'inherit',
@@ -3051,10 +2784,10 @@ const styles = {
   },
   
   metricCard: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     textAlign: 'center'
   },
   
@@ -3067,7 +2800,7 @@ const styles = {
   },
   
   metricIcon: {
-    color: '#4a90e2'
+    color: '#5D5F89'
   },
 
   suggestionsItem: {
@@ -3077,7 +2810,7 @@ const styles = {
     padding: '0.75rem 1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    borderBottom: '1px solid #f3f4f6',
+    borderBottom: '1px solid #f0f4f4ff',
     border: 'none',
     backgroundColor: 'white',
     width: '100%',
@@ -3088,22 +2821,15 @@ const styles = {
   metricTitle: {
     fontSize: '0.95rem',
     fontWeight: '600',
-    color: '#718096',
-    margin: 0
-  },
-  
-  metricValue: {
-    fontSize: '1.5rem',
-    fontWeight: '600',
-    color: '#2d3748',
+    color: '#4a5568',
     margin: 0
   },
   
   descriptionCard: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   descriptionTitle: {
@@ -3115,7 +2841,7 @@ const styles = {
   
   descriptionText: {
     fontSize: '0.95rem',
-    color: '#718096',
+    color: '#4a5568',
     lineHeight: '1.6'
   },
   
@@ -3133,7 +2859,7 @@ const styles = {
   
   financialTable: {
     backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     overflow: 'hidden'
   },
@@ -3141,8 +2867,8 @@ const styles = {
   tableHeader: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr',
-    backgroundColor: '#f7fafc',
-    borderBottom: '1px solid #e5e7eb',
+    backgroundColor: '#f0f4f4ff',
+    borderBottom: '1px solid #CAD3E7',
     fontWeight: '600',
     color: '#2d3748'
   },
@@ -3150,12 +2876,12 @@ const styles = {
   tableRow: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr',
-    borderBottom: '1px solid #f3f4f6'
+    borderBottom: '1px solid #f0f4f4ff'
   },
   
   tableCell: {
     padding: '0.75rem 1rem',
-    borderRight: '1px solid #f3f4f6',
+    borderRight: '1px solid #f0f4f4ff',
     fontSize: '0.9rem',
     display: 'flex',
     alignItems: 'center'
@@ -3163,17 +2889,17 @@ const styles = {
   
   noData: {
     textAlign: 'center',
-    color: '#718096',
+    color: '#4a5568',
     padding: '2rem',
     fontSize: '1rem'
   },
   
   // Analysis Styles
   analysisCard: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   analysisTitle: {
@@ -3193,7 +2919,7 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '1rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     textAlign: 'center'
   },
   
@@ -3210,7 +2936,7 @@ const styles = {
   },
   
   recommendationTarget: {
-    color: '#718096',
+    color: '#4a5568',
     fontSize: '0.9rem'
   },
   
@@ -3220,234 +2946,10 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '3rem',
-    color: '#718096'
-  },
-  
-  featuresSection: {
-    padding: '4rem 3rem',
-    maxWidth: '1400px',
-    margin: '0 auto',
-    width: '100%'
-  },
-  
-  featuresGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '2rem'
-  },
-  
-  featureCard: {
-    position: 'relative',
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '2.5rem 2rem',
-    overflow: 'hidden',
-    cursor: 'pointer',
-    transition: 'all 0.25s ease',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    border: '1px solid #ffffff'
-  },
-  
-  cardContent: {
-    position: 'relative',
-    zIndex: 1
-  },
-  
-  cardIcon: {
-    marginBottom: '1.5rem',
-    display: 'inline-block'
-  },
-  
-  cardTitle: {
-    fontSize: '1.4rem',
-    fontWeight: '600',
-    color: '#2d3748',
-    marginBottom: '0.75rem'
-  },
-  
-  cardDescription: {
-    fontSize: '0.95rem',
-    color: '#718096',
-    lineHeight: '1.6'
-  },
-  
-  footer: {
-    backgroundColor: '#2d3748',
-    color: '#e2e8f0',
-    padding: '3rem',
-    marginTop: 'auto'
-  },
-  
-  footerContent: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: '2rem'
-  },
-  
-  footerLeft: {
-    flex: 1
-  },
-  
-  copyright: {
-    fontSize: '0.9rem',
-    color: '#cbd5e0',
-    margin: 0
-  },
-  
-  footerRight: {
-    flex: 1,
-    maxWidth: '250px'
-  },
-  
-  functionsTitle: {
-    fontSize: '1rem',
-    fontWeight: '600',
-    color: '#e2e8f0',
-    marginBottom: '1rem',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  },
-  
-  functionsList: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0
-  },
-  
-  functionsItem: {
-    fontSize: '0.9rem',
-    color: '#cbd5e0',
-    marginBottom: '0.5rem',
-    paddingLeft: '1rem',
-    position: 'relative'
+    color: '#4a5568'
   },
 
-
-  chartContainer: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    border: '1px solid #e5e7eb',
-    marginBottom: '2rem'
-  },
-  
-  chartControls: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap',
-    gap: '1rem'
-  },
-  
-  chartTypeSelector: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  
-  chartControlButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    transition: 'all 0.3s ease',
-    backgroundColor: 'white'
-  },
-  
-  periodSelector: {
-    display: 'flex',
-    gap: '0.5rem'
-  },
-  
-  periodButton: {
-    padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    fontWeight: '500',
-    transition: 'all 0.3s ease',
-    backgroundColor: 'white'
-  },
-  
-  chartWrapper: {
-    width: '100%',
-    height: '400px',
-    marginBottom: '1rem'
-  },
-  
-  chartInfo: {
-    display: 'flex',
-    gap: '2rem',
-    justifyContent: 'center',
-    flexWrap: 'wrap'
-  },
-  
-  chartMetric: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.25rem'
-  },
-  
-  metricLabel: {
-    fontSize: '0.8rem',
-    color: '#718096',
-    fontWeight: '500'
-  },
-  
-  metricValue: {
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    color: '#2d3748'
-  },
-  
-  chartSection: {
-    marginBottom: '3rem'
-  },
-  
-  chartSectionTitle: {
-    fontSize: '1.3rem',
-    fontWeight: '600',
-    color: '#2d3748',
-    marginBottom: '1.5rem'
-  },
-  
-  financialChartsContainer: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    border: '1px solid #e5e7eb'
-  },
-  
-  financialChartTabs: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap'
-  },
-  
-  financialChartTab: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.75rem 1.5rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    transition: 'all 0.3s ease'
-  },
-
+  // Peer Comparison Styles
   peerHeader: {
     marginBottom: '2rem',
     textAlign: 'center'
@@ -3461,7 +2963,7 @@ const styles = {
   },
   
   peerSubtitle: {
-    color: '#718096',
+    color: '#4a5568',
     fontSize: '1rem'
   },
   
@@ -3475,7 +2977,7 @@ const styles = {
   
   metricButton: {
     padding: '0.75rem 1.5rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '0.9rem',
@@ -3501,15 +3003,11 @@ const styles = {
   },
   
   peerCard: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
     padding: '1.5rem',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #CAD3E7',
     transition: 'all 0.3s ease'
-  },
-  
-  peerHeader: {
-    marginBottom: '1rem'
   },
   
   peerSymbol: {
@@ -3521,7 +3019,7 @@ const styles = {
   
   peerName: {
     fontSize: '0.9rem',
-    color: '#718096'
+    color: '#4a5568'
   },
   
   peerMetrics: {
@@ -3540,7 +3038,7 @@ const styles = {
   viewPeerButton: {
     width: '100%',
     padding: '0.75rem',
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#5D5F89',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -3572,14 +3070,9 @@ const styles = {
     marginBottom: '1rem'
   },
   
-  financialChartContent: {
-    width: '100%',
-    height: '350px'
-  },
-  
   retryButton: {
     padding: '0.5rem 1rem',
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#5D5F89',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -3591,9 +3084,9 @@ const styles = {
   searchSection: {
     marginTop: '1.5rem',
     padding: '1.5rem',
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#f0f4f4ff',
     borderRadius: '12px',
-    border: '1px solid #e5e7eb'
+    border: '1px solid #CAD3E7'
   },
   
   searchBox: {
@@ -3603,23 +3096,9 @@ const styles = {
     marginBottom: '1rem'
   },
   
-  searchInputContainer: {
-    position: 'relative',
-    flex: 1
-  },
-  
-  searchInput: {
-    width: '100%',
-    padding: '0.75rem 1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    fontFamily: 'inherit'
-  },
-  
   resetButton: {
     padding: '0.5rem 1rem',
-    backgroundColor: '#718096',
+    backgroundColor: '#4a5568',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -3639,7 +3118,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#5D5F89',
     color: 'white',
     padding: '0.25rem 0.75rem',
     borderRadius: '20px',
@@ -3654,5 +3133,4 @@ const styles = {
     fontSize: '1rem'
   }
 };
-
 export default CompanySearch; 

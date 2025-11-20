@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Filter, PenTool, User, ChevronDown, ArrowLeft, 
-  Heart, Share2, Bookmark, X, LogOut, History, Settings,
-  Wrench, TrendingUp, Activity, BookOpen, Cpu, GitCompare,
+  Heart, Share2, Bookmark,
   Loader
 } from 'lucide-react';
-import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import { useNavigate } from "react-router-dom";
 import { blogService } from '../api/index';
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 
 
@@ -344,135 +343,7 @@ const FinanceBlog = () => {
   return (
     <div style={styles.container}>
       {/* Header */}
-     <header style={styles.header}>
-          <div style={styles.headerLeft}>
-            <div style={styles.logo}>
-              <img
-                src={fglogo_Wbg}
-                style={{ height: "80px", width: "auto" }}
-                alt="logo"
-              />
-            </div>
-          </div>
-          <nav style={styles.nav}>
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/mainpageafterlogin")}
-            >
-              Home
-            </span>
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/NewsPage")}
-            >
-              News
-            </span>
-    
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/Chatbot")}
-            >
-              Chatbot
-            </span>
-    
-            <span
-              className="nav-link"
-              style={{...styles.navLink,
-              }}
-              onClick={() => navigate("/About_us")}
-            >
-              About us
-            </span>
-    
-            <div
-              style={styles.toolsMenu}
-               onClick={() => setShowToolsDropdown(prev => !prev)} 
-            >
-              <Wrench size={24} color="black" style={styles.userIcon} />
-              {showToolsDropdown && (
-                <div style={styles.HFdropdown}>
-                  
-                  <div style={styles.dropdownItem}>
-                    <Search size={16} />
-                    <span>Search Companies</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => navigate("/Trends_KPI")}
-                  >
-                    <Activity size={16} />
-                    <span>Trends & KPIs</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => navigate("/blogPage")}
-                  >
-                    <BookOpen size={16} />
-                    <span>Blog Page</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                     onClick={() => navigate("/FileUploadApp")}
-                  >
-                    <Cpu size={16} />
-                    <span>AI Summary</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                  onClick={() => navigate("/comparison")}
-                  >
-                    <GitCompare size={16} />
-                    <span>Comparison</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                     onClick={() => navigate("/sectorOverview")}
-                  >
-                    <GitCompare size={16} />
-                    <span>Sector Overview</span>
-                  </div>
-                </div>
-              )}
-            </div>
-    
-            <div
-              style={styles.userMenu}
-              onClick={() => setShowDropdown(prev => !prev)} 
-            >
-              <User size={24} color="black" style={styles.userIcon} />
-              {showDropdown && (
-                <div style={styles.HFdropdown}>
-                  <div style={styles.dropdownItem}
-                  onClick={() => navigate("/Profile_page")}   
-                  >
-                    <User size={16} />
-                    <span>Profile</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <History size={16} />
-                    <span>History</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <Settings size={16} />
-                    <span>Settings</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => {
-                      // (Optional) clear user data or tokens here
-                      navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                    }}>
-                    <LogOut size={16} />
-                    <span>Sign Out</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </nav>
-        </header>
+     <Header/>
 
       {/* Notification */}
       {notification && (
@@ -847,25 +718,7 @@ const FinanceBlog = () => {
       )}
 
       {/* Footer */}
-       <footer style={styles.footer}>
-      <div style={styles.footerLeft}>
-        <p style={styles.copyright}>
-          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-        </p>
-      </div>
-
-      <div style={styles.footerRight}>
-        <h4 style={styles.functionsTitle}>Functions</h4>
-        <ul style={styles.functionsList}>
-          <li style={styles.functionsItem}>AI summary</li>
-          <li style={styles.functionsItem}>Sector View</li>
-          <li style={styles.functionsItem}>search companies</li>
-          <li style={styles.functionsItem}>Blog Page</li>
-          <li style={styles.functionsItem}>Trends & KPIs</li>
-          <li style={styles.functionsItem}>Compare companies</li>
-        </ul>
-      </div>
-    </footer>
+       <Footer/>
 
 
     </div>
@@ -1391,60 +1244,7 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
-   // --- FOOTER STYLES ---
-    footer: {
-    backgroundColor: '#4D5C61',
-    color: '#FFFFFF',
-    padding: '2rem 4rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: '4rem',
-    position: 'relative',
-    zIndex: 5,
-  },
 
-  footerLeft: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  copyright: {
-    fontSize: '0.9rem',
-    color: '#cbd5e0',
-    margin: 0
-  },
-  footerLink: {
-    color: '#FFFFFF',
-    textDecoration: 'none',
-    transition: 'opacity 0.3s',
-  },
-
-  footerRight: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  functionsTitle: {
-    fontSize: '14px',
-    fontWeight: '700',
-    marginRight: '8rem',
-  },
-
-  functionsList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'grid',
-    gridTemplateColumns: '3.5fr 1fr',
-    textAlign: 'right',
-    gap: '6px 0px',
-  },
-  functionsItem: {
-    fontSize: '13px',
-    margin: 0,
-    textTransform: "capitalize",
-    whiteSpace: 'nowrap'
-  },
-    
 
 };
 

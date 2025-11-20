@@ -194,6 +194,11 @@ def prepare_context_smart(documents: List[Document]) -> str:
 def create_groq_llm(api_key: str, purpose: str = "extraction"):
     """Create Groq LLM with reliable model selection."""
     
+<<<<<<< HEAD
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-pro",
+        google_api_key=api_key,
+=======
     # Use only the most reliable models
     model_selection = {
         "extraction": "llama-3.1-8b-instant",      # Most reliable for extraction
@@ -210,6 +215,7 @@ def create_groq_llm(api_key: str, purpose: str = "extraction"):
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
+>>>>>>> de3d946126645e8403cbbe84ab4fcff2d887019b
         temperature=temperature,
         max_tokens=4096,  # Reduce token usage
         timeout=60,
@@ -537,7 +543,7 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
                 "file_type": detect_file_type(file_path),
                 "content_length": len(context_text),
                 "items_extracted": len(extraction_result.get("financial_items", [])),
-                "ai_model": "gemini-2.5-flash"
+                "ai_model": "gemini-pro"
             }
         }
         

@@ -1,197 +1,10 @@
 import React, { useState, useEffect ,useRef, useId,useMemo} from 'react';
 import { Bot, TrendingUp, PieChart, Search, BookOpen, Award, User, Menu, X, Activity, Cpu, GitCompare, History, Settings, LogOut, Wrench, BarChart3,ArrowRight } from 'lucide-react';
-import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import mainlogo from '../images/mainlogo.png';
 import { useNavigate, useLocation } from "react-router-dom";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
-// Add this import at the top with your other imports
-
-
-// Add the CurvedLoop component inside your file (before FinGenieLanding component)
-// const CurvedLoop = ({
-//   marqueeText = 'Explore Our Features',
-//   speed = 2,
-//   curveAmount = 0,
-//   direction = 'left',
-//   interactive = true
-// }) => {
-//   const text = useMemo(() => {
-//     const hasTrailing = /\s|\u00A0$/.test(marqueeText);
-//     return (hasTrailing ? marqueeText.replace(/\s+$/, '') : marqueeText) + '\u00A0';
-//   }, [marqueeText]);
-
-//   const measureRef = useRef(null);
-//   const textPathRef = useRef(null);
-//   const pathRef = useRef(null);
-//   const [spacing, setSpacing] = useState(0);
-//   const [offset, setOffset] = useState(0);
-//   const uid = useId();
-//   const pathId = `curve-${uid}`;
-//   const pathD = `M-100,40 Q500,${40 + curveAmount} 1540,40`;
-
-//   const dragRef = useRef(false);
-//   const lastXRef = useRef(0);
-//   const dirRef = useRef(direction);
-//   const velRef = useRef(0);
-
-//   const textLength = spacing;
-//   const totalText = textLength
-//     ? Array(Math.ceil(1800 / textLength) + 2)
-//         .fill(text)
-//         .join('')
-//     : text;
-//   const ready = spacing > 0;
-
-//   useEffect(() => {
-//     if (measureRef.current) {
-//       const length = measureRef.current.getComputedTextLength();
-//       console.log('Text length:', length); // Debug
-//       setSpacing(length);
-//     }
-//   }, [text]);
-
-//   useEffect(() => {
-//     if (!spacing) return;
-//     if (textPathRef.current) {
-//       const initial = -spacing;
-//       textPathRef.current.setAttribute('startOffset', initial + 'px');
-//       setOffset(initial);
-//     }
-//   }, [spacing]);
-
-//   useEffect(() => {
-//     if (!spacing || !ready) return;
-//     let frame = 0;
-//     const step = () => {
-//       if (!dragRef.current && textPathRef.current) {
-//         const delta = dirRef.current === 'right' ? speed : -speed;
-//         const currentOffset = parseFloat(textPathRef.current.getAttribute('startOffset') || '0');
-//         let newOffset = currentOffset + delta;
-
-//         const wrapPoint = spacing;
-//         if (newOffset <= -wrapPoint) newOffset += wrapPoint;
-//         if (newOffset > 0) newOffset -= wrapPoint;
-
-//         textPathRef.current.setAttribute('startOffset', newOffset + 'px');
-//         setOffset(newOffset);
-//       }
-//       frame = requestAnimationFrame(step);
-//     };
-//     frame = requestAnimationFrame(step);
-//     return () => cancelAnimationFrame(frame);
-//   }, [spacing, speed, ready]);
-
-//   const onPointerDown = e => {
-//     if (!interactive) return;
-//     dragRef.current = true;
-//     lastXRef.current = e.clientX;
-//     velRef.current = 0;
-//     e.target.setPointerCapture(e.pointerId);
-//   };
-
-//   const onPointerMove = e => {
-//     if (!interactive || !dragRef.current || !textPathRef.current) return;
-//     const dx = e.clientX - lastXRef.current;
-//     lastXRef.current = e.clientX;
-//     velRef.current = dx;
-
-//     const currentOffset = parseFloat(textPathRef.current.getAttribute('startOffset') || '0');
-//     let newOffset = currentOffset + dx;
-
-//     const wrapPoint = spacing;
-//     if (newOffset <= -wrapPoint) newOffset += wrapPoint;
-//     if (newOffset > 0) newOffset -= wrapPoint;
-
-//     textPathRef.current.setAttribute('startOffset', newOffset + 'px');
-//     setOffset(newOffset);
-//   };
-
-//   const endDrag = () => {
-//     if (!interactive) return;
-//     dragRef.current = false;
-//     dirRef.current = velRef.current > 0 ? 'right' : 'left';
-//   };
-
-//   const cursorStyle = interactive ? 'grab' : 'auto';
-
-//   return (
-//     <div
-//       style={{
-//         width: '100%',
-//         height: '100px',
-//         display: 'flex',
-//         alignItems: 'center',
-//         justifyContent: 'center',
-//         cursor: cursorStyle,
-//         position: 'relative',
-//         zIndex: 1,
-//         marginTop: '0.5rem',     // 🔥 bigger top margin
-//   marginBottom: '-2rem',
-//       }}
-//       onPointerDown={onPointerDown}
-//       onPointerMove={onPointerMove}
-//       onPointerUp={endDrag}
-//       onPointerLeave={endDrag}
-//     >
-//       <svg 
-//         style={{
-//           userSelect: 'none',
-//           WebkitUserSelect: 'none',
-//           MozUserSelect: 'none',
-//           width: '100%',
-//           height: '200px',
-//           height: '150px',
-//           overflow: 'visible',
-//           display: 'block'
-//         }}
-//         viewBox="0 0 1440 120"
-//         preserveAspectRatio="xMidYMid meet"
-//       >
-//         <defs>
-//           <path ref={pathRef} id={pathId} d={pathD} fill="none" stroke="transparent" />
-//         </defs>
-        
-//         <text 
-//           ref={measureRef} 
-//           style={{ 
-//             visibility: 'hidden', 
-//             opacity: 0, 
-//             pointerEvents: 'none',
-//             fontSize: '2rem',
-//             fontWeight: 400,
-//             fontFamily: '"Bricolage Grotesque", sans-serif'
-//           }}
-//         >
-//           {text}
-//         </text>
-        
-//         {ready && (
-//           <text 
-//             style={{
-//               fontSize: '2rem',
-//               fontWeight: 400,
-//               fill: '#191733ff',
-//               fontFamily: '"Bricolage Grotesque", sans-serif',
-//               textTransform: 'uppercase',
-//                   filter: 'drop-shadow(0 0 12px #eef4ceaa) drop-shadow(0 0 20px #eef4ce55)'
-
-//             }}
-//           >
-//             <textPath 
-//               ref={textPathRef} 
-//               href={`#${pathId}`} 
-//               startOffset={offset + 'px'}
-//             >
-//               {totalText}
-//             </textPath>
-//           </text>
-//         )}
-//       </svg>
-//     </div>
-//   );
-// };
-
-// Then in your FinGenieLanding component, add it before the features section:
 
 const features = [
   {
@@ -214,7 +27,7 @@ const features = [
     title: 'Trends & KPIs',
     description: 'Visualize company performance with interactive charts and real-time metrics.',
     icon: PieChart,
-    bgColor: '#F6F9F9',
+    bgColor: '#dceaeaff',
     bordercolor: '#B5D1D1',
     route: '/Trends_KPI'
   },
@@ -279,7 +92,7 @@ const FeatureCard = ({ feature, index }) => {
        // background: "linear-gradient(135deg, #e1ececff, #f1eeee6e)",
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-        transition: `all 0.5s ease ${index * 0.1}s, transform 0.25s ease, box-shadow 0.25s ease`,
+        transition: `all 0.1s ease ${index * 0.1}s, transform 0.25s ease, box-shadow 0.25s ease`,
         backdropFilter: 'blur(25px)',
         WebkitBackdropFilter: 'blur(25px)',
         borderRadius: '15px',
@@ -307,182 +120,10 @@ const FinGenieLanding = () => {
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+  const [hoverExplore, setHoverExplore] = useState(false);
 
-  const isHomeActive = location.pathname === "/mainpageafterlogin";
-  const Header = () => (
-    <header style={styles.header}>
-      <div style={styles.headerLeft}>
-        <div style={styles.logo}>
-          <img
-            src={fglogo_Wbg}
-            style={{ height: "80px", width: "auto" }}
-            alt="logo"
-          />
-        </div>
-      </div>
-      <nav style={styles.nav}>
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-            borderBottom: isHomeActive ? "2px solid black" : "none",
-          }}
-          onClick={() => navigate("/mainpageafterlogin")}
-        >
-          Home
-        </span>
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-            borderBottom:
-              location.pathname === "/NewsPage" ? "2px solid black" : "none",
-          }}
-          onClick={() => navigate("/NewsPage")}
-        >
-          News
-        </span>
 
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-            borderBottom:
-              location.pathname === "/Chatbot" ? "2px solid black" : "none",
-          }}
-          onClick={() => navigate("/Chatbot")}
-        >
-          Chatbot
-        </span>
 
-          {/* --- WordOfTheDay --- */}
-          <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-                borderBottom:
-                  location.pathname === "/wordOfTheDay" ? "2px solid black" : "none",
-              }}
-              onClick={() => navigate("/wordOfTheDay")}
-          >
-              Word of the Day
-          </span>
-        <span
-          className="nav-link"
-          style={{
-            ...styles.navLink,
-            borderBottom:
-              location.pathname === "/About_us" ? "2px solid black" : "none",
-          }}
-          onClick={() => navigate("/About_us")}
-        >
-          About us
-        </span>
-
-        <div
-          style={styles.toolsMenu}
-           onClick={() => setShowToolsDropdown(prev => !prev)} 
-        >
-          <Wrench size={24} color="black" style={styles.userIcon} />
-          {showToolsDropdown && (
-            <div style={styles.HFdropdown}>
-              
-              <div style={styles.dropdownItem}>
-                <Search size={16} />
-                <span>Search Companies</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/Trends_KPI")}
-              >
-                <Activity size={16} />
-                <span>Trends & KPIs</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/blogPage")}
-              >
-                <BookOpen size={16} />
-                <span>Blog Page</span>
-              </div>
-              <div style={styles.dropdownItem}
-                 onClick={() => navigate("/FileUploadApp")}
-              >
-                <Cpu size={16} />
-                <span>AI Summary</span>
-              </div>
-              <div style={styles.dropdownItem}
-              onClick={() => navigate("/comparison")}
-              >
-                <GitCompare size={16} />
-                <span>Comparison</span>
-              </div>
-              <div style={styles.dropdownItem}
-                 onClick={() => navigate("/sectorOverview")}
-              >
-                <GitCompare size={16} />
-                <span>Sector Overview</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div
-          style={styles.userMenu}
-          onClick={() => setShowDropdown(prev => !prev)} 
-        >
-          <User size={24} color="black" style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/Profile_page")}   
-                >
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                }}>
-                <LogOut size={16} />
-                <span>Sign Out</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
-  );
-
-  const Footer = () => (
-    <footer style={styles.footer}>
-      <div style={styles.footerLeft}>
-        <p style={styles.copyright}>
-          © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-        </p>
-      </div>
-
-      <div style={styles.footerRight}>
-        <h4 style={styles.functionsTitle}>Functions</h4>
-        <ul style={styles.functionsList}>
-          <li style={styles.functionsItem}>AI summary</li>
-          <li style={styles.functionsItem}>Sector View</li>
-          <li style={styles.functionsItem}>search companies</li>
-          <li style={styles.functionsItem}>Blog Page</li>
-          <li style={styles.functionsItem}>Trends & KPIs</li>
-          <li style={styles.functionsItem}>Compare companies</li>
-        </ul>
-      </div>
-    </footer>
-  );
   return (
     <div style={styles.pageContainer}>
       <div style={styles.creativeBG} /> 
@@ -568,11 +209,6 @@ const FinGenieLanding = () => {
               padding: 3rem 1.5rem !important;
             }
             
-            .circles-container {
-              width: 400px !important;
-              height: 400px !important;
-            }
-            
           }
         `}
       </style>
@@ -586,9 +222,19 @@ const FinGenieLanding = () => {
       </div>
 
       <div style={styles.moreToolContent}>
-      <p style={styles.exploreTools} className="hero-subtitle">Explore all tools
-        <ArrowRight size={18} style={{ marginLeft: "6px", verticalAlign: "middle" }} />
-      </p>
+      <div
+  style={{
+    ...styles.exploreButton,
+    ...(hoverExplore ? styles.exploreButtonHover : {}),
+  }}
+  onClick={() => navigate("/FeaturesPage")}
+  onMouseEnter={() => setHoverExplore(true)}
+  onMouseLeave={() => setHoverExplore(false)}
+>
+  <span>Explore all tools</span>
+  <ArrowRight size={18} />
+</div>
+
       </div>
 
       {/* Features Grid */}
@@ -610,6 +256,7 @@ onClick={() => navigate("/wordoftheday")}
   <div style={styles.quizText}
 >
     Take a fun quiz!
+    
   </div>
 
 </div>
@@ -652,125 +299,32 @@ const styles = {
     top: 0,
     zIndex: 100
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-
-  navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
-  },
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
-  },
-    toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-      userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
-  },
+  
   hamburger: {
     display: 'none',
     cursor: 'pointer',
     color: '#4a5568'
   },
 
+exploreButton: {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  fontSize: "1rem",
+  fontWeight: "500",
+  color: "#3b3b3d",
+  padding: "6px 12px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  transition: "all 0.25s ease",
+  position: "relative",
+},
 
-  /*circlesContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '600px',
-    height: '600px',
-    pointerEvents: 'none'
-  },
-circleLayer: {
-  position: 'absolute',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  top: '-250px',
-  width: '1520px',
-  height: '695px',
+exploreButtonHover: {
+  backgroundColor: "#D1DFDF",
+  boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
+},
 
-  borderRadius: '50%',
-  border: '5px solid transparent',
-
-  background: `
-    linear-gradient(#f6f6f6, #eeeeee) padding-box,
-    linear-gradient(135deg, #9DAAC6, #1F2634) border-box
-  `,
-  backgroundClip: 'padding-box, border-box',
-  //boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-
-  zIndex: 0,
-},*/
 
 
   heroContent: {
@@ -805,7 +359,7 @@ circleLayer: {
   featuresGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '1rem'
+    gap: '1.5rem'
   },
   featureCard: {
     position: 'relative',
@@ -838,68 +392,17 @@ circleLayer: {
     display: 'inline-block'
   },
   cardTitle: {
-    fontSize: '1.4rem',
+    fontSize: '1.7rem',
     fontWeight: '800',
     color: '#2d3748',
     marginBottom: '0.75rem'
   },
   cardDescription: {
-    fontSize: '0.95rem',
+    fontSize: '1rem',
     color: '#718096',
     lineHeight: '1.6'
   },
-  footer: {
-    backgroundColor: '#4D5C61',
-    color: '#FFFFFF',
-    padding: '2rem 4rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: '4rem',
-    position: 'relative',
-    zIndex: 5,
-  },
 
-  footerLeft: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  copyright: {
-    fontSize: '0.9rem',
-    color: '#cbd5e0',
-    margin: 0
-  },
-  footerLink: {
-    color: '#FFFFFF',
-    textDecoration: 'none',
-    transition: 'opacity 0.3s',
-  },
-
-  footerRight: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  functionsTitle: {
-    fontSize: '14px',
-    fontWeight: '700',
-    marginRight: '8rem',
-  },
-
-  functionsList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'grid',
-    gridTemplateColumns: '3.5fr 1fr',
-    textAlign: 'right',
-    gap: '6px 0px',
-  },
-  functionsItem: {
-    fontSize: '13px',
-    margin: 0,
-    textTransform: "capitalize",
-    whiteSpace: 'nowrap'
-  },
 fullWidthBox: {
   width: "50%",
   position: "relative",

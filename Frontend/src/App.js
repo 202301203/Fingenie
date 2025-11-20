@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
-// import all pages
 import HomepageBeforeLogin from "./pages/homepage_beforelogin";
 import AuthFlow from "./pages/AuthFlow";
 import MainPageAfterLogin from "./pages/mainpageafterlogin";
@@ -18,6 +17,8 @@ import About_us from "./pages/About_us.jsx";
 import AiInsights from "./pages/AiInsights.jsx";
 import ComparisonPage from "./pages/comparison.jsx"; 
 import ProfilePage from "./pages/Profile_page.jsx";
+import FeaturesPage from "./pages/featuresPage.jsx";
+
 function App() {
   return (
     <Routes>
@@ -41,6 +42,7 @@ function App() {
       <Route path="/AiInsights" element={<AiInsights/>} />
       <Route path="/comparison" element={<ComparisonPage />} />
       <Route path="/Profile_page" element={<ProfilePage />} />
+      <Route path="/featuresPage" element={<FeaturesPage />} />
     </Routes>
   );
 }

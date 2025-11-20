@@ -3,38 +3,28 @@ import {
   FileText,
   CheckCircle,
   ArrowLeft,
-  User,
-  History,
-  Settings,
-  LogOut,
-  Wrench,
-  TrendingUp,
-  Search,
-  Activity,
-  BookOpen,
-  Cpu,
-  GitCompare,
   Key
 } from 'lucide-react';
 import '../App.css';
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import UploadImage from '../images/uploadimage_Wbg.png';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from '../api';
-
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 const FileUploadApp = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showApiPopup, setShowApiPopup] = useState(false);
 
-  
-  const [currentPage, setCurrentPage] = useState('first'); 
+  const [currentPage, setCurrentPage] = useState('first');
   const [numberOfFiles, setNumberOfFiles] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('groq_api_key') || '');
+  const [apiKey, setApiKey] = useState('');
+
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false); // State defined
-  const [showToolsDropdown, setShowToolsDropdown] = useState(false); // State defined
 
   const MAX_FILE_SIZE_MB = 10;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -55,6 +45,7 @@ const FileUploadApp = () => {
   const handleFiles = (files) => {
     const validFiles = [];
     const errors = [];
+
     files.forEach(file => {
       const allowedTypes = [
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -75,245 +66,137 @@ const FileUploadApp = () => {
     if (errors.length > 0) alert('Upload errors:\n\n' + errors.join('\n\n'));
 
     if (validFiles.length > 0) {
-      setUploadedFiles(prev => {
-        const existingNames = new Set(prev.map(f => f.name));
-        const newFiles = validFiles
-          .filter(file => !existingNames.has(file.name))
-          .map(file => ({
-            id: Date.now() + Math.random(),
-            name: file.name,
-            size: (file.size / 1024 / 1024).toFixed(1) + " MB",
-            file,
-            uploaded: true
-          }));
-        return [...prev, ...newFiles].slice(0, numberOfFiles);
-      });
+      setUploadedFiles([
+        {
+          id: Date.now(),
+          name: validFiles[0].name,
+          size: (validFiles[0].size / 1024 / 1024).toFixed(1) + " MB",
+          file: validFiles[0],
+          uploaded: true
+        }
+      ]);
     }
   };
+
 
   const removeFile = (id) => setUploadedFiles(prev => prev.filter(file => file.id !== id));
   const goToUpload = () => {
     if (numberOfFiles < 1 || numberOfFiles > 4) return alert('Please enter a number between 1 and 4');
+
+
+    if (!apiKey.trim()) {
+      setShowApiPopup(true);
+      return;
+    }
+
+
     setCurrentPage('upload');
   };
-  const goBack = () => { 
-    setCurrentPage('first'); 
+  const goBack = () => {
+    setCurrentPage('first');
     setUploadedFiles([]);
     setApiKey('');
     setShowApiKeyInput(false);
   };
 
-  // Header Component
-    const Header = ({ navigate, showDropdown, setShowDropdown, showToolsDropdown, setShowToolsDropdown }) => (
-        
-        <header style={styles.header}>
-          <div style={styles.headerLeft}>
-            <div style={styles.logo}>
-              <img
-                src={fglogo_Wbg}
-                style={{ height: "80px", width: "auto" }}
-                alt="logo"
-              />
-            </div>
-          </div>
-          <nav style={styles.nav}>
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/mainpageafterlogin")}
-            >
-              Home
-            </span>
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/NewsPage")}
-            >
-              News
-            </span>
-    
-            <span
-              className="nav-link"
-              style={{
-                ...styles.navLink,
-              }}
-              onClick={() => navigate("/Chatbot")}
-            >
-              Chatbot
-            </span>
-    
-            <span
-              className="nav-link"
-              style={{...styles.navLink,
-              }}
-              onClick={() => navigate("/About_us")}
-            >
-              About us
-            </span>
-    
-            <div
-              style={styles.toolsMenu}
-               onClick={() => setShowToolsDropdown(prev => !prev)} 
-            >
-              <Wrench size={24} color="black" style={styles.userIcon} />
-              {showToolsDropdown && (
-                <div style={styles.HFdropdown}>
-                  
-                  <div style={styles.dropdownItem}>
-                    <Search size={16} />
-                    <span>Search Companies</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => navigate("/Trends_KPI")}
-                  >
-                    <Activity size={16} />
-                    <span>Trends & KPIs</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => navigate("/blogPage")}
-                  >
-                    <BookOpen size={16} />
-                    <span>Blog Page</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                     onClick={() => navigate("/FileUploadApp")}
-                  >
-                    <Cpu size={16} />
-                    <span>AI Summary</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                  onClick={() => navigate("/comparison")}
-                  >
-                    <GitCompare size={16} />
-                    <span>Comparison</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                     onClick={() => navigate("/sectorOverview")}
-                  >
-                    <GitCompare size={16} />
-                    <span>Sector Overview</span>
-                  </div>
-                </div>
-              )}
-            </div>
-    
-            <div
-              style={styles.userMenu}
-              onClick={() => setShowDropdown(prev => !prev)} 
-            >
-              <User size={24} color="black" style={styles.userIcon} />
-              {showDropdown && (
-                <div style={styles.HFdropdown}>
-                  <div style={styles.dropdownItem}
-                  onClick={() => navigate("/Profile_page")}   
-                  >
-                    <User size={16} />
-                    <span>Profile</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <History size={16} />
-                    <span>History</span>
-                  </div>
-                  <div style={styles.dropdownItem}>
-                    <Settings size={16} />
-                    <span>Settings</span>
-                  </div>
-                  <div style={styles.dropdownItem}
-                    onClick={() => {
-                      // (Optional) clear user data or tokens here
-                      navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                    }}>
-                    <LogOut size={16} />
-                    <span>Sign Out</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </nav>
-        </header>
-      );
-    
-      const Footer = () => (
-        <footer style={styles.footer}>
-          <div style={styles.footerLeft}>
-            <p style={styles.copyright}>
-              © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-            </p>
-          </div>
-    
-          <div style={styles.footerRight}>
-            <h4 style={styles.functionsTitle}>Functions</h4>
-            <ul style={styles.functionsList}>
-              <li style={styles.functionsItem}>AI summary</li>
-              <li style={styles.functionsItem}>Sector View</li>
-              <li style={styles.functionsItem}>search companies</li>
-              <li style={styles.functionsItem}>Blog Page</li>
-              <li style={styles.functionsItem}>Trends & KPIs</li>
-              <li style={styles.functionsItem}>Compare companies</li>
-            </ul>
-          </div>
-        </footer>
-      );
+
 
   if (currentPage === 'first') {
     return (
       <div style={styles.container}>
-        <Header 
-          navigate={navigate}
-          showDropdown={showDropdown}
-          setShowDropdown={setShowDropdown}
-          showToolsDropdown={showToolsDropdown}
-          setShowToolsDropdown={setShowToolsDropdown}
-        />
+        <Header />
+        {showApiPopup && (
+          <div style={popupStyles.overlay}>
+            <div style={popupStyles.box}>
+              <h3 style={{ marginBottom: '10px' }}>Missing API Key</h3>
+              <p>Please enter your API key to continue.</p>
+
+              <button
+                onClick={() => setShowApiPopup(false)}
+                style={popupStyles.button}
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        )}
         <div style={styles.mainContent}>
           <div style={styles.card}>
             <div style={styles.cardContent}>
               <div style={styles.iconContainer}><FileText size={32} color="white" /></div>
-              <h1 style={styles.title}>Please upload the financial report file here to generate a simplified financial report.</h1>
-              <div style={styles.formSection}>
-                <label style={styles.label}>Enter the number of files (1-4) to upload.</label>
+              <h1 style={styles.title}>Upload the BALANCE SHEET here to generate a simplified financial report.</h1>
+              {/* API Key Toggle */}
+              <div style={{
+                  margin: '1rem 10rem',
+                  textAlign: 'left',
+                  padding: '1rem', // Added padding and background for better appearance
+                  backgroundColor: '#a6b1caff',
+                  borderRadius: '12px',
+                  border: '1px solid #9ea8b8',
+                  width: '90%',
+                }}>
+                  {/* Container for Label and Button */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label style={{
+                      display: 'block',
+                      color: '#0b0b0bff',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      margin: 0,
+                    }}>
+                      Enter API Key
+                    </label>
 
-                <input type="number" min="1" max="4" value={numberOfFiles} onChange={(e) => setNumberOfFiles(parseInt(e.target.value) || 1)} style={styles.input} />
+                    {/* New Button */}
+                    <button
+                      onClick={() => navigate("/API_key")}
+                      style={{
+                        backgroundColor: '#64748b', // Darker color for button
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '0.3rem 0.6rem',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        transition: 'background-color 0.2s',
+                      }}
+                      title="Click for instructions"
+                    >
+                      How to get API key? 
+                    </button>
+                  </div>
 
-                {/* API Key Toggle */}
-                <div style={styles.apiKeySection}>
-                  <button 
-                    type="button"
-                    style={styles.apiKeyToggle}
-                    onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  >
-                    <Key size={16} />
-                    <span>{showApiKeyInput ? 'Hide API Key' : 'Use Custom API Key'}</span>
-                  </button>
-                  
-                  {showApiKeyInput && (
-                    <div style={styles.apiKeyInputContainer}>
-                      <label style={styles.apiKeyLabel}>API Key (Optional)</label>
-                      <input 
-                        type="text" 
-                        value={apiKey} 
-                        onChange={(e) => setApiKey(e.target.value)} 
-                        placeholder="Enter your API key for enhanced processing"
-                        style={styles.apiKeyInput}
-                      />
-                      <p style={styles.apiKeyHelp}>
-                        Using your own API key may provide better processing results
-                      </p>
-                    </div>
-                  )}
+                  {/* Input Field */}
+                  <input
+                    type="text"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Paste API key here"
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem',
+                      borderRadius: '8px',
+                      border: '1px solid #a7a7a7',
+                      boxSizing: 'border-box'
+                    }}
+                  />
                 </div>
+              <div style={styles.formSection}>
 
+                
+                
+                {/* Number of Files Input */}
                 <button onClick={goToUpload} style={styles.uploadButton}>Upload Files</button>
               </div>
             </div>
           </div>
           <div style={styles.aiWarning}>
-              <strong>Note:</strong> AI-generated summaries may contain inaccuracies. Always cross-verify with original documents.
-            </div>
+            <strong>Note:</strong> AI-generated summaries may contain inaccuracies. Always cross-verify with original documents.
+          </div>
         </div>
         <Footer />
       </div>
@@ -323,19 +206,13 @@ const FileUploadApp = () => {
   if (currentPage === 'upload') {
     return (
       <div style={styles.container}>
-        <Header 
-          navigate={navigate}
-          showDropdown={showDropdown}
-          setShowDropdown={setShowDropdown}
-          showToolsDropdown={showToolsDropdown}
-          setShowToolsDropdown={setShowToolsDropdown}
-        />
+        <Header />
         <div style={styles.mainContent1}>
           <div style={{ ...styles.card1, maxWidth: '800px' }}>
             <div style={styles.cardContent1}>
               <div style={styles.uploadHeader}>
                 <button onClick={goBack} style={styles.backButton}><ArrowLeft size={20} /><span>Back</span></button>
-                <div style={styles.fileCounter}>Upload {numberOfFiles} file{numberOfFiles > 1 ? 's' : ''}</div>
+                <div style={styles.fileCounter}>Upload 1 file (required)</div>
               </div>
 
               {/* API Key Input Section */}
@@ -345,10 +222,10 @@ const FileUploadApp = () => {
                     <Key size={20} />
                     <span>Custom API Key</span>
                   </div>
-                  <input 
-                    type="text" 
-                    value={apiKey} 
-                    onChange={(e) => setApiKey(e.target.value)} 
+                  <input
+                    type="text"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
                     placeholder="Paste your API key here for enhanced processing"
                     style={styles.apiKeyInputUpload}
                   />
@@ -361,16 +238,18 @@ const FileUploadApp = () => {
               <div style={styles.uploadTitle}><h1 style={styles.title}>Upload Your Files</h1></div>
 
               {/* Upload Area */}
-              <div style={{...styles.uploadArea, ...(dragActive ? styles.uploadAreaActive : {}), ...(uploadedFiles.length >= numberOfFiles || isProcessing ? styles.uploadAreaDisabled : {})}}
-                   onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
-                <input type="file" multiple accept=".xlsx,.xls,.csv,.pdf" onChange={handleFileChange} style={styles.fileInput} disabled={uploadedFiles.length >= numberOfFiles || isProcessing} />
+              <div style={{ ...styles.uploadArea, ...(dragActive ? styles.uploadAreaActive : {}), ...(uploadedFiles.length == 1 || isProcessing ? styles.uploadAreaDisabled : {}) }}
+                onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+                <input type="file" accept=".xlsx,.xls,.csv,.pdf" onChange={handleFileChange} style={styles.fileInput} />
+
+
                 <div style={styles.uploadContent}>
                   <div style={styles.uploadIcon}><img src={UploadImage} alt="Upload Icon" style={{ width: '80px', height: '70px' }} /></div>
                   <div>
                     <p style={styles.uploadText}>Drag & drop files</p>
                     <p style={styles.uploadSubtext}>Only .xlsx/.xls/.csv/.pdf files supported (Max {MAX_FILE_SIZE_MB}MB per file)</p>
                   </div>
-                  <button type="button" style={{ ...styles.chooseButton, ...(uploadedFiles.length >= numberOfFiles || isProcessing ? styles.chooseButtonDisabled : {}) }} disabled={uploadedFiles.length >= numberOfFiles || isProcessing}>Choose Files</button>
+                  <button type="button" style={{ ...styles.chooseButton, ...(uploadedFiles.length >= 1 || isProcessing ? styles.chooseButtonDisabled : {}) }} disabled={uploadedFiles.length >= 1 || isProcessing}>Choose Files</button>
                 </div>
               </div>
 
@@ -389,8 +268,9 @@ const FileUploadApp = () => {
                 </div>
               )}
 
+
               {/* Generate Button */}
-              {uploadedFiles.length === numberOfFiles && (
+              {uploadedFiles.length === 1 && (
                 <div style={styles.generateSection}>
                   <button
                     style={{ ...styles.generateButton, opacity: isProcessing ? 0.7 : 1, cursor: isProcessing ? 'not-allowed' : 'pointer' }}
@@ -404,17 +284,20 @@ const FileUploadApp = () => {
 
                         const formData = new FormData();
                         formData.append('file', fileObj.file);
-                        
-                        // Add API key to form data if provided
-                        if (apiKey?.trim()) {
-                          formData.append('api_key', apiKey.trim());
-                          localStorage.setItem('groq_api_key', apiKey.trim());
+
+                        // Add API key mandatory check
+                        if (!apiKey.trim()) {
+                          alert("Please enter your API key before generating the report.");
+                          setIsProcessing(false);
+                          return;
                         }
+
+                        formData.append("api_key", apiKey.trim());
 
                         const json = await api.postExtract(formData);
 
                         if (json?.report_id) localStorage.setItem('currentReportId', json.report_id);
-                        
+
                         // Store API key in localStorage if provided
                         if (apiKey?.trim()) {
                           localStorage.setItem('userApiKey', apiKey.trim());
@@ -439,7 +322,7 @@ const FileUploadApp = () => {
               )}
 
             </div>
-            
+
           </div>
         </div>
         <Footer />
@@ -554,141 +437,6 @@ const styles = {
     fontFamily: '"Bricolage Grotesque", Arial, sans-serif'
   },
 
-   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-
-  navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
-  },
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
-  },
-    toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-      userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
-  },
-  footer: {
-    backgroundColor: '#4D5C61',
-    color: '#FFFFFF',
-    padding: '2rem 4rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: '4rem',
-    position: 'relative',
-    zIndex: 5,
-  },
-
-  footerLeft: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  copyright: {
-    fontSize: '0.9rem',
-    color: '#cbd5e0',
-    margin: 0
-  },
-  footerLink: {
-    color: '#FFFFFF',
-    textDecoration: 'none',
-    transition: 'opacity 0.3s',
-  },
-
-  footerRight: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  functionsTitle: {
-    fontSize: '14px',
-    fontWeight: '700',
-    marginRight: '8rem',
-  },
-
-  functionsList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'grid',
-    gridTemplateColumns: '3.5fr 1fr',
-    textAlign: 'right',
-    gap: '6px 0px',
-  },
-  functionsItem: {
-    fontSize: '13px',
-    margin: 0,
-    textTransform: "capitalize",
-    whiteSpace: 'nowrap'
-  },
 
   mainContent: {
     display: 'flex',
@@ -696,7 +444,7 @@ const styles = {
     justifyContent: 'center',
     minHeight: 'calc(110vh - 80px)',
     //marginTop: '-70px'
-     flexDirection: 'column', 
+    flexDirection: 'column',
   },
 
   card: {
@@ -707,17 +455,17 @@ const styles = {
     boxShadow: '0 -4px 10px rgba(255, 255, 255, 0.1), 0 -1px 3px rgba(0, 0, 0, 0.08)',
     border: '1px solid #191919ff',
     padding: '2rem',
-    width: '100%',
+    width: '70%',
     maxWidth: '1300px'
   },
 
   cardContent: {
-  display: 'flex',          // ⭐ required
-  flexDirection: 'column',  // so inputs stack vertically
-  alignItems: 'center',
-  textAlign: 'center',
-  position: 'relative',
-},
+    display: 'flex',          // ⭐ required
+    flexDirection: 'column',  // so inputs stack vertically
+    alignItems: 'center',
+    textAlign: 'center',
+    position: 'relative',
+  },
 
   iconContainer: {
     width: '64px',
@@ -734,7 +482,7 @@ const styles = {
     fontSize: '1.7rem',
     fontWeight: 'bold',
     color: '#212121ff',
-    margin: '0 0 3rem 0'
+    margin: '0 0 2rem 0'
   },
 
 
@@ -742,7 +490,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
-    maxWidth: '350px',
+    width: '30%',
     margin: '0 auto'
   },
 
@@ -985,7 +733,7 @@ const styles = {
     width: '100%',
     backgroundColor: '#25344F',
     color: 'white',
-    fontSize:'20px',
+    fontSize: '20px',
     fontWeight: '600',
     padding: '1.00rem 1.5rem',
     border: 'none',
@@ -1025,15 +773,46 @@ const styles = {
     borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   },
-  
+
   toolsMenu: {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-  cursor: "pointer",
-  marginLeft: "1rem",
-  color: "Black"
-},
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    marginLeft: "1rem",
+    color: "Black"
+  },
+};
+const popupStyles = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+    backdropFilter: "blur(3px)"
+  },
+  box: {
+    background: "white",
+    padding: "1.5rem 2rem",
+    borderRadius: "12px",
+    textAlign: "center",
+    width: "320px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    border: "1px solid #ddd"
+  },
+  button: {
+    marginTop: "1rem",
+    padding: "0.5rem 1rem",
+    background: "#25344F",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600"
+  }
 };
 
 export default FileUploadApp;

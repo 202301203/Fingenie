@@ -6,31 +6,19 @@ import {
   Download,
   User,
   ChevronDown,
-  X,
-  History,
-  Settings,
-  LogOut,
-  Wrench,
-  BarChart,
-  TrendingUp,
-  Search,
-  Activity,
-  BookOpen,
-  Cpu,
-  GitCompare
+  X
 } from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import jsPDF from 'jspdf';
-import { 
-  djangoRequest, 
-  testAuthStatus, 
-  getLatestReport, 
-  getReport 
+import {
+  djangoRequest,
+  testAuthStatus,
+  getLatestReport,
+  getReport
 } from '../api/index'; // Import the corrected functions
-
-// Register Chart.js components (after all imports, before component definitions)
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
@@ -67,7 +55,7 @@ export default function FinGenieApp() {
       console.log("Checking authentication status...");
       const authStatus = await testAuthStatus();
       console.log("Auth status:", authStatus);
-      
+
       if (!authStatus.authenticated) {
         console.log('User not authenticated, redirecting to login');
         setError('Please log in to access this page');
@@ -76,7 +64,7 @@ export default function FinGenieApp() {
         }, 2000);
         return false;
       }
-      
+
       console.log('User authenticated successfully');
       return true;
     } catch (error) {
@@ -108,16 +96,16 @@ export default function FinGenieApp() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // First check authentication
       const isAuthenticated = await checkAuthentication();
       if (!isAuthenticated) return;
 
       console.log("Fetching company data...");
-      
+
       let data;
       const locationData = location.state;
-      
+
       if (locationData && locationData.report_id) {
         console.log("Fetching specific report:", locationData.report_id);
         data = await getReport(locationData.report_id);
@@ -127,17 +115,17 @@ export default function FinGenieApp() {
       }
 
       console.log('API Response:', data);
-      
+
       if (data.success === false) {
         throw new Error(data.error || 'Failed to load data');
       }
-      
+
       setCompanyData(data);
       setFinancialRatios(data.ratios || []);
-      
+
     } catch (err) {
       console.error('Error fetching data:', err);
-      
+
       if (err.message.includes('Authentication') || err.message.includes('401') || err.message.includes('403')) {
         setError('Authentication required. Redirecting to login...');
         setTimeout(() => {
@@ -189,22 +177,22 @@ export default function FinGenieApp() {
   // Simplified PDF Download Function 
   const downloadPDF = async () => {
     const addWrappedText = (pdf, text, x, y, maxWidth, lineHeight = 16) => {
-  const lines = pdf.splitTextToSize(text, maxWidth);
-  for (let line of lines) {
-    if (y > 760) {             // page overflow check
-      pdf.addPage();
-      y = 40;                  // reset to top margin
-    }
-    pdf.text(line, x, y);
-    y += lineHeight;
-  }
-  return y;
-};
+      const lines = pdf.splitTextToSize(text, maxWidth);
+      for (let line of lines) {
+        if (y > 760) {             // page overflow check
+          pdf.addPage();
+          y = 40;                  // reset to top margin
+        }
+        pdf.text(line, x, y);
+        y += lineHeight;
+      }
+      return y;
+    };
 
     try {
       const pdf = new jsPDF('p', 'pt', 'a4');
       let yPosition = 40;
-      
+
       // Add title
       pdf.setFontSize(20);
       pdf.setTextColor(0, 0, 0);
@@ -215,7 +203,7 @@ export default function FinGenieApp() {
       pdf.setFontSize(16);
       pdf.text(`Company: ${companyData?.company_name || 'Unknown Company'}`, 40, yPosition);
       yPosition += 25;
-      
+
       if (companyData?.ticker_symbol) {
         pdf.text(`Ticker: ${companyData.ticker_symbol}`, 40, yPosition);
         yPosition += 25;
@@ -230,30 +218,30 @@ export default function FinGenieApp() {
       if (companyData?.summary) {
         // Financial Health Summary
         if (companyData.summary.financial_health_summary) {
-  pdf.setTextColor(0, 0, 139);
-  pdf.text("Financial Health Overview:", 40, yPosition);
-  yPosition += 20;
-  pdf.setTextColor(0, 0, 0);
+          pdf.setTextColor(0, 0, 139);
+          pdf.text("Financial Health Overview:", 40, yPosition);
+          yPosition += 20;
+          pdf.setTextColor(0, 0, 0);
 
-  yPosition = addWrappedText(
-    pdf,
-    companyData.summary.financial_health_summary,
-    40,
-    yPosition,
-    500,   // max width
-    16     // line height
-  );
-}
+          yPosition = addWrappedText(
+            pdf,
+            companyData.summary.financial_health_summary,
+            40,
+            yPosition,
+            500,   // max width
+            16     // line height
+          );
+        }
         // Pros
         if (companyData.summary.pros && companyData.summary.pros.length > 0) {
           pdf.setTextColor(0, 100, 0); // Green for pros
           pdf.text('Strengths:', 40, yPosition);
           yPosition += 15;
           pdf.setTextColor(0, 0, 0);
-          
+
           companyData.summary.pros.forEach(pro => {
-  yPosition = addWrappedText(pdf, `• ${pro}`, 50, yPosition, 480, 16);
-});
+            yPosition = addWrappedText(pdf, `• ${pro}`, 50, yPosition, 480, 16);
+          });
 
         }
 
@@ -267,61 +255,61 @@ export default function FinGenieApp() {
           pdf.text('Areas for Improvement:', 40, yPosition);
           yPosition += 15;
           pdf.setTextColor(0, 0, 0);
-          
+
           companyData.summary.cons.forEach(con => {
-  yPosition = addWrappedText(pdf, `• ${con}`, 50, yPosition, 480, 16);
-});
+            yPosition = addWrappedText(pdf, `• ${con}`, 50, yPosition, 480, 16);
+          });
 
         }
 
-        
+
 
       }
 
       // Ratios section on new page
       // Ratios section on new page
-pdf.addPage();
-yPosition = 40;
+      pdf.addPage();
+      yPosition = 40;
 
-pdf.setFontSize(14);
-pdf.text('Financial Ratios Analysis', 40, yPosition);
-yPosition += 30;
+      pdf.setFontSize(14);
+      pdf.text('Financial Ratios Analysis', 40, yPosition);
+      yPosition += 30;
 
-pdf.setFontSize(10);
+      pdf.setFontSize(10);
 
-if (financialRatios.length > 0) {
- financialRatios.forEach((ratio, index) => {
+      if (financialRatios.length > 0) {
+        financialRatios.forEach((ratio, index) => {
 
-  if (yPosition > 720) {
-    pdf.addPage();
-    yPosition = 40;
-  }
+          if (yPosition > 720) {
+            pdf.addPage();
+            yPosition = 40;
+          }
 
-  pdf.setFontSize(12);
-  pdf.setTextColor(0, 0, 128);
-  pdf.text(`${index + 1}. ${ratio.ratio_name || `Ratio ${index + 1}`}`, 40, yPosition);
-  yPosition += 22;
+          pdf.setFontSize(12);
+          pdf.setTextColor(0, 0, 128);
+          pdf.text(`${index + 1}. ${ratio.ratio_name || `Ratio ${index + 1}`}`, 40, yPosition);
+          yPosition += 22;
 
-  pdf.setFontSize(10);
-  pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(10);
+          pdf.setTextColor(0, 0, 0);
 
-  yPosition = addWrappedText(pdf, `Formula: ${ratio.formula || "N/A"}`, 50, yPosition, 480, 16);
-  yPosition = addWrappedText(pdf, `Calculation: ${ratio.calculation || "N/A"}`, 50, yPosition, 480, 16);
-  yPosition = addWrappedText(pdf, `Result: ${ratio.result || "N/A"}`, 50, yPosition, 480, 16);
+          yPosition = addWrappedText(pdf, `Formula: ${ratio.formula || "N/A"}`, 50, yPosition, 480, 16);
+          yPosition = addWrappedText(pdf, `Calculation: ${ratio.calculation || "N/A"}`, 50, yPosition, 480, 16);
+          yPosition = addWrappedText(pdf, `Result: ${ratio.result || "N/A"}`, 50, yPosition, 480, 16);
 
-  yPosition = addWrappedText(
-    pdf,
-    `Interpretation: ${ratio.interpretation || "No interpretation available"}`,
-    50,
-    yPosition,
-    480,
-    16
-  );
+          yPosition = addWrappedText(
+            pdf,
+            `Interpretation: ${ratio.interpretation || "No interpretation available"}`,
+            50,
+            yPosition,
+            480,
+            16
+          );
 
-  yPosition += 10;
-});
+          yPosition += 10;
+        });
 
-}
+      }
 
 
       // Save PDF
@@ -331,198 +319,6 @@ if (financialRatios.length > 0) {
       alert('Failed to generate PDF. Please try again.');
     }
   };
-
-  // Header Component
-    const Header = () => (
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logo}>
-            <img
-              src={fglogo_Wbg}
-              style={{ height: "80px", width: "auto" }}
-              alt="logo"
-            />
-          </div>
-        </div>
-        <nav style={styles.nav}>
-          <span
-            className="nav-link"
-            style={styles.navLink}
-            onClick={() => navigate("/mainpageafterlogin")}
-          >
-            Home
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/NewsPage" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/NewsPage")}
-          >
-            News
-          </span>
-          <span
-            className="nav-link"
-            style={{
-              ...styles.navLink,
-              borderBottom:
-                location.pathname === "/AboutUs" ? "2px solid black" : "none",
-            }}
-            onClick={() => navigate("/AboutUs")}
-          >
-            About us
-          </span>
-  
-          <div
-            style={styles.toolsMenu}
-             onClick={() => setShowToolsDropdown(prev => !prev)} 
-          >
-            <Wrench size={24} color="black" style={styles.userIcon} />
-            {showToolsDropdown && (
-              <div style={styles.HFdropdown}>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/debt-ratings");
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <TrendingUp size={16} />
-                  <span>Debt Ratings</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/company-search");
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <Search size={16} />
-                  <span>Search Companies</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/charts-kpis");
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <Activity size={16} />
-                  <span>Trends & KPIs</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/blogs");
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <BookOpen size={16} />
-                  <span>Blog Page</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <Cpu size={16} />
-                  <span>AI Summary</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/comparison");
-                  setShowToolsDropdown(false);
-                }}
-              >
-                  <GitCompare size={16} />
-                  <span>Comparison</span>
-                </div>
-                <div style={styles.dropdownItem}>
-                  <GitCompare size={16} />
-                  <span>Sector Overview</span>
-                </div>
-              </div>
-            )}
-          </div>
-  
-          <div
-            style={styles.userMenu}
-            onClick={() => setShowDropdown(prev => !prev)} 
-          >
-            <User size={24} color="black" style={styles.userIcon} />
-            {showDropdown && (
-              <div style={styles.HFdropdown}>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/profile");
-                  setShowDropdown(false);
-                }}
-              >
-                  <User size={16} />
-                  <span>Profile</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/profile?tab=history");
-                  setShowDropdown(false);
-                }}
-              >
-                  <History size={16} />
-                  <span>History</span>
-                </div>
-                <div 
-                style={styles.dropdownItem}
-                onClick={() => {
-                  navigate("/profile?tab=settings");
-                  setShowDropdown(false);
-                }}
-              >
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </div>
-                <div style={styles.dropdownItem}
-                  onClick={() => {
-                    // (Optional) clear user data or tokens here
-                    handleLogout();      // Redirect to dashboard on logout
-                  }}>
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </nav>
-      </header>
-    );
-  
-    const Footer = () => (
-      <footer style={styles.footer}>
-        <div style={styles.footerLeft}>
-          <p style={styles.copyright}>
-            © 2025 FinGenie | <a href="#" style={styles.footerLink}>About</a> | <a href="#" style={styles.footerLink}>Privacy Policy</a> | <a href="#" style={styles.footerLink}>Contact</a>
-          </p>
-        </div>
-  
-        <div style={styles.footerRight}>
-          <h4 style={styles.functionsTitle}>Functions</h4>
-          <ul style={styles.functionsList}>
-            <li style={styles.functionsItem}>AI summary</li>
-            <li style={styles.functionsItem}>Sector View</li>
-            <li style={styles.functionsItem}>Debt ratings</li>
-            <li style={styles.functionsItem}>search companies</li>
-            <li style={styles.functionsItem}>Blog Page</li>
-            <li style={styles.functionsItem}>Trends & KPIs</li>
-            <li style={styles.functionsItem}>Compare companies</li>
-          </ul>
-        </div>
-      </footer>
-    );
 
   // Navigation Component
   const Navigation = () => (
@@ -555,13 +351,10 @@ if (financialRatios.length > 0) {
     </div>
   );
 
-  // Footer Component
-
-
   const sectors = [
-    'Telecom', 'Technology', 'Financial Services', 
-    'Real Estate', 'Banking', 'Infrastructure', 
-    'Pharma', 'Automobile', 'Energy', 
+    'Telecom', 'Technology', 'Financial Services',
+    'Real Estate', 'Banking', 'Infrastructure',
+    'Pharma', 'Automobile', 'Energy',
     'Consumer Goods', 'Metals & Mining', 'Chemicals'
   ];
 
@@ -615,75 +408,174 @@ if (financialRatios.length > 0) {
           {companyData.ticker_symbol && (
             <p style={styles.tickerSymbol}>Ticker: {companyData.ticker_symbol}</p>
           )}
+
         </div>
 
         <div style={styles.contentBox}>
           <div style={styles.contentGrid}>
-            <div style={{ ...styles.financialHealthSummarySec, gridArea: 'summary' }}>
+
+            {/* SUMMARY (FULL WIDTH) */}
+            <div style={{ ...styles.financialHealthSummarySec, gridArea: "summary" }}>
               <h3 style={styles.prosTitle}>Financial Health Summary</h3>
               <h4 style={{ color: '#3d3d3dff' }}>Overview</h4>
               <p style={styles.financialSummary}>{financialHealthSummary}</p>
             </div>
-            <div style={{ ...styles.consSection, gridArea: 'cons' }}>
+
+            {/* CONS (LEFT BOX) */}
+            <div style={{ ...styles.consSection, gridArea: "cons" }}>
               <h3 style={styles.prosTitle}>Cons</h3>
               <ul style={styles.prosList}>
                 {cons.length > 0 ? cons.map((con, i) => <li key={i}>{con}</li>) : <li>No cons data available</li>}
               </ul>
             </div>
-            <div style={{ ...styles.prosSection, gridArea: 'pros' }}>
+
+            {/* PROS (RIGHT BOX) */}
+            <div style={{ ...styles.prosSection, gridArea: "pros" }}>
               <h3 style={styles.prosTitle}>Pros</h3>
               <ul style={styles.prosList}>
                 {pros.length > 0 ? pros.map((pro, i) => <li key={i}>{pro}</li>) : <li>No pros data available</li>}
               </ul>
             </div>
+
           </div>
         </div>
+          {/* ------------------ GAUGE CHART SECTION ------------------ */}
 
-        {companyData.ticker_symbol && (
-          <div style={{ ...styles.contentBox, marginTop: '2rem', backgroundColor: '#ffffff' }}>
-            <h3 style={{ ...styles.prosTitle, marginBottom: '0.5rem' }}>Stock Price Trend</h3>
-            <p style={{ color: '#444', marginTop: 0, marginBottom: '1rem' }}>
-              {companyData.ticker_symbol} recent price movement
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={styles.chartContainer}>
-                {pricePoints.length > 1 ? (
-                  <Line
-                    data={chartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: { legend: { display: false }, title: { display: false } },
-                      scales: {
-                        x: { ticks: { maxTicksLimit: 6, color: '#333', font: { size: 11 } }, grid: { display: false } },
-                        y: { ticks: { color: '#333', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
-                      }
-                    }}
-                  />
-                ) : (
-                  <div style={{ color: '#555', padding: '1rem' }}>No price data available.</div>
-                )}
-              </div>
-              <div style={{ minWidth: 180 }}>
-                <h4 style={{ margin: '0 0 0.5rem', color: '#1a1a1a' }}>Current Price</h4>
-                {latestPrice != null ? (
-                  <div style={{ fontSize: '28px', fontWeight: '600', color: '#0A2540' }}>${latestPrice.toFixed(2)}</div>
-                ) : (
-                  <div style={{ color: '#666' }}>N/A</div>
-                )}
-                {priceDelta != null && (
-                  <div style={{ marginTop: '0.75rem', fontSize: '14px', fontWeight: '500', color: priceDelta >= 0 ? '#0b6e2b' : '#b30000' }}>
-                    {priceDelta >= 0 ? '+' : ''}{priceDelta.toFixed(2)} ({priceDeltaPct >= 0 ? '+' : ''}{priceDeltaPct.toFixed(2)}%)
-                  </div>
-                )}
-                <div style={{ marginTop: '1rem', fontSize: '12px', color: '#777' }}>Data points: {pricePoints.length || 0}</div>
-              </div>
-            </div>
-          </div>
-        )}
+<div
+  style={{
+    background: "white",
+    padding: "2rem",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    marginTop: "2rem"
+  }}
+>
+  <h2 style={{ textAlign: "center", marginBottom: "2rem" }}>
+    Debt & Performance Ratings
+  </h2>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+      gap: "2rem"
+    }}
+  >
+    <GaugeChart
+      title="Liquidity"
+      subtitle="Short-term solvency"
+      value={companyData?.liquidity_score ?? 64}
+    />
+
+    <GaugeChart
+      title="Stability"
+      subtitle="Debt-equity strength"
+      value={companyData?.stability_score ?? 49}
+    />
+
+    <GaugeChart
+      title="Profitability"
+      subtitle="Earnings & margins"
+      value={companyData?.profitability_score ?? 72}
+    />
+
+    <GaugeChart
+      title="Efficiency"
+      subtitle="Return ratios & activity"
+      value={companyData?.efficiency_score ?? 58}
+    />
+
+    <GaugeChart
+      title="Growth"
+      subtitle="Revenue & earnings growth"
+      value={companyData?.growth_score ?? 61}
+    />
+  </div>
+</div>
+
+
       </>
     );
   };
+ //debt rations
+const GaugeChart = ({ title, subtitle, value }) => {
+  const [animatedValue, setAnimatedValue] = React.useState(0);
+
+  React.useEffect(() => {
+    let start = 0;
+    const end = value;
+    const duration = 900;
+    const step = end / (duration / 16);
+
+    const animate = () => {
+      start += step;
+      if (start < end) {
+        setAnimatedValue(start);
+        requestAnimationFrame(animate);
+      } else {
+        setAnimatedValue(end);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value]);
+
+  const angle = (animatedValue / 100) * 180;
+  const rad = (angle * Math.PI) / 180;
+
+  const needleX = 100 + 80 * Math.cos(Math.PI - rad);
+  const needleY = 100 + 80 * Math.sin(Math.PI - rad);
+
+  return (
+    <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+      <h3 style={{ margin: 0, fontWeight: 700 }}>{title}</h3>
+      <p style={{ margin: 0, color: "#555" }}>{subtitle}</p>
+
+      <svg width="220" height="140">
+        <defs>
+          <linearGradient id="gaugeColors">
+            <stop offset="0%" stopColor="#e74c3c" />
+            <stop offset="40%" stopColor="#f1c40f" />
+            <stop offset="80%" stopColor="#2ecc71" />
+          </linearGradient>
+        </defs>
+
+        {/* Arc */}
+        <path
+          d="M20,100 A80,80 0 0,1 180,100"
+          fill="none"
+          stroke="url(#gaugeColors)"
+          strokeWidth="20"
+        />
+
+        {/* Needle */}
+        <line
+          x1="100"
+          y1="100"
+          x2={needleX}
+          y2={needleY}
+          stroke="black"
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+
+        {/* Center circle */}
+        <circle cx="100" cy="100" r="6" fill="black" />
+
+        {/* Score */}
+        <text
+          x="100"
+          y="130"
+          textAnchor="middle"
+          fontSize="16"
+          fontWeight="600"
+        >
+          {Math.round(animatedValue)}/100
+        </text>
+      </svg>
+    </div>
+  );
+};
 
   // Ratios Page
   const RatiosPage = () => {
@@ -725,7 +617,7 @@ if (financialRatios.length > 0) {
             <p>No financial ratios available.</p>
           )}
         </div>
-        
+
         {ratios.length > 0 && (
           <button
             style={styles.knowMoreButtonOutside}
@@ -737,7 +629,7 @@ if (financialRatios.length > 0) {
       </>
     );
   };
-
+  
   // Detailed Ratios Modal
   const DetailedRatiosModal = () => (
     <div style={styles.modalOverlay}>
@@ -769,10 +661,11 @@ if (financialRatios.length > 0) {
       </div>
     </div>
   );
-
+ 
   return (
     <div style={styles.container}>
-      <Header />
+      <Header/>
+
       <Navigation />
 
       <main style={styles.main}>
@@ -834,75 +727,7 @@ const styles = {
     fontSize: '16px',
     fontStyle: 'italic'
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
 
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nav: {
-    display: "flex",
-    alignItems: "center",
-    gap: "1.5rem",
-  },
-  navLink: {
-    cursor: "pointer",
-    color: "#000000",
-    textDecoration: "none",
-    fontSize: "14px",
-    fontWeight: "500",
-    transition: "opacity 0.3s",
-  },
-  toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    color: 'Black'
-  },
-  userIcon: {
-    transition: 'color 0.2s'
-  },
-
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '14px'
-    ,color:'black'
-  },
   navigation: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -925,18 +750,7 @@ const styles = {
     fontWeight: '500',
     transition: 'background-color 0.3s',
   },
-    HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
+
   navButtonActive: {
     backgroundColor: '#515266',
     color: 'white',
@@ -995,14 +809,14 @@ const styles = {
     color: 'black',
   },
   contentGrid: {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gridTemplateAreas: `
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gridTemplateAreas: `
     "summary summary"
     "cons    pros"
   `,
-  gap: "40px",
-},
+    gap: "40px",
+  },
 
   prosSection: {
     backgroundColor: '#D1DFDF',
@@ -1048,9 +862,9 @@ const styles = {
     padding: '0.5rem',
     borderRadius: 12,
   },
-  ratioRow: { 
+  ratioRow: {
     display: 'grid',
-    gridTemplateColumns: '150px 30px 1fr', 
+    gridTemplateColumns: '150px 30px 1fr',
     alignItems: 'center',
     gap: '10px',
     marginBottom: '10px',
@@ -1216,7 +1030,7 @@ const styles = {
     padding: 0,
     display: 'grid',
     gridTemplateColumns: '3.5fr 1fr',
-    textAlign: 'right', 
+    textAlign: 'right',
     gap: '6px 0px',
   },
   functionsItem: {
@@ -1226,12 +1040,12 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   dropdownContainer: {
-    position: 'absolute', 
+    position: 'absolute',
     marginTop: '0.5rem',
-    right: 0, 
+    right: 0,
     minWidth: '180px',
     maxWidth: '80vw',
-    backgroundColor: '#DCDCDC', 
+    backgroundColor: '#DCDCDC',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
     borderRadius: '8px',
     zIndex: 10,
