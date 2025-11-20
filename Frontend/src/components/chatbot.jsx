@@ -24,8 +24,23 @@ export default function Chatbot({ reportId, apiKey }) {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
 
-    // API endpoint for your Django backend
+    // API endpoint for Django backend.
+    // The backend automatically pulls the stored summary (pros/cons/financial_health_summary)
+    // for the provided `reportId` (FinancialReport.report_id). Frontend only needs to send
+    // question, history, reportId, and apiKey.
     const CHAT_API_URL = '/api/chat/api/chatbot/'; 
+
+    // Auto-load Groq API key from localStorage if not passed
+    useEffect(() => {
+        if (!apiKey) {
+            const stored = localStorage.getItem('groq_api_key') || localStorage.getItem('userApiKey') || localStorage.getItem('GENAI_API_KEY');
+            if (stored && stored !== apiKey) {
+                // push a hint message
+                setChatHistory(prev => [...prev, { role: 'model', text: 'Using stored API key from previous upload session.' }]);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Scroll to the bottom of the chat window when new messages appear
     useEffect(() => {
@@ -162,10 +177,10 @@ export default function Chatbot({ reportId, apiKey }) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    question: question,
+                    question,
                     document_id: reportId,
-                    history: [...chatHistory, userMessage], // Send the *new* history
-                    api_key: apiKey
+                    history: [...chatHistory, userMessage],
+                    api_key: apiKey || localStorage.getItem('groq_api_key') || localStorage.getItem('userApiKey')
                 })
             });
 

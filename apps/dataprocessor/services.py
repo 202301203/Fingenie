@@ -8,7 +8,7 @@ import pytesseract
 from typing import List, Optional, Dict, Any, Literal
 
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
@@ -191,17 +191,35 @@ def prepare_context_smart(documents: List[Document]) -> str:
 
 # --- GEMINI 2.5 FLASH CONFIGURATION ---
 
-def create_gemini_llm(api_key: str, purpose: str = "extraction"):
-    """Create Gemini 2.5 Flash LLM with optimized settings."""
-    temperature = 0.1 if purpose == "extraction" else 0.2
+def create_groq_llm(api_key: str, purpose: str = "extraction"):
+    """Create Groq LLM with reliable model selection."""
     
+<<<<<<< HEAD
     llm = ChatGoogleGenerativeAI(
         model="gemini-pro",
         google_api_key=api_key,
+=======
+    # Use only the most reliable models
+    model_selection = {
+        "extraction": "llama-3.1-8b-instant",      # Most reliable for extraction
+        "analysis": "llama-3.1-8b-instant",        # Use same model for consistency
+        "pros_cons": "llama-3.1-8b-instant",       # Avoid 70b models that have issues
+        "ratios": "llama-3.1-8b-instant",          # Fast and reliable
+        "summary": "llama-3.1-8b-instant"          # Consistent performance
+    }
+    
+    temperature = 0.1  # Lower temperature for more consistent results
+    
+    model = model_selection.get(purpose, "llama-3.1-8b-instant")
+    
+    llm = ChatGroq(
+        model=model,
+        groq_api_key=api_key,
+>>>>>>> de3d946126645e8403cbbe84ab4fcff2d887019b
         temperature=temperature,
-        max_tokens=8192,  # Increased for better responses
-        timeout=120,
-        max_retries=3
+        max_tokens=4096,  # Reduce token usage
+        timeout=60,
+        max_retries=1     # Fewer retries to avoid cascading failures
     )
     return llm
 
@@ -248,7 +266,7 @@ Return ONLY valid JSON that strictly follows the specified schema. No additional
 def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any]:
     """Extract raw data using Gemini 2.5 Flash with structured output."""
     try:
-        llm = create_gemini_llm(api_key, "extraction")
+        llm = create_groq_llm(api_key, "extraction")
         
         print("Using Gemini 2.5 Flash for financial data extraction...")
         
@@ -283,7 +301,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
 def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, Any]:
     """Manual extraction fallback using Gemini 2.5 Flash."""
     try:
-        llm = create_gemini_llm(api_key, "extraction")
+        llm = create_groq_llm(api_key, "extraction")
         
         manual_prompt = f"""
         {EXTRACTION_PROMPT.format(context=context_text)}
@@ -372,7 +390,7 @@ As a senior financial analyst, analyze the extracted financial data and provide 
 def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
     """Generates a structured Pros/Cons summary using Gemini 2.5 Flash."""
     try:
-        llm = create_gemini_llm(api_key, "summary")
+        llm = create_groq_llm(api_key, "summary")
         
         financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
         formatted_prompt = SUMMARY_PROMPT.format(financial_data_json=financial_data_json)
@@ -427,7 +445,7 @@ As a financial analyst, calculate key financial ratios from the provided data an
 def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: str) -> Dict[str, Any]:
     """Generates financial ratios using Gemini 2.5 Flash."""
     try:
-        llm = create_gemini_llm(api_key, "ratios")
+        llm = create_groq_llm(api_key, "ratios")
         
         financial_data_json = json.dumps({"financial_items": financial_items}, indent=2)
         formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)

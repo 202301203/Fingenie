@@ -1,15 +1,22 @@
 import requests
 from django.conf import settings
 from django.http import JsonResponse
+from urllib.parse import urlencode, quote_plus # <-- NEW IMPORT for URL encoding
 
 def article_api(request):
     """
     API endpoint to fetch paginated financial news articles (20 per page)
-    with next and previous page support.
+    with next and previous page support, using advanced search.
     """
     try:
-        # --- Search query ---
-        query = "finance OR investing OR stock market OR company balance sheets"
+        # --- Search query: Use advanced operators for investment focus ---
+        # The key phrase 'stock market' or 'investing' MUST appear (+), 
+        # OR look for terms like 'global economy' or 'forex'.
+        query_text = (
+            '("stock market" OR "investing" OR "company balance sheets") '
+            'AND (finance OR "global economy" OR forex OR treasury) '
+            'NOT (sports OR weather)'
+        )
 
         # --- Pagination parameters ---
         page = int(request.GET.get('page', 1))  # Default page = 1
@@ -17,21 +24,28 @@ def article_api(request):
 
         # --- API key and endpoint ---
         api_key = settings.NEWS_API_KEY
-        url = (
-            'https://newsapi.org/v2/everything?'
-            f'qInTitle={query}&'
-            'sortBy=publishedAt&'
-            'language=en&'
-            f'pageSize={page_size}&'
-            f'page={page}&'
-            f'apiKey={api_key}'
-        )
+        url = 'https://newsapi.org/v2/everything'
+        
+        # --- Define parameters dictionary ---
+        # Using a dictionary for params lets the requests library handle URL encoding automatically, 
+        # which is crucial for the advanced search operators (like AND/OR/NOT and spaces).
+        params = {
+            'q': query_text,        # The full advanced query text
+            'searchIn': 'title,description', # Focuses search on title and description for higher relevance
+            'sortBy': 'publishedAt', # Newest articles come first
+            'language': 'en',
+            'pageSize': page_size,
+            'page': page,
+            'apiKey': api_key,
+        }
 
-        # --- Make the API call ---
-        response = requests.get(url)
+        # --- Make the API call using the 'params' dictionary ---
+        # requests.get will automatically build and encode the URL from the dictionary
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
 
+        # --- Rest of your existing code remains the same ---
         # --- Clean and filter results ---
         articles = [
             article for article in data.get('articles', [])

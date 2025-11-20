@@ -1,274 +1,220 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen,Cpu,GitCompare } from "lucide-react";
-import Default_photo from '../images/default_news.png';
+
+import {
+  User,
+  LogOut,
+  History,
+  Settings,
+  Wrench,
+  BarChart,
+  TrendingUp,
+  Search,
+  Activity,
+  BookOpen,
+  Cpu,
+  GitCompare,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+
+import Default_photo from "../images/default_news.png";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+
+// ⛔ ADD THIS (your backend URL)
+const API_BASE_URL = "http://localhost:8000"; // change as required
+
 const NewsPage = () => {
+  // UI state
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+
+  // Data state
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total_pages: 1,
+    next_page: null,
+    prev_page: null,
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Dummy static news data
-  const newsArticles = [
-    {
-      title: "Nigeria Firms Seen Mending Balance Sheets as Profits, Economy Recover",
-      author: "Bloomberg",
-      source: "Biztoc",
-      publishedAt: "2025-10-28T15:47:00Z",
-      urlToImage: "https://biztoc.com/x/39c9a9c5fab03ce_s.webp",
-      url: "https://biztoc.com/",
-    },
-    {
-      title: "How to identify good companies to invest in? Learn to analyse balance sheets",
-      author: "Sameer Bhardwaj",
-      source: "The Times of India",
-      publishedAt: "2025-10-27T01:00:00Z",
-      urlToImage:
-        "https://img.etimg.com/thumb/width-1200,height-900,imgsize-71006,resizemode-75,msid-124798097/wealth/invest/how-to-identify-good-companies-to-invest-in-learn-to-analyse-balance-sheets.jpg",
-      url: "https://economictimes.indiatimes.com/",
-    },
-    {
-      title: "AI’s Move From Banking Back Offices to Balance Sheets Warrants Caution",
-      author: "PYMNTS",
-      source: "Biztoc",
-      publishedAt: "2025-10-26T20:30:00Z",
-      urlToImage: "https://biztoc.com/x/b2c06614397f06_s.webp",
-      url: "https://biztoc.com/",
-    },
-    {
-      title: "Nigeria Firms Seen Mending Balance Sheets as Profits, Economy Recover",
-      author: "Bloomberg",
-      source: "Biztoc",
-      publishedAt: "2025-10-28T15:47:00Z",
-      urlToImage: "https://biztoc.com/x/39c9a9c5fab03ce_s.webp",
-      url: "https://biztoc.com/",
-    },
-    {
-      title: "How to identify good companies to invest in? Learn to analyse balance sheets",
-      author: "Sameer Bhardwaj",
-      source: "The Times of India",
-      publishedAt: "2025-10-27T01:00:00Z",
-      urlToImage:
-        "https://img.etimg.com/thumb/width-1200,height-900,imgsize-71006,resizemode-75,msid-124798097/wealth/invest/how-to-identify-good-companies-to-invest-in-learn-to-analyse-balance-sheets.jpg",
-      url: "https://economictimes.indiatimes.com/",
-    },
-    {
-      title: "AI’s Move From Banking Back Offices to Balance Sheets Warrants Caution",
-      author: "PYMNTS",
-      source: "Biztoc",
-      publishedAt: "2025-10-26T20:30:00Z",
-      urlToImage: "https://biztoc.com/x/b2c06614397f06_s.webp",
-      url: "https://biztoc.com/",
-    },
-    {
-      title: "Nigeria Firms Seen Mending Balance Sheets as Profits, Economy Recover",
-      author: "Bloomberg",
-      source: "Biztoc",
-      publishedAt: "2025-10-28T15:47:00Z",
-      urlToImage: "https://biztoc.com/x/39c9a9c5fab03ce_s.webp",
-      url: "https://biztoc.com/",
-    },
-    {
-      title: "How to identify good companies to invest in? Learn to analyse balance sheets",
-      author: "Sameer Bhardwaj",
-      source: "The Times of India",
-      publishedAt: "2025-10-27T01:00:00Z",
-      urlToImage:
-        "https://img.etimg.com/thumb/width-1200,height-900,imgsize-71006,resizemode-75,msid-124798097/wealth/invest/how-to-identify-good-companies-to-invest-in-learn-to-analyse-balance-sheets.jpg",
-      url: "https://economictimes.indiatimes.com/",
-    },
-    {
-      title: "AI’s Move From Banking Back Offices to Balance Sheets Warrants Caution",
-      author: "PYMNTS",
-      source: "Biztoc",
-      publishedAt: "2025-10-26T20:30:00Z",
-      urlToImage: "https://biztoc.com/x/b2c06614397f06_s.webp",
-      url: "https://biztoc.com/",
-    },
-  ];
+  // Extract page number from URL
+  const getPageFromQuery = () => {
+    const params = new URLSearchParams(location.search);
+    return parseInt(params.get("page")) || 1;
+  };
 
-  //  Filter news based on search text
-  const filteredArticles = newsArticles.filter(
-    (article) =>
-      article.title.toLowerCase().includes(search.toLowerCase()) ||
-      article.author.toLowerCase().includes(search.toLowerCase()) ||
-      article.source.toLowerCase().includes(search.toLowerCase())
+  const [currentPage, setCurrentPage] = useState(getPageFromQuery());
+
+  // Fetch Articles Function
+  const fetchArticles = useCallback(
+    async (pageNumber) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const url = `${API_BASE_URL}/api/articles/?page=${pageNumber}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Error fetching articles");
+        }
+
+        const data = await response.json();
+
+        setArticles(data.articles || []);
+        setPagination({
+          page: data.page,
+          total_pages: data.total_pages,
+          next_page: data.next_page,
+          prev_page: data.prev_page,
+        });
+
+        navigate(`/NewsPage?page=${pageNumber}`, { replace: true });
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Could not fetch news.");
+        setArticles([]);
+      }
+
+      setLoading(false);
+    },
+    [navigate]
   );
 
-  //  Check if we are on News page (for underline)
-  const isNewsActive = location.pathname === "/NewsPage";
+  // Run fetch when page changes
+  useEffect(() => {
+    fetchArticles(currentPage);
+  }, [currentPage, fetchArticles]);
+
+  // Filtered articles based on search
+  const filteredArticles = articles.filter(
+    (article) =>
+      article.title.toLowerCase().includes(search.toLowerCase()) ||
+      (article.author &&
+        article.author.toLowerCase().includes(search.toLowerCase())) ||
+      (article.source?.name &&
+        article.source.name.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  // Pagination handler
+  const goToPage = (page) => {
+    if (page && page !== currentPage) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Pagination Component
+  const PaginationControls = () => (
+    <div style={styles.paginationContainer}>
+      <button
+        onClick={() => goToPage(pagination.prev_page)}
+        disabled={!pagination.prev_page || loading}
+        style={styles.paginationButton}
+      >
+        <ChevronLeft size={20} /> Previous
+      </button>
+
+      <span style={styles.paginationInfo}>
+        Page {pagination.page} of {pagination.total_pages}
+      </span>
+
+      <button
+        onClick={() => goToPage(pagination.next_page)}
+        disabled={!pagination.next_page || loading}
+        style={styles.paginationButton}
+      >
+        Next <ChevronRight size={20} />
+      </button>
+    </div>
+  );
 
   return (
     <>
-      {/*  HEADER SECTION */}
       <Header />
 
-      {/* 📰 MAIN NEWS SECTION */}
       <div style={styles.container}>
-        
-
-        {/* Search Bar */}
-        <div style={{ position: "relative", width: "900px" }}>
-            <Search
-                size={20}
-                color="gray"
-                style={{
-                position: "absolute",
-                left: "10px",
-                top: "30%",
-                transform: "translateY(-50%)",
-                }}
-            />
-            <input
-                type="text"
-                placeholder="Search news..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                ...styles.search,
-                paddingLeft: "35px", //  make space for the icon
-                }}
-            />
-            </div>
-<h1 style={styles.heading}>Latest News</h1>
-
-        {/* News Grid */}
-        <div style={styles.grid}>
-          {filteredArticles.map((article, index) => (
-            <div key={index} style={styles.card}>
-              <img
-                src={article.urlToImage || Default_photo}
-                alt="news"
-                style={styles.image}
-                onError={(e) => {
-                e.target.onerror = null; // avoid infinite loop
-                e.target.src = Default_photo; // fallback to default image
-                }}
-              />
-              <h3 style={styles.title}>{article.title}</h3>
-              <p style={styles.source}>
-                {article.source} — <em>{article.author}</em>
-              </p>
-              <p style={styles.date}>
-                {new Date(article.publishedAt).toLocaleString()}
-              </p>
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={styles.link}
-              >
-                Read more →
-              </a>
-            </div>
-          ))}
+        {/* 🔍 Search */}
+        <div style={{ position: "relative", width: "100%", maxWidth: "900px", margin: "0 auto" }}>
+          <Search size={20} color="gray" style={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search news by title, author, or source..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...styles.search, paddingLeft: "35px" }}
+            disabled={loading || error}
+          />
         </div>
+
+        <h1 style={styles.heading}>Latest Financial News</h1>
+
+        {/* 📰 News Grid */}
+        {loading ? (
+          <p>Loading news...</p>
+        ) : error ? (
+          <p style={{ color: "red" }}>{error}</p>
+        ) : filteredArticles.length === 0 ? (
+          <p>No articles match your search.</p>
+        ) : (
+          <div style={styles.grid}>
+            {filteredArticles.map((article, index) => (
+              <div key={index} style={styles.card}>
+                <img
+                  src={article.urlToImage || Default_photo}
+                  alt="news"
+                  style={styles.image}
+                  onError={(e) => (e.target.src = Default_photo)}
+                />
+
+                <h3 style={styles.title}>{article.title}</h3>
+                <p style={styles.source}>
+                  {article.source?.name || "Unknown Source"} —{" "}
+                  <em>{article.author || "No Author"}</em>
+                </p>
+
+                <p style={styles.date}>
+                  {new Date(article.publishedAt).toLocaleString()}
+                </p>
+
+                <a href={article.url} target="_blank" rel="noopener noreferrer" style={styles.link}>
+                  Read more →
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && articles.length > 0 && <PaginationControls />}
       </div>
-<Footer />
+
+      <Footer />
     </>
   );
 };
 
-
-/* CSS */
 const styles = {
-   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-
-  navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
-  },
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
-  },
-    toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-      userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
-  },
-  
   container: {
-    maxWidth: '1200px',
-    margin: '2rem auto',
-    padding: '0 1rem',
+    maxWidth: "1200px",
+    margin: "2rem auto",
+    padding: "0 1rem",
   },
-
   heading: {
     fontSize: "28px",
+    textAlign: "center",
     fontWeight: "bold",
-    marginBottom: "1rem",
+    marginTop: "2rem",
+    marginBottom: "1.5rem",
   },
   search: {
     width: "100%",
@@ -278,6 +224,12 @@ const styles = {
     border: "1px solid #ccc",
     marginBottom: "2rem",
   },
+  searchIcon: {
+    position: "absolute",
+    left: "10px",
+    top: "50%",
+    transform: "translateY(-50%)",
+  },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
@@ -286,10 +238,9 @@ const styles = {
   card: {
     background: "linear-gradient(135deg, #e6ecf7ff, #ffffff)",
     borderRadius: "10px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    border: "1px solid #1e1e1e",
     padding: "1rem",
-    transition: "transform 0.2s",
-    border: "1px solid #1e1e1eff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
   },
   image: {
     width: "100%",
@@ -298,26 +249,45 @@ const styles = {
     borderRadius: "8px",
   },
   title: {
+    marginTop: "0.5rem",
     fontSize: "18px",
     fontWeight: "600",
-    marginTop: "0.5rem",
   },
   source: {
+    marginTop: "0.25rem",
     fontSize: "14px",
     color: "#555",
   },
   date: {
+    marginTop: "0.25rem",
     fontSize: "12px",
     color: "#999",
-    marginBottom: "0.5rem",
   },
   link: {
     textDecoration: "none",
+    fontWeight: "500",
     color: "#007bff",
+    marginTop: "0.5rem",
+    display: "inline-block",
+  },
+  paginationContainer: {
+    marginTop: "2rem",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "1rem",
+  },
+  paginationButton: {
+    padding: "8px 16px",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+    cursor: "pointer",
+    background: "#f8f9fa",
+  },
+  paginationInfo: {
+    fontSize: "16px",
     fontWeight: "500",
   },
-  
-
 };
 
 export default NewsPage;

@@ -28,22 +28,28 @@ def ai_insights_view(request):
         return JsonResponse({'error': 'Invalid method'}, status=405)
 
     try:
-        data = json.loads(request.body)
-        question = data.get('question')
-        chat_history = data.get('history', []) # Get the chat history
-        api_key = data.get('api_key')
+        data = json.loads(request.body or '{}')
+        # Accept alternate key names for flexibility from frontend.
+        question = data.get('question') or data.get('prompt') or data.get('message')
+        chat_history = data.get('history', [])  # list[{role,text}]
+        # API key can come from request, settings or environment.
+        api_key = (
+            data.get('api_key')
+            or getattr(settings, 'GEMINI_API_KEY', None)
+            or os.environ.get('GEMINI_API_KEY')
+        )
 
         if not question:
             return JsonResponse({'error': 'Missing question'}, status=400)
-            
-        if not api_key:
-            return JsonResponse({'error': 'Missing api_key'}, status=400)
 
-        # ---CONFIGURE API KEY INSIDE THE VIEW ---
+        if not api_key:
+            return JsonResponse({'error': 'API key not provided and GEMINI_API_KEY not set on server.'}, status=500)
+
+        # Configure SDK with resolved key
         try:
             genai.configure(api_key=api_key)
         except Exception as e:
-            return JsonResponse({'error': f'Invalid API key or configuration error: {e}'}, status=500)
+            return JsonResponse({'error': f'Gemini configuration error: {e}'}, status=500)
 
         # 4. Set up the model.
         # Build an ordered list of candidate models to try.

@@ -301,8 +301,10 @@ const FileUploadApp = () => {
                         // Store API key in localStorage if provided
                         if (apiKey?.trim()) {
                           localStorage.setItem('userApiKey', apiKey.trim());
+                          localStorage.setItem('groq_api_key', apiKey.trim());
                         } else if (json?.api_key) {
                           localStorage.setItem('userApiKey', json.api_key);
+                          localStorage.setItem('groq_api_key', json.api_key);
                         }
 
                         navigate('/summary_page', { state: json });
