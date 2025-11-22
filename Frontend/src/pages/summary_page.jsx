@@ -97,9 +97,7 @@ export default function FinGenieApp() {
       setLoading(true);
       setError(null);
 
-      // First check authentication
-      const isAuthenticated = await checkAuthentication();
-      if (!isAuthenticated) return;
+      // Authentication check removed: allow anonymous access to summaries
 
       console.log("Fetching company data...");
 
