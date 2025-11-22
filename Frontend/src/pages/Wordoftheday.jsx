@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, LogOut, History, Settings, Wrench, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare } from "lucide-react";
 import Header from "../components/Header";
@@ -17,21 +17,7 @@ const COLORS = {
 
 };
 
-// --- DUMMY DATA (Mimics the backend output) ---
-const mockQuizData = {
-    date: "2025-11-05",
-    term: "Debt-to-Equity Ratio",
-    explanation: "The Debt-to-Equity (D/E) ratio is a financial metric showing how much debt a company uses to finance its assets compared to the value of shareholders' equity. It helps assess a company's financial leverage and solvency. A higher ratio often indicates greater reliance on debt funding, which can mean higher risk, while a lower ratio suggests more equity financing. Investors use it to evaluate risk.",
-    question: "What does a high Debt-to-Equity ratio typically indicate for a company?",
-    options: [
-        "The company has very low financial risk.",
-        "The company relies more on equity financing than debt.",
-        "The company relies more on debt financing than equity.",
-        "The company is guaranteed to be profitable."
-    ],
-    correct_answer: "The company relies more on debt financing than equity.",
-    answer_explanation: "A high Debt-to-Equity ratio means a company uses a large proportion of debt compared to equity to finance its operations, indicating higher financial leverage and potentially higher risk."
-};
+
 
 // --- STYLES DEFINITION ---
 const styles = {
@@ -212,16 +198,57 @@ const styles = {
 
 // --- MAIN QUIZ APPLICATION COMPONENT ---
 export default function QuizPage() {
-    const navigate = useNavigate(); // FIX 1: Define useNavigate hook
+    const navigate = useNavigate();
     const [selectedOption, setSelectedOption] = useState(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [hoveredOption, setHoveredOption] = useState(null);
-    const [errorMsg, setErrorMsg] = useState(''); // New state for error message
-    // FIX 2 & 3: Define state for dropdown menus
-    const location = useLocation();
+    const [errorMsg, setErrorMsg] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [showToolsDropdown, setShowToolsDropdown] = useState(false);
 
+    // --- BACKEND INTEGRATION STATE ---
+    const [quizData, setQuizData] = useState(null); // Stores the fetched data
+    const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState(null);
 
-    const data = mockQuizData; // Use mock data for now, replace with API fetch later
+    // --- BACKEND FETCH EFFECT ---
+    useEffect(() => {
+        const fetchDailyTopic = async () => {
+            const apiKey = localStorage.getItem('userApiKey');
+
+            if (!apiKey) {
+                setApiError("API Key not found. Please log in again or upload a document first.");
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch('https://fingenie-sz41.onrender.com/api/learning/daily-topic/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `API Error: ${response.status}`);
+                }
+
+                const fetchedData = await response.json();
+                setQuizData(fetchedData);
+            } catch (err) {
+                console.error("Failed to fetch daily topic:", err);
+                setApiError("Failed to load today's topic. Please check your connection.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDailyTopic();
+    }, []);
+
+    // Use the fetched data if available
+    const data = quizData;
 
     const handleSubmit = () => {
         if (selectedOption !== null) {
@@ -282,6 +309,44 @@ export default function QuizPage() {
         return isCorrect ? styles.resultCorrect : styles.resultIncorrect;
     };
 
+    if (isLoading) {
+        return (
+            <div style={styles.appWrapper}>
+                <Header />
+                <div style={styles.mainContent}>
+                    <div style={{...styles.contentCard1, textAlign: 'center'}}>
+                        <h2>Loading today's topic...</h2>
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        );
+    }
+
+    // 2. Show Error State
+    if (apiError) {
+        return (
+            <div style={styles.appWrapper}>
+                <Header />
+                <div style={styles.mainContent}>
+                     <div style={{...styles.contentCard2, borderColor: COLORS.Error}}>
+                        <h2 style={{color: COLORS.Error}}>Unable to load content</h2>
+                        <p>{apiError}</p>
+                        <button 
+                            style={styles.submitButton} 
+                            onClick={() => window.location.reload()}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        );
+    }
+
+    // 3. Safety check
+    if (!data) return null;
 
     return (
         <div style={styles.appWrapper}>
