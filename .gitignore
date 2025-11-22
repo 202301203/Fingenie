@@ -23,3 +23,11 @@ dist/
 # Others
 .env
 *.DS_Store
+
+.early.coverage
+
+venv/
+venv312/
+*.pyc
+__pycache__/
+
