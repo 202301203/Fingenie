@@ -1,20 +1,29 @@
+# Web Framework and REST API
+Django==5.1.2                    # Core web framework
+djangorestframework==3.15.0      # REST API framework
+django-cors-headers==4.4.0       # Handle CORS headers
+gunicorn==21.2.0                # WSGI HTTP Server
 
-Django==5.1.2
-gunicorn==21.2.0
-django-cors-headers==4.4.0
+# Environment and HTTP
+python-dotenv==1.0.1            # Load environment variables
+requests==2.32.3                # HTTP client library
 
+# Image and Document Processing
+Pillow==11.0.0                  # Python Imaging Library
+pytesseract==0.3.13            # Optical Character Recognition
+pypdf==5.1.0                    # PDF processing
+pdfplumber==0.11.5             # PDF text extraction
 
-python-dotenv==1.0.1
-requests==2.32.3
-Pillow==11.0.0
-pydantic==2.9.2
+# Data Models and Validation
+pydantic==2.9.2                # Data validation using Python type annotations
 
+# Financial Data
+yfinance==0.2.43               # Yahoo Finance market data
 
-yfinance==0.2.43
-langchain-google-genai==1.0.7
-langchain-community==0.2.15
-
-
-pypdf==5.1.0
-pdfplumber==0.11.5
-pytesseract==0.3.13
+# AI 
+google-generativeai    # Google's Generative AI models
+langchain-google-genai  # LangChain + Google AI integration
+langchain-community    # Community integrations for LangChain
+channels>=4.1.0         # Django Channels for WebSockets
+django-model-utils==5.0.0
+langchain-groq

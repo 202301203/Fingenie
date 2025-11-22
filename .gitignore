@@ -24,6 +24,7 @@ dist/
 .env
 *.DS_Store
 
+<<<<<<< HEAD
 .early.coverage
 
 venv/
@@ -31,3 +32,6 @@ venv312/
 *.pyc
 __pycache__/
 
+=======
+.early.coverage
+>>>>>>> 20ab1b8aa76276d3a9dc1dffd2a4778dae745241

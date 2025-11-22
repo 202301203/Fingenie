@@ -1,4 +1,3 @@
-
 from django.http import JsonResponse
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -30,8 +29,16 @@ def get_stock_data_api(request, ticker, period):
 
         # 2. Fetch historical data
         hist = stock.history(**params)
+        
+        # --- MODIFICATION 1: Check for historical data immediately ---
         if hist.empty:
-            return JsonResponse({'error': f'No historical data found for ticker {ticker}'}, status=404)
+            # Check if yfinance logged a failure reason
+            error_msg = f'No historical data found for ticker {ticker} for period {period}.'
+            if stock.info is None or not stock.info:
+                 error_msg += " Ticker information also failed to load (possibly invalid symbol or data source issue)."
+            
+            # Use 404 for 'No data found'
+            return JsonResponse({'error': error_msg}, status=404)
 
         # 3. Format historical data for candlestick/bar charts (OHLC format)
         chart_data = []
@@ -43,12 +50,22 @@ def get_stock_data_api(request, ticker, period):
 
         # 4. Fetch current price information
         info = stock.info
-        last_close = info.get('previousClose', 0)
-        current_price = info.get('currentPrice', hist['Close'].iloc[-1]) # Use last historical close as fallback
         
-        price_diff = current_price - last_close
-        percent_diff = (price_diff / last_close * 100) if last_close != 0 else 0
-        currency = info.get('currency', 'USD')
+        # --- MODIFICATION 2: Handle cases where 'info' might be incomplete or missing ---
+        if not info:
+            # If info failed, use the last available close price from the historical data
+            last_close = hist['Close'].iloc[-1]
+            current_price = last_close
+            price_diff = 0.0
+            percent_diff = 0.0
+            currency = 'N/A'
+        else:
+            last_close = info.get('previousClose', hist['Close'].iloc[-1] if not hist.empty else 0)
+            current_price = info.get('currentPrice', hist['Close'].iloc[-1])
+            
+            price_diff = current_price - last_close
+            percent_diff = (price_diff / last_close * 100) if last_close != 0 else 0
+            currency = info.get('currency', 'USD')
         
         # 5. Build the final JSON response
         response_data = {
@@ -63,4 +80,5 @@ def get_stock_data_api(request, ticker, period):
         return JsonResponse(response_data, status=200)
 
     except Exception as e:
-        return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)
+        # Catch any unexpected errors during processing
+        return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)

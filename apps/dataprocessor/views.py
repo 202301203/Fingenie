@@ -1,120 +1,409 @@
-from django.shortcuts import render
+# dataprocessor/views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required  # retained for potential future use but not applied now
 from django.conf import settings
 import os
 import uuid
 import json
 
-# Import core logic functions
+from .models import FinancialReport
 from .services import (
+    load_pdf_robust,
+    prepare_context_smart,
     extract_raw_financial_data,
     generate_summary_from_data,
-    generate_ratios_from_data,
-    load_pdf_robust,
-    prepare_context_smart
+    generate_ratios_from_data
 )
 
-# Simple form for file upload
-def upload_file_view(request):
-    """Renders the file upload form."""
-    return render(request, 'pdf_app/upload.html')
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from decimal import Decimal
+import datetime
+import time
+import yfinance as yf
+
+class CustomJSONEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
 
 @csrf_exempt
-def extract_data_api(request):
-    """
-    Handles the file upload, performs robust extraction, and generates a business summary.
-    """
+def process_financial_statements_api(request):
     if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request method.'}, status=405)
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-    # --- MODIFIED KEY ---
-    if 'file' not in request.FILES:
-        return JsonResponse({'error': 'No file uploaded.'}, status=400)
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return JsonResponse({'error': 'No file uploaded'}, status=400)
 
-    uploaded_file = request.FILES['file']
-    # --------------------
-    # Prefer api_key sent from frontend (if provided), otherwise fall back to server-side configured key
-    api_key = request.POST.get('api_key') or getattr(settings, 'GENIE_API_KEY', None) or os.environ.get('GENIE_API_KEY')
-    if not api_key:
-        return JsonResponse({'error': 'No API key provided. Provide api_key in the POST or set GENIE_API_KEY in settings or environment.'}, status=500)
+    temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_uploads')
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}.pdf")
 
-    # 1. Save the file temporarily
-    unique_name = str(uuid.uuid4())
-    file_extension = os.path.splitext(uploaded_file.name)[1]
+    google_api_key = request.POST.get('api_key')  
     
-    # --- ADDED PDF CHECK ---
-    if file_extension.lower() != '.pdf':
-        return JsonResponse({'error': 'Invalid file type. Only PDF files are accepted.'}, status=400)
-    # -----------------------
-    temp_filename = f"{unique_name}{file_extension}"
-    pdf_path = os.path.join(settings.MEDIA_ROOT, temp_filename)
-    
-    os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-    
-    extraction_result = {"financial_items": [], "summary": None}
-    
+    if not google_api_key:
+        return JsonResponse({'error': 'Missing API key'}, status=500)
+    if not google_api_key:
+        return JsonResponse({'error': 'Missing Google API key'}, status=500)
+
     try:
-        with open(pdf_path, 'wb+') as destination:
+        # Save uploaded file temporarily
+        with open(temp_path, 'wb+') as destination:
             for chunk in uploaded_file.chunks():
                 destination.write(chunk)
-        
-        # --- STEP 1: LOAD AND PREPARE CONTEXT ---
-        documents = load_pdf_robust(pdf_path)
-        if not documents:
-            raise ValueError("Failed to extract any usable text from PDF.")
-        
-        context_text = prepare_context_smart(documents)
-        
-        
-        # --- STEP 2: EXTRACT RAW FINANCIAL DATA ---
-        raw_data_result = extract_raw_financial_data(context_text, api_key)
-        
-        if not raw_data_result.get('success'):
-            return JsonResponse(raw_data_result, status=500)
-            
-        # Capture all the extracted data, not just financial_items
-        financial_items = raw_data_result.get('financial_items', [])
-        company_name = raw_data_result.get('company_name')
-        ticker_symbol = raw_data_result.get('ticker_symbol')
 
-        # Store everything in the main result object
-        extraction_result['financial_items'] = financial_items
-        extraction_result['company_name'] = company_name
-        extraction_result['ticker_symbol'] = ticker_symbol
-        
-        if not financial_items:
-            # If no items were extracted, skip the summary step
-             return JsonResponse({
-                'financial_items': [],
-                'summary': {'pros': ["Extraction successful but no financial tables found."], 'cons': []}
-            }, status=200)
+        # Step 1: Load and prepare document context
+        documents = load_pdf_robust(temp_path)
+        context = prepare_context_smart(documents)
+        if len(context.strip()) < 100:
+            return JsonResponse({"error": "Insufficient financial content found", "success": False}, status=400)
 
-        # --- STEP 3: GENERATE SUMMARY FROM EXTRACTED DATA ---
-        summary_result = generate_summary_from_data(financial_items, api_key)
-        
-        if not summary_result.get('success'):
-             # If summary fails, return raw data and log the error
-            print(f"Summary failed: {summary_result.get('error')}")
-            extraction_result['summary'] = {'pros': [], 'cons': [f"Summary generation failed: {summary_result.get('error')}"]}
+        # Step 2: Extract raw financial data
+        extracted_data = extract_raw_financial_data(context, google_api_key)
+        if not extracted_data.get("success"):
+            error_msg = extracted_data.get("error", "Data extraction failed")
+            return JsonResponse({"error": error_msg, "success": False}, status=400)
+
+        # Step 3: Generate summary
+        summary_result = generate_summary_from_data(extracted_data.get('financial_items', []), google_api_key)
+        if not summary_result.get("success"):
+            # Don't fail entirely if summary fails, just use empty summary
+            summary_data = {"pros": [], "cons": [], "financial_health_summary": "Summary generation failed"}
         else:
-            extraction_result['summary'] = summary_result['summary']
+            summary_data = {
+                "pros": summary_result.get("pros", []),
+                "cons": summary_result.get("cons", []),
+                "financial_health_summary": summary_result.get("financial_health_summary", "")
+            }
 
-        ratio_result = generate_ratios_from_data(financial_items,api_key)
-
-        if not ratio_result.get('success'):
-            print(f"Ratio calcuulation Failed: {ratio_result.get('error')}")
+        # Step 4: Calculate ratios
+        ratios_result = generate_ratios_from_data(extracted_data.get('financial_items', []), google_api_key)
+        if not ratios_result.get("success"):
+            # Don't fail entirely if ratios fail, just use empty ratios
+            ratios_data = []
         else:
-            extraction_result['ratios'] = ratio_result['ratios']
-        # --- STEP 4: RETURN COMBINED RESULTS ---
-        return JsonResponse(extraction_result, status=200)
+            ratios_data = ratios_result.get("financial_ratios", [])
+
+        # Step 5: Save to DB using your model's setter methods - NOW WITH USER LINK
+        report_id = str(uuid.uuid4())
+        # Remove user linkage: allow creation without authentication.
+        # If you later want optional linkage, use:
+        # user_obj = request.user if getattr(request.user, 'is_authenticated', False) else None
+        # and pass user=user_obj.
+        report = FinancialReport.objects.create(
+            report_id=report_id,
+            company_name=extracted_data.get("company_name", "Unknown Company"),
+            ticker_symbol=extracted_data.get("ticker_symbol", ""),
+            user=None,  # No user association
+            uploaded_pdf=uploaded_file,
+            pdf_original_name=uploaded_file.name,
+        )
+        
+        # Use the setter methods from your model
+        report.set_summary(summary_data)
+        report.set_ratios(ratios_data)
+        report.save()
+
+        # Clean up
+        os.remove(temp_path)
+
+        # Return the response in the format expected by frontend
+        return JsonResponse({
+            'success': True,
+            'report_id': report_id,
+            'company_name': extracted_data.get("company_name", "Unknown Company"),
+            'ticker_symbol': extracted_data.get("ticker_symbol", ""),
+            'summary': report.get_summary(),  # Use getter to ensure proper format
+            'ratios': report.get_ratios(),    # Use getter to ensure proper format
+            'metadata': {
+                "file_name": uploaded_file.name,
+                "size_kb": round(uploaded_file.size / 1024, 2),
+                "uploaded_pdf": True,
+            }
+        }, encoder=CustomJSONEncoder)
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': f"An internal server error occurred during processing: {e}"}, status=500)
+        print(f"Error in processing: {str(e)}")
+        print(traceback.format_exc())
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
 
-    finally:
-        # Clean up the temporary file, regardless of success/failure
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
+@csrf_exempt
+def get_report_by_id_api(request, report_id):
+    try:
+        print(f" Looking for report: {report_id}")
+        # Public access: fetch by report_id only (no user restriction)
+        report = FinancialReport.objects.get(report_id=report_id)
+        print(f" Found report: {report.company_name}")
+        
+        # Debug: Check what data we have
+        print(f" Summary data type: {type(report.summary)}")
+        print(f" Ratios data type: {type(report.ratios)}")
+        
+        # Use getter methods to ensure proper structure
+        summary_data = report.get_summary()
+        ratios_data = report.get_ratios()
+        
+        print(f" Summary pros count: {len(summary_data.get('pros', []))}")
+        print(f" Summary cons count: {len(summary_data.get('cons', []))}")
+        print(f" Ratios count: {len(ratios_data)}")
+        
+        response_data = {
+            'success': True,
+            'report_id': str(report.report_id),
+            'company_name': report.company_name,
+            'ticker_symbol': report.ticker_symbol,
+            'summary': summary_data,
+            'ratios': ratios_data,
+            'created_at': report.created_at.isoformat(),
+            'time_ago': report.time_ago,
+            'has_uploaded_pdf': report.has_uploaded_pdf,
+            'uploaded_pdf_name': report.pdf_original_name,
+        }
+        
+        print(f" Sending response for report: {report_id}")
+        return JsonResponse(response_data)
+        
+    except FinancialReport.DoesNotExist:
+        print(f" Report not found or access denied: {report_id}")
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
+    except Exception as e:
+        print(f" Error in get_report_by_id_api: {str(e)}")
+        import traceback
+        print(f"Stack trace: {traceback.format_exc()}")
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+@csrf_exempt
+def get_latest_report_api(request):
+    try:
+        print(" Looking for latest report...")
+        # Public: latest overall report (no user filter)
+        report = FinancialReport.objects.order_by('-created_at').first()
+        if not report:
+            print(" No reports found for user")
+            return JsonResponse({'error': 'No reports found'}, status=404)
+
+        print(f" Found latest report: {report.company_name}")
+        
+        # Use getter methods
+        response_data = {
+            'success': True,
+            'report_id': str(report.report_id),
+            'company_name': report.company_name,
+            'ticker_symbol': report.ticker_symbol,
+            'summary': report.get_summary(),
+            'ratios': report.get_ratios(),
+            'created_at': report.created_at.isoformat(),
+            'time_ago': report.time_ago,
+            'has_uploaded_pdf': report.has_uploaded_pdf,
+        }
+        
+        print(f" Sending latest report response")
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        print(f" Error in get_latest_report_api: {str(e)}")
+        import traceback
+        print(f"Stack trace: {traceback.format_exc()}")
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+# ============================================
+# NEW PROFILE-INTEGRATED VIEWS
+# ============================================
+
+@csrf_exempt
+def user_summary_history(request):
+    """Get public financial analysis history (all reports)."""
+    try:
+        reports = FinancialReport.objects.order_by('-created_at')
+        
+        reports_data = []
+        for report in reports:
+            reports_data.append({
+                'report_id': str(report.report_id),
+                'company_name': report.company_name,
+                'ticker_symbol': report.ticker_symbol,
+                'summary_preview': report.financial_health_summary[:100] + '...' if report.financial_health_summary else '',
+                'full_summary': report.financial_health_summary,
+                'date': report.created_at.strftime('%b %d, %Y'),
+                'time_ago': report.time_ago,
+                'uploaded_pdf': report.has_uploaded_pdf,
+                'pdf_name': report.pdf_original_name,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'reports': reports_data,
+            'total_reports': len(reports_data)
+        })
+        
+    except Exception as e:
+        print(f"Error in user_summary_history: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to load summary history'
+        }, status=500)
+
+@csrf_exempt
+def delete_report_api(request, report_id):
+    """Delete a report by id (public). WARNING: consider re-adding auth for production."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    try:
+        # Public delete by id (no user filter)
+        report = FinancialReport.objects.get(report_id=report_id)
+        company_name = report.company_name
+        report.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Report for {company_name} deleted successfully'
+        })
+        
+    except FinancialReport.DoesNotExist:
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
+    except Exception as e:
+        print(f"Error deleting report: {str(e)}")
+        return JsonResponse({'error': 'Failed to delete report'}, status=500)
+
+@csrf_exempt
+def get_recent_analyses(request):
+    """Get recent analyses (public feed)."""
+    try:
+        limit = request.GET.get('limit', 5)
+        reports = FinancialReport.objects.order_by('-created_at')[:int(limit)]
+        
+        analyses_data = []
+        for report in reports:
+            analyses_data.append({
+                'report_id': str(report.report_id),
+                'company_name': report.company_name,
+                'ticker_symbol': report.ticker_symbol,
+                'summary_preview': report.financial_health_summary[:50] + '...' if report.financial_health_summary else 'Analysis completed',
+                'date': report.created_at.strftime('%b %d, %Y'),
+                'time_ago': report.time_ago,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'analyses': analyses_data
+        })
+        
+    except Exception as e:
+        print(f"Error in get_recent_analyses: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to load recent analyses'
+        }, status=500)
+
+@csrf_exempt
+def get_stock_data_api(request, ticker_symbol, period='1M'):
+    """Return recent stock price data for the given ticker.
+
+    Query params:
+      period   -> overrides URL period (1D,5D,1M,3M,6M,1Y,2Y,5Y,10Y)
+      interval -> optional explicit granularity (30m,1h,1d,1wk) if supported by yfinance
+
+    If interval not supplied or invalid, a sensible default is chosen based on period.
+    """
+    try:
+        qp_period = request.GET.get('period')
+        sel_period = (qp_period or period or '1M').upper()
+        qp_interval = request.GET.get('interval')
+        period_map = {
+            '1D': '1d', '5D': '5d',
+            '1M': '1mo', '3M': '3mo', '6M': '6mo',
+            '1Y': '1y', '2Y': '2y', '5Y': '5y', '10Y': '10y'
+        }
+        yf_period = period_map.get(sel_period, '1mo')
+
+        # Choose interval: allow explicit override if valid; else auto-select.
+        allowed_intervals = {'30m', '1h', '1d', '1wk'}
+        if qp_interval and qp_interval in allowed_intervals:
+            interval = qp_interval
+        else:
+            if yf_period in ('1d', '5d'):
+                interval = '30m'
+            elif yf_period in ('1mo', '3mo'):
+                interval = '1d'
+            else:
+                interval = '1wk'
+
+        ticker = ticker_symbol.strip()
+        # Helper with retry & fallback
+        def fetch_history():
+            last_exception = None
+            for attempt in range(3):
+                try:
+                    df = yf.download(ticker, period=yf_period, interval=interval, progress=False, auto_adjust=False, threads=False)
+                    if df is not None and not df.empty:
+                        return df
+                except Exception as e:
+                    last_exception = e
+                # Fallback to Ticker.history
+                try:
+                    tk = yf.Ticker(ticker)
+                    df2 = tk.history(period=yf_period, interval=interval)
+                    if df2 is not None and not df2.empty:
+                        return df2
+                except Exception as e2:
+                    last_exception = e2
+                time.sleep(1)  # brief backoff
+            if last_exception:
+                print(f"Stock fetch failed for {ticker}: {last_exception}")
+            return None
+
+        df = fetch_history()
+
+        if df is None or df.empty:
+            return JsonResponse({
+                'success': True,
+                'ticker': ticker,
+                'period': sel_period,
+                'interval': interval,
+                'data': [],
+                'note': 'No data returned from provider'
+            })
+
+        # Build list of points: date/time + close price
+        points = []
+        for idx, row in df.iterrows():
+            # idx can be pandas Timestamp
+            ts = idx.to_pydatetime() if hasattr(idx, 'to_pydatetime') else idx
+            # prefer Close; fallback to Adj Close
+            price = None
+            if 'Close' in row and not (row['Close'] is None):
+                try:
+                    price = float(row['Close'])
+                except Exception:
+                    price = None
+            if price is None and 'Adj Close' in row and not (row['Adj Close'] is None):
+                try:
+                    price = float(row['Adj Close'])
+                except Exception:
+                    price = None
+            if price is None:
+                continue
+            points.append({
+                'timestamp': ts.isoformat(),
+                'price': price
+            })
+
+        return JsonResponse({
+            'success': True,
+            'ticker': ticker,
+            'period': sel_period,
+            'interval': interval,
+            'point_count': len(points),
+            'data': points
+        })
+
+    except Exception as e:
+        print(f"Error fetching stock data for {ticker_symbol}: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to fetch stock data'}, status=500)

@@ -17,15 +17,25 @@ Including another URLconf
 # financial_extractor/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from apps.news import views as news_views
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', include('apps.accounts.urls')),  # Link to homepage app URLs
     path('admin/', admin.site.urls),
     path('accounts/',include('apps.accounts.urls')),
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
     path('sector/',include('apps.sector_overview.urls')),
+    path('trends/',include('apps.trends.urls')),
+    path('blog/', include('apps.blog.urls')),
+    path('company-search/', include('apps.company_search.urls')), # Link Company Search app
+    path('api/chat/', include('apps.chatbot.urls')), #Link Chatbot app
+    path('api/learning/', include('apps.learning.urls')),# Link quiz learning app
+    path('api/insights/', include('apps.ai_insights.urls')), # Link AI insights app
+    # Provide articles endpoint directly (frontend uses /api/articles/)
+    path('api/articles/', news_views.article_api, name='article_api'),
 ]
 
 # Serve media files during development

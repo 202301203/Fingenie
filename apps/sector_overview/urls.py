@@ -1,9 +1,8 @@
 from django.urls import path
 from . import views
 
-app_name = "sector_overview"
-
 urlpatterns = [
-    path("", views.dashboard_view, name="dashboard"),
-    path("api/overview/", views.sector_overview_api, name="api_overview"),
+    path('api/sector-overview/', views.sector_overview_api, name='sector-overview'),
+    path('api/health/', views.health_check, name='health-check'),
+    path('api/available-sectors/', views.available_sectors_api, name='available-sectors'),
 ]

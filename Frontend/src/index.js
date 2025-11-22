@@ -1,25 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom'; // ✅ ADD THIS IMPORT
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import App from './App';
 import './index.css';
-import reportWebVitals from './reportWebVitals';
-import { BrowserRouter } from 'react-router-dom';
 
-// Use environment variable if available; otherwise replace with your client id.
-const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '972027062493-i944gk25qhn7qj8ut7ebu6jdnpud8des.apps.googleusercontent.com';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={clientId}>
-      <BrowserRouter>
+    <BrowserRouter> {/* ✅ ADD THIS WRAPPER */}
+      <GoogleOAuthProvider clientId={clientId}>
         <App />
-      </BrowserRouter>
-    </GoogleOAuthProvider>
+      </GoogleOAuthProvider>
+    </BrowserRouter> {/* ✅ CLOSE THE WRAPPER */}
   </React.StrictMode>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-reportWebVitals();
