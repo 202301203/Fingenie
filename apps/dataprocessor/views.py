@@ -306,12 +306,16 @@ def get_recent_analyses(request):
 def get_stock_data_api(request, ticker_symbol, period='1M'):
     """Return recent stock price data for the given ticker.
 
-    Supports URL period or query param `?period=`. Period examples: 1D, 5D, 1M, 3M, 6M, 1Y.
-    Maps to yfinance periods: 1d, 5d, 1mo, 3mo, 6mo, 1y.
+    Query params:
+      period   -> overrides URL period (1D,5D,1M,3M,6M,1Y,2Y,5Y,10Y)
+      interval -> optional explicit granularity (30m,1h,1d,1wk) if supported by yfinance
+
+    If interval not supplied or invalid, a sensible default is chosen based on period.
     """
     try:
         qp_period = request.GET.get('period')
         sel_period = (qp_period or period or '1M').upper()
+        qp_interval = request.GET.get('interval')
         period_map = {
             '1D': '1d', '5D': '5d',
             '1M': '1mo', '3M': '3mo', '6M': '6mo',
@@ -319,14 +323,17 @@ def get_stock_data_api(request, ticker_symbol, period='1M'):
         }
         yf_period = period_map.get(sel_period, '1mo')
 
-        # Choose interval based on period length
-        interval = '1d'
-        if yf_period in ('1d', '5d'):
-            interval = '30m'
-        elif yf_period in ('1mo', '3mo'):
-            interval = '1d'
+        # Choose interval: allow explicit override if valid; else auto-select.
+        allowed_intervals = {'30m', '1h', '1d', '1wk'}
+        if qp_interval and qp_interval in allowed_intervals:
+            interval = qp_interval
         else:
-            interval = '1wk'
+            if yf_period in ('1d', '5d'):
+                interval = '30m'
+            elif yf_period in ('1mo', '3mo'):
+                interval = '1d'
+            else:
+                interval = '1wk'
 
         ticker = ticker_symbol.strip()
         # Helper with retry & fallback

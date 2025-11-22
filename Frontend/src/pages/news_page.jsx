@@ -21,9 +21,10 @@ import {
 import Default_photo from "../images/default_news.png";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import api from '../api/index';
 
-// ⛔ ADD THIS (your backend URL)
-const API_BASE_URL = "http://localhost:8000"; // change as required
+// Use centralized backend base from api module (falls back to render URL)
+const API_BASE_URL = api.DJANGO_API_BASE || 'https://fingenie-sz41.onrender.com';
 
 const NewsPage = () => {
   // UI state

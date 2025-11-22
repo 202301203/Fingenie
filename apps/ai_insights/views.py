@@ -34,8 +34,7 @@ def ai_insights_view(request):
         chat_history = data.get('history', [])  # list[{role,text}]
         # API key can come from request, settings or environment.
         api_key = (
-            data.get('api_key')
-            or getattr(settings, 'GEMINI_API_KEY', None)
+             getattr(settings, 'GEMINI_API_KEY', None)
             or os.environ.get('GEMINI_API_KEY')
         )
 

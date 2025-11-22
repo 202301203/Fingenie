@@ -70,6 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+GEMINI_API_KEY = "AIzaSyAOESLavI7QOHEp-IVPzmV3-aeV_MVKPfc"
 # ============================================================================
 # CORS Configuration - CRITICAL for cross-origin authentication
 # ============================================================================

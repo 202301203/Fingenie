@@ -20,6 +20,9 @@ import {
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
+// Register Chart.js components once so the chart can render (must come after imports)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
 export default function FinGenieApp() {
   const [currentPage, setCurrentPage] = useState('summary');
   const [selectedRatio, setSelectedRatio] = useState(1);
@@ -41,6 +44,9 @@ export default function FinGenieApp() {
   const [companyData, setCompanyData] = useState(null);
   const [financialRatios, setFinancialRatios] = useState([]);
   const [stockData, setStockData] = useState(null);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('1M');
+  const [selectedInterval, setSelectedInterval] = useState(''); // empty means auto
   // Attempt to load stored API key (user may have saved it earlier on API key page)
   const [apiKey, setApiKey] = useState(() => (
     localStorage.getItem('groq_api_key') ||
@@ -143,21 +149,24 @@ export default function FinGenieApp() {
     fetchData();
   }, [location.state]);
 
-  // Fetch stock data if company has a ticker
+  // Fetch stock data whenever ticker / period / interval changes
   useEffect(() => {
     const fetchStockData = async () => {
       if (!companyData?.ticker_symbol) return;
-
+      setStockLoading(true);
       try {
-        const stockDataResponse = await djangoRequest(`/dataprocessor/api/stock-data/${companyData.ticker_symbol}/`);
-        setStockData(stockDataResponse.data || stockDataResponse);
+        const url = `/dataprocessor/api/stock-data/${companyData.ticker_symbol}/?period=${selectedPeriod}` + (selectedInterval ? `&interval=${selectedInterval}` : '');
+        const stockData = await djangoRequest(url);
+        setStockData(stockData.data || stockData);
       } catch (err) {
         console.error('Error fetching stock data:', err);
+        setStockData({ data: [], note: 'Failed to load stock data' });
+      } finally {
+        setStockLoading(false);
       }
     };
-
     fetchStockData();
-  }, [companyData?.ticker_symbol]);
+  }, [companyData?.ticker_symbol, selectedPeriod, selectedInterval]);
 
   // Handle ratio hover
   const handleRatioHover = (ratioId) => {
@@ -437,6 +446,59 @@ export default function FinGenieApp() {
 
           </div>
         </div>
+
+        {/* STOCK PRICE CHART */}
+        <div style={{ marginTop: '2rem' }}>
+          <div style={styles.stockHeaderRow}>
+            <h3 style={{ color: '#1a1a1a', marginBottom: '0.75rem' }}>Stock Price Trend</h3>
+            {companyData?.ticker_symbol && (
+              <div style={styles.stockControls}>
+                <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} style={styles.select}>
+                  {['1D','5D','1M','3M','6M','1Y'].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select value={selectedInterval} onChange={e => setSelectedInterval(e.target.value)} style={styles.select}>
+                  <option value=''>Auto</option>
+                  <option value='30m'>30m</option>
+                  <option value='1h'>1h</option>
+                  <option value='1d'>1d</option>
+                  <option value='1wk'>1wk</option>
+                </select>
+              </div>
+            )}
+          </div>
+          <div style={styles.chartContainer}>
+            {chartData && chartData.labels.length ? (
+              <Line
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  interaction: { mode: 'index', intersect: false },
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: false },
+                    tooltip: { enabled: true }
+                  },
+                  scales: {
+                    x: {
+                      ticks: { maxRotation: 0, autoSkip: true },
+                      grid: { display: false }
+                    },
+                    y: {
+                      ticks: { callback: v => (typeof v === 'number' ? v.toFixed(2) : v) },
+                      grid: { color: 'rgba(0,0,0,0.05)' }
+                    }
+                  }
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555' }}>
+                {stockLoading ? 'Loading stock data...' : (stockData ? (stockData.note || 'No stock data points available.') : 'No data')}
+              </div>
+            )}
+          </div>
+        </div>
+
           {/* ------------------ GAUGE CHART SECTION ------------------ */}
 
 <div
@@ -852,13 +914,33 @@ const styles = {
     paddingLeft: '1.5rem',
   },
   chartContainer: {
-    width: '50%',
+    width: '100%',
     minWidth: 320,
-    maxWidth: 800,
-    height: 320,
+    maxWidth: '100%',
+    height: 360,
     backgroundColor: '#ffffff',
     padding: '0.5rem',
     borderRadius: 12,
+  },
+  stockHeaderRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '0.75rem'
+  },
+  stockControls: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center'
+  },
+  select: {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '8px',
+    border: '1px solid #444',
+    backgroundColor: '#fff',
+    fontSize: '14px',
+    cursor: 'pointer'
   },
   ratioRow: {
     display: 'grid',

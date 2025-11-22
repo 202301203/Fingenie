@@ -47,7 +47,7 @@ def get_daily_topic_view(request):
         # 2. If not, generate a new one
         try:
             data = json.loads(request.body)
-            api_key = data.get('api_key')
+            api_key = getattr(settings, 'GEMINI_API_KEY', None) or os.environ.get('GEMINI_API_KEY')
             
             if not api_key:
                 return JsonResponse({'error': 'Missing api_key'}, status=400)
