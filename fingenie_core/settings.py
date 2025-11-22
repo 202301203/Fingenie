@@ -122,10 +122,10 @@ SESSION_SAVE_EVERY_REQUEST = False
 # CRITICAL FIX: For HTTP development (localhost without HTTPS)
 # SameSite=None requires Secure=True, but Secure=True requires HTTPS
 # Solution: Use SameSite=Lax for development (works on localhost)
-SESSION_COOKIE_DOMAIN = None
-SESSION_COOKIE_SECURE = False  # Must be False for HTTP
-SESSION_COOKIE_HTTPONLY = True  # Security: prevent JS access
-SESSION_COOKIE_SAMESITE = 'Lax'  # Changed to Lax for HTTP development
+SESSION_COOKIE_DOMAIN = None # Keep as None or set to '.onrender.com'
+SESSION_COOKIE_SECURE = True  # MUST be True for HTTPS/SameSite=None
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'None' # MUST be None for cross-site cookies
 SESSION_COOKIE_PATH = '/'
 
 # ============================================================================
@@ -137,9 +137,9 @@ CSRF_COOKIE_AGE = 31449600  # 1 year
 CSRF_USE_SESSIONS = False  # Store in cookie, not session
 
 CSRF_COOKIE_DOMAIN = None
-CSRF_COOKIE_SECURE = False  # Must be False for HTTP
+CSRF_COOKIE_SECURE = True  # Must be False for HTTP
 CSRF_COOKIE_HTTPONLY = False  # MUST be False so JavaScript can read it
-CSRF_COOKIE_SAMESITE = 'Lax'  # Changed to Lax for HTTP development
+CSRF_COOKIE_SAMESITE = 'None'  # Changed to Lax for HTTP development
 CSRF_COOKIE_PATH = '/'
 
 # Trusted origins for CSRF (allows POST requests from these origins)
