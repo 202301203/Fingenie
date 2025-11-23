@@ -1,6 +1,6 @@
 import google.generativeai as genai
 import json
-import datetime
+from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -34,7 +34,7 @@ def get_daily_topic_view(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method'}, status=405)
 
-    today = datetime.date.today()
+    today = timezone.now().date()
 
     # 1. Check if the topic for today already exists in the database
     try:
