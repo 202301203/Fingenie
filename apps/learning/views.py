@@ -54,6 +54,14 @@ def get_daily_topic_view(request):
             
             genai.configure(api_key=api_key)
 
+            # Avoid repeating the last topic
+            last_topic = DailyTopic.objects.order_by('-date').first()
+            avoid_instruction = ""
+            
+            if last_topic:
+                print(f"Avoiding previous topic: {last_topic.term}")
+                avoid_instruction = f"- IMPORTANT: Do NOT generate the term '{last_topic.term}'. Pick something else."
+            
             # Try different model names in order of preference
             model_names = [
                 'models/gemini-2.5-flash',
@@ -88,9 +96,10 @@ def get_daily_topic_view(request):
                 }, status=500)
 
             # 4. Create the prompt
-            prompt = """
+            prompt = f"""
             Generate a new "Financial Topic of the Day".
             It should be about a common financial ratio, accounting basic, or investment metric.
+            {avoid_instruction}
             - Keep the "term" concise (e.g., "P/E Ratio", "Compounding Interest").
             - Keep the "explanation" simple, under 100 words, like you're explaining it to a beginner.
             - Create one multiple-choice "question" to test the explanation.
@@ -109,6 +118,22 @@ def get_daily_topic_view(request):
                     
                 try:
                     response_json = json.loads(response.text)
+                     # 1. Check if the Quiz is Solvable
+                    # The correct answer MUST be one of the options.
+                    options = response_json.get('options', [])
+                    correct = response_json.get('correct_answer')
+                    
+                    if correct not in options:
+                        print(f"AI Logic Error: Answer '{correct}' not found in {options}")
+                        # Raising this error will trigger the 'except' block below
+                        # and return a 500 error, effectively rejecting the bad data.
+                        raise ValueError(f"AI generated an unsolvable quiz. Answer not in options.")
+
+                    # 2. Check for Duplicate Options (Quality Control)
+                    # Options should be unique (e.g., don't have "Buy" twice).
+                    if len(set(options)) != len(options):
+                        raise ValueError("AI generated duplicate options for the quiz.")
+                    
                 except json.JSONDecodeError as e:
                     print(f"Invalid JSON response: {response.text}")
                     return JsonResponse({
