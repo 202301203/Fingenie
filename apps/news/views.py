@@ -1,3 +1,4 @@
+import os
 import requests
 from django.conf import settings
 from django.http import JsonResponse
@@ -74,3 +75,4 @@ def article_api(request):
     except Exception as e:
 
         return JsonResponse({'error': f'An unexpected error occurred: {e}'}, status=500)
+
