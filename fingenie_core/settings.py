@@ -70,7 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-GEMINI_API_KEY = "AIzaSyAOESLavI7QOHEp-IVPzmV3-aeV_MVKPfc"
+
 # ============================================================================
 # CORS Configuration - CRITICAL for cross-origin authentication
 # ============================================================================
@@ -288,7 +288,7 @@ LOGGING = {
         },
     },
 }
-NEWS_API_KEY = "7a624852aa6a420aaeedf127d88a67f8"
+
 LOGIN_URL = "/accounts/api/login/"
 
 # ============================================================================
