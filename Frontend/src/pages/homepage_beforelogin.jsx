@@ -152,8 +152,10 @@ export default function FinGenieLanding() {
         </div>
       </div>
       <nav style={styles.nav}>
-        <span style={styles.navLink}>News</span>
-        <span style={styles.navLink}>About us</span>
+        <span style={styles.navLink}
+        onClick={() => navigate("/NewsPage")}>News</span>
+        <span style={styles.navLink}
+        onClick={() => navigate("/About_us")}>About us</span>
         <button
               onClick={() => navigate("/AuthFlow")}
               style={styles.signupButton}
@@ -189,7 +191,8 @@ export default function FinGenieLanding() {
             Get Started
           </button>
           
-          <a style={styles.exploreLink}>Explore all tools →</a>
+          <a style={styles.exploreLink}
+          onClick={() => navigate("/FeaturesPage")}>Explore all tools →</a>
         </div>
       </main>
     </div>

@@ -129,33 +129,8 @@ import { User, LogOut, Settings, History, Wrench, Search, Activity, BookOpen, Cp
           style={styles.userMenu}
           onClick={() => setShowDropdown(prev => !prev)} 
         >
-          <User size={24} color="black" style={styles.userIcon} />
-          {showDropdown && (
-            <div style={styles.HFdropdown}>
-              <div style={styles.dropdownItem}
-                onClick={() => navigate("/Profile_page")}   
-                >
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <History size={16} />
-                <span>History</span>
-              </div>
-              <div style={styles.dropdownItem}>
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div style={styles.dropdownItem}
-                onClick={() => {
-                  // (Optional) clear user data or tokens here
-                  navigate("/homepage_beforelogin");      // Redirect to dashboard on logout
-                }}>
-                <LogOut size={16} />
-                <span>Sign Out</span>
-              </div>
-            </div>
-          )}
+          <User size={24} color="black" style={styles.userIcon} onClick={() => navigate("/Profile_page")}/>
+          
         </div>
       </nav>
     </header>)

@@ -837,13 +837,7 @@ const SettingsContent = ({ settings, onSettingToggle, navigate, onShowPasswordMo
         <div style={styles.profileContentArea}>
             <h2 style={styles.sectionTitle}>Preferences</h2>
             {/* Dark/Light Mode Setting */}
-            <div style={styles.settingItem}>
-                <span style={styles.settingText}>
-                    {settings.theme === 'dark' ? <Moon size={20} style={{marginRight: '10px'}}/> : <Sun size={20} style={{marginRight: '10px'}}/>} 
-                    Theme: {settings.theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                </span>
-                <ToggleSwitch isActive={settings.theme === 'dark'} onClick={() => onSettingToggle('theme', settings.theme === 'light' ? 'dark' : 'light')} />
-            </div>
+         
             {/* Email Notifications Setting */}
             <div style={styles.settingItem}>
                 <span style={styles.settingText}>

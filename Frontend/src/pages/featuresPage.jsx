@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowRight, FileText, GitCompare, Activity, Search, BookOpen, BarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const FeaturesPage = () => {
   const navigate = useNavigate();
@@ -49,8 +50,7 @@ const FeaturesPage = () => {
       help: "Find any listed company instantly and explore its full financial insights.",
       steps: [
         "Search by company name or ticker.",
-        "Get Overview, Charts, Ratios, Peer Analysis, Balance Sheet, Income Statement, and Cash Flow.",
-        "AI summarizes the data so you don’t have to read long reports."
+        "Get Overview, Charts, Ratios, Peer Analysis, Balance Sheet, Income Statement, and Cash Flow."
       ],
       link: "/searchCompanies"
     },
@@ -117,6 +117,7 @@ const FeaturesPage = () => {
         ))}
       </div>
     </div>
+    <Footer />
     </>
   );
 };
@@ -125,9 +126,8 @@ export default FeaturesPage;
 
 const styles = {
   pageWrapper: {
-    padding: "2rem auto",
+   // padding: "2rem auto",
     backgroundColor: "#F6F7F9",
-    minHeight: "100vh"
   },
   pageTitle: {
     textAlign: "center",

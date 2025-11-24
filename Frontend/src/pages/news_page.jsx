@@ -18,12 +18,12 @@ import {
   ChevronRight
 } from "lucide-react";
 
-import Default_photo from "../images/default_news.png";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 // ⛔ ADD THIS (your backend URL)
 const API_BASE_URL = "http://localhost:8000"; // change as required
+const Default_photo = "https://i.pinimg.com/1200x/45/d4/87/45d487585543758244ed9774b7c83d1e.jpg";
 
 const NewsPage = () => {
   // UI state
@@ -143,21 +143,20 @@ const NewsPage = () => {
       <Header />
 
       <div style={styles.container}>
-        {/* 🔍 Search */}
-        <div style={{ position: "relative", width: "100%", maxWidth: "900px", margin: "0 auto" }}>
-          <Search size={20} color="gray" style={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search news by title, author, or source..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ ...styles.search, paddingLeft: "35px" }}
-            disabled={loading || error}
-          />
-        </div>
-
+      
         <h1 style={styles.heading}>Latest Financial News</h1>
-
+        {/* 🔍 Search */}
+        <div style={styles.searchWrapper}>
+  <Search size={20} color="gray" style={styles.searchIcon} />
+  <input
+    type="text"
+    placeholder="Search news by title, author, or source..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    style={styles.search}
+    disabled={loading || error}
+  />
+</div>
         {/* 📰 News Grid */}
         {loading ? (
           <p>Loading news...</p>
@@ -205,16 +204,15 @@ const NewsPage = () => {
 
 const styles = {
   container: {
-    maxWidth: "1200px",
     margin: "2rem auto",
     padding: "0 1rem",
   },
   heading: {
-    fontSize: "28px",
+    fontSize: "32px",
     textAlign: "center",
     fontWeight: "bold",
     marginTop: "2rem",
-    marginBottom: "1.5rem",
+    marginBottom: "2rem",
   },
   search: {
     width: "100%",
@@ -224,12 +222,31 @@ const styles = {
     border: "1px solid #ccc",
     marginBottom: "2rem",
   },
-  searchIcon: {
-    position: "absolute",
-    left: "10px",
-    top: "50%",
-    transform: "translateY(-50%)",
-  },
+searchWrapper: {
+  position: "relative",
+  width: "70%",
+  margin: "2rem auto",
+},
+
+searchIcon: {
+  position: "absolute",
+  left: "10px",
+  top: "50%",
+  transform: "translateY(-50%)",
+  pointerEvents: "none",
+},
+
+search: {
+  width: "100%",
+  padding: "12px 15px",
+  paddingLeft: "40px",   // space for icon
+  borderRadius: "12px",
+  border: "1px solid #ccc",
+  fontSize: "16px",
+  outline: "none",
+  boxSizing: "border-box",
+},
+
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",

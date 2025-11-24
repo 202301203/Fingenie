@@ -1,5 +1,5 @@
 import React, { useState, useEffect ,useRef, useId,useMemo} from 'react';
-import { Bot, TrendingUp, PieChart, Search, BookOpen, Award, User, Menu, X, Activity, Cpu, GitCompare, History, Settings, LogOut, Wrench, BarChart3,ArrowRight } from 'lucide-react';
+import { Bot, TrendingUp, PieChart, Search, BookOpen, BarChart3,ArrowRight } from 'lucide-react';
 import mainlogo from '../images/mainlogo.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
