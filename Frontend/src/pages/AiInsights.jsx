@@ -17,7 +17,7 @@ import fglogo_Wbg from "../images/fglogo_Wbg.png";
 import {useNavigate } from "react-router-dom";
 
 // --- API CONFIGURATION ---
-const API_BASE =  "https://fingenie-sz41.onrender.com/api/insights/chat/";
+const API_BASE =  "https://fingenie-siu7.onrender.com/api/insights/chat/";
 
 // Format timestamps
 function fmtTime(ts) {

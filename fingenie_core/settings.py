@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "fingenie-sz41.onrender.com",
+    "fingenie-siu7.onrender.com",
     "fingenie-2exi.vercel.app",
     "localhost",
     "127.0.0.1",
@@ -83,7 +83,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://fingenie-2exi.vercel.app",
     "https://fingenie-eight.vercel.app",
-    "https://fingenie-sz41.onrender.com",
+    "https://fingenie-siu7.onrender.com",
 ]
 
 # CRITICAL: Must be True to allow cookies in cross-origin requests
@@ -150,7 +150,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://fingenie-2exi.vercel.app",
     "https://fingenie-eight.vercel.app",
-    "https://fingenie-sz41.onrender.com",
+    "https://fingenie-siu7.onrender.com",
 ]
 
 # ============================================================================

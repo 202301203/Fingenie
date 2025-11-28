@@ -24,7 +24,7 @@ import Footer from "../components/Footer";
 import api from '../api/index';
 
 // Use centralized backend base from api module (falls back to render URL)
-const API_BASE_URL = api.DJANGO_API_BASE || 'https://fingenie-sz41.onrender.com';
+const API_BASE_URL = api.DJANGO_API_BASE || 'https://fingenie-siu7.onrender.com';
 
 const NewsPage = () => {
   // UI state
