@@ -445,8 +445,23 @@ def google_login_api(request):
         # Verify Google token and get user info
         try:
             google_info = GoogleOAuthService.verify_google_token(token)
+        except ImportError as e:
+            logger.error(f"Google auth library not installed: {str(e)}")
+            return error_response(
+                "Server configuration error: Google authentication library not installed. Please contact administrator.", 
+                500,
+                str(e) if settings.DEBUG else None
+            )
         except ValueError as e:
+            logger.error(f"Google token validation error: {str(e)}")
             return error_response(f"Invalid Google token: {str(e)}", 400)
+        except Exception as e:
+            logger.error(f"Unexpected error during token verification: {str(e)}", exc_info=True)
+            return error_response(
+                "Failed to verify Google token", 
+                500,
+                str(e) if settings.DEBUG else None
+            )
         
         # Check if email is verified
         if not google_info.get('email_verified', False):
@@ -455,10 +470,19 @@ def google_login_api(request):
         # Get or create user
         try:
             user, created = GoogleOAuthService.get_or_create_google_user(google_info)
-        except IntegrityError:
+        except IntegrityError as e:
+            logger.error(f"Database integrity error: {str(e)}")
             return error_response("User creation failed due to conflict", 500)
         except ValueError as e:
+            logger.error(f"User creation validation error: {str(e)}")
             return error_response(str(e), 400)
+        except Exception as e:
+            logger.error(f"Unexpected error during user creation: {str(e)}", exc_info=True)
+            return error_response(
+                "Failed to create or retrieve user",
+                500,
+                str(e) if settings.DEBUG else None
+            )
         
         # Log the user in
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
@@ -466,12 +490,16 @@ def google_login_api(request):
         # Create activity log
         activity_type = 'login' if not created else 'profile_update'
         activity_title = 'Google Login' if not created else 'Account Created via Google'
-        UserActivity.objects.create(
-            user=user,
-            activity_type=activity_type,
-            title=activity_title,
-            description=f"{'New user registered' if created else 'User logged in'} via Google OAuth"
-        )
+        try:
+            UserActivity.objects.create(
+                user=user,
+                activity_type=activity_type,
+                title=activity_title,
+                description=f"{'New user registered' if created else 'User logged in'} via Google OAuth"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create activity log: {str(e)}")
+            # Continue anyway, activity log is not critical
         
         message = "Registration successful" if created else "Login successful"
         logger.info(f"Google {'registration' if created else 'login'} successful: {user.username}")
@@ -489,7 +517,7 @@ def google_login_api(request):
         )
 
     except Exception as e:
-        logger.error(f"Google login error: {str(e)}")
+        logger.error(f"Google login error: {str(e)}", exc_info=True)
         return error_response(
             "Google authentication failed", 
             500, 

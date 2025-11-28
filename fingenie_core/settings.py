@@ -10,7 +10,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ========================= SECURITY =========================
 SECRET_KEY = 'django-insecure-cv1)6=wq(z30$=mc5l*df0*7qvhd8v7x7m(3le!3%(k62zbge0'
-DEBUG = False   # ❗ IMPORTANT — Enable for production
+
+# Check if running locally or in production
+IS_PRODUCTION = os.environ.get('RENDER', False) or os.environ.get('VERCEL', False)
+DEBUG = not IS_PRODUCTION  # True for local, False for production
 
 ALLOWED_HOSTS = [
     "fingenie-siu7.onrender.com",
@@ -72,24 +75,35 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://fingenie-2exi.vercel.app",
     "https://fingenie-siu7.onrender.com",
+    "http://localhost:3000",
 ]
 
 
-# ========================= COOKIE / SESSION FIX (Important) =========================
-# These settings make login work on deployment
+# ========================= COOKIE / SESSION FIX =========================
+# Different settings for local vs production
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-
 SESSION_COOKIE_NAME = "sessionid"
-SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "None"         # Required to allow auth across domains
-SESSION_COOKIE_DOMAIN = ".onrender.com"  # 🔥 allows Vercel frontend to receive cookies
 
-CSRF_COOKIE_SECURE = True
+if IS_PRODUCTION:
+    # Production settings (Render/Vercel with HTTPS)
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_DOMAIN = ".onrender.com"
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_DOMAIN = ".onrender.com"
+else:
+    # Local development settings (HTTP on localhost)
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_DOMAIN = None
+
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_DOMAIN = ".onrender.com"
 
 # ===============================================================
 
