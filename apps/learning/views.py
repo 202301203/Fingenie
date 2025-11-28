@@ -31,8 +31,8 @@ def get_daily_topic_view(request):
     Gets the financial topic of the day.
     Matches logic of ai_insights_view for stability.
     """
-    if request.method != 'POST' and request.method != 'GET':
-        return JsonResponse({'error': 'Invalid method'}, status=405)
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Invalid method. Use GET.'}, status=405)
 
     today = timezone.now().date()
 

@@ -214,19 +214,10 @@ export default function QuizPage() {
     // --- BACKEND FETCH EFFECT ---
     useEffect(() => {
         const fetchDailyTopic = async () => {
-            const apiKey = localStorage.getItem('userApiKey');
-
-            if (!apiKey) {
-                setApiError("API Key not found. Please log in again or upload a document first.");
-                setIsLoading(false);
-                return;
-            }
-
             try {
-                const response = await fetch('https://fingenie-sz41.onrender.com/api/learning/daily-topic/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: apiKey })
+                const response = await fetch('https://fingenie-siu7.onrender.com/api/learning/daily-topic/', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 if (!response.ok) {

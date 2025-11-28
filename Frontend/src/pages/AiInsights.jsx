@@ -43,7 +43,6 @@ export default function ChatbotPage() {
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('userApiKey') || ''); // Get key from login
   
   // **CRITICAL**: Get User ID from login (or use a fallback for testing)
   // Ideally, your AuthFlow should save 'userId' to localStorage
@@ -117,10 +116,6 @@ export default function ChatbotPage() {
   async function sendMessage() {
     const text = inputText.trim();
     if (!text) return;
-    if (!apiKey) {
-        alert("Please log in or provide an API Key first.");
-        return;
-    }
 
     // 1. Show User Message Immediately (Optimistic UI)
     const userMsg = { sender: "user", text, ts: new Date().toISOString() };
@@ -133,7 +128,6 @@ export default function ChatbotPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          api_key: apiKey,
           user_id: userId,
           question: text,
           session_id: currentSessionId // Send ID if continuing a chat, null if new
@@ -166,7 +160,7 @@ export default function ChatbotPage() {
 
     } catch (err) {
       console.error("API error", err);
-      const errorMsg = { sender: "bot", text: `Error: ${err.message}`, ts: new Date().toISOString() };
+      const errorMsg = { sender: "bot", text: "Sorry, I encountered an error. Please try again.", ts: new Date().toISOString() };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsSending(false);
