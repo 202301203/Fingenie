@@ -108,7 +108,7 @@ const FileUploadApp = () => {
           <div style={popupStyles.overlay}>
             <div style={popupStyles.box}>
               <h3 style={{ marginBottom: '10px' }}>Missing API Key</h3>
-              <p>Please enter your API key to continue.</p>
+              <p>Please enter your Groq API key to continue.</p>
 
               <button
                 onClick={() => setShowApiPopup(false)}
@@ -174,7 +174,7 @@ const FileUploadApp = () => {
                     type="text"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Paste API key here"
+                    placeholder="Paste Groq API key here"
                     style={{
                       width: '100%',
                       padding: '0.65rem',

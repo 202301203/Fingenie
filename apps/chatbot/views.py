@@ -14,12 +14,14 @@ GROQ_DEFAULT_MODEL = getattr(settings, 'GROQ_CHAT_MODEL', None) or os.environ.ge
 def chatbot_api_view(request):
     """Handle chat requests based ONLY on stored financial report summary using Groq LLM."""
     if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid method'}, status=405)
+        return JsonResponse({'error': 'Invalid method. Use POST.'}, status=405)
 
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError as e:
-        return JsonResponse({'error': f'Invalid JSON: {e}'}, status=400)
+        return JsonResponse({'error': f'Invalid JSON: {str(e)}'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Failed to parse request: {str(e)}'}, status=400)
 
     question = data.get('question')
     
@@ -31,10 +33,13 @@ def chatbot_api_view(request):
     # Get Groq API key (from request or environment fallback)
     api_key = data.get('api_key') or request.POST.get('api_key') or os.environ.get('GROQ_API_KEY') or getattr(settings, 'GROQ_API_KEY', None)
     if not api_key:
-        return JsonResponse({'error': 'Missing Groq API key (api_key)'}, status=400)
+        return JsonResponse({'error': 'Missing Groq API key. Please provide an API key.'}, status=400)
 
-    if not question or not document_id:
-        return JsonResponse({'error': 'Missing question or document_id'}, status=400)
+    if not question:
+        return JsonResponse({'error': 'Missing question in request.'}, status=400)
+    
+    if not document_id:
+        return JsonResponse({'error': 'Missing document_id (report ID) in request.'}, status=400)
 
     # Init Groq LLM
     try:
@@ -64,7 +69,10 @@ def chatbot_api_view(request):
         return JsonResponse({'error': f'Groq model initialization failed: {e}'}, status=500)
 
     # 1. Fetch the report and its structured summary from the database.
-    doc = get_object_or_404(FinancialReport, pk=document_id)
+    try:
+        doc = get_object_or_404(FinancialReport, pk=document_id)
+    except Exception as e:
+        return JsonResponse({'error': f'Report not found with ID: {document_id}. Please upload a financial report first.'}, status=404)
 
     # 2. Build context from stored summary (pros, cons, financial health summary)
     summary_data = doc.get_summary() if hasattr(doc, 'get_summary') else {}

@@ -163,12 +163,23 @@ export default function Chatbot({ reportId, apiKey }) {
         const question = input.trim();
         if (!question) return;
 
-        setIsLoading(true);
-        setInput('');
-
         // Add user message to history immediately
         const userMessage = { role: 'user', text: question };
         setChatHistory(prev => [...prev, userMessage]);
+
+        // Check for reportId and apiKey BEFORE making the request
+        const effectiveApiKey = apiKey || localStorage.getItem('groq_api_key') || localStorage.getItem('userApiKey') || localStorage.getItem('GENAI_API_KEY');
+        
+        if (!reportId || !effectiveApiKey) {
+            setChatHistory(prev => [...prev, { 
+                role: 'model', 
+                text: 'Chat unavailable: missing report ID or API key. Please upload a document or provide an API key.' 
+            }]);
+            return;
+        }
+
+        setIsLoading(true);
+        setInput('');
 
         try {
             const response = await fetch(CHAT_API_URL, {
@@ -180,20 +191,19 @@ export default function Chatbot({ reportId, apiKey }) {
                     question,
                     document_id: reportId,
                     history: [...chatHistory, userMessage],
-                    api_key: apiKey || localStorage.getItem('groq_api_key') || localStorage.getItem('userApiKey')
+                    api_key: effectiveApiKey
                 })
             });
 
-                // If reportId or apiKey is missing, do not call the backend; show guidance instead
-                if (!reportId || !apiKey) {
-                    setIsLoading(false);
-                    setChatHistory(prev => [...prev, { role: 'model', text: 'Chat unavailable: missing report ID or API key. Please upload a document or provide an API key.' }]);
-                    return;
-                }
-
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'API request failed');
+                let errorMessage = 'API request failed';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server error (${response.status}): ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
