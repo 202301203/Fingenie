@@ -137,53 +137,44 @@ import { User, LogOut, Settings, History, Wrench, Search, Activity, BookOpen, Cp
   };
 const styles = {
   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-
-    position: 'sticky',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0.5rem 1rem",
+    backgroundColor: "#DEE6E6",
+    border: "1px solid #000",
+    borderRadius: "8px",
+    position: "sticky",
     top: 0,
-    zIndex: 100
+    zIndex: 100,
+    flexWrap: "wrap",
   },
+
   headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0,
   },
 
   nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
+    display: "flex",
+    alignItems: "center",
+    gap: "1.5rem",
+    flexWrap: "wrap",
   },
 
   navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
+    fontSize: "0.9rem",
+    fontWeight: "500",
+    cursor: "pointer",
+    color: "#333",
+    textDecoration: "none",
   },
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
+
   userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
+    cursor: "pointer",
   },
+
     toolsMenu: {
     position: 'relative',
     cursor: 'pointer',
@@ -210,15 +201,59 @@ const styles = {
     minWidth: '200px',
     zIndex: 1000
   },
+
+  dropdown: {
+    position: "absolute",
+    top: "100%",
+    right: 0,
+    background: "white",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+    padding: "0.5rem 0",
+    minWidth: "200px",
+    zIndex: 2000,
+  },
+
   dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+    padding: "0.6rem 1rem",
+    cursor: "pointer",
+    fontSize: "0.9rem",
+  },
+
+  // 📱 MOBILE RESPONSIVENESS
+  "@media (max-width: 768px)": {
+    nav: {
+      gap: "1rem",
+    },
+    navLink: {
+      fontSize: "0.85rem",
+    },
+    header: {
+      flexDirection: "column",
+      alignItems: "flex-start",
+      gap: "0.75rem",
+    },
+  },
+
+  "@media (max-width: 480px)": {
+    nav: {
+      flexDirection: "column",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+    },
+    navLink: {
+      fontSize: "0.8rem",
+    },
+    headerLeft: {
+      width: "100%",
+      justifyContent: "center",
+    },
   },
 };
+
 
 export default Header;

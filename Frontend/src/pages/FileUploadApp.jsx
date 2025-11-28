@@ -459,7 +459,7 @@ const styles = {
   },
 
   cardContent: {
-    display: 'flex',          // ⭐ required
+    display: 'flex',        
     flexDirection: 'column',  // so inputs stack vertically
     alignItems: 'center',
     textAlign: 'center',

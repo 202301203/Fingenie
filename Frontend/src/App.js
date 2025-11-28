@@ -1,23 +1,25 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
-import HomepageBeforeLogin from "./pages/homepage_beforelogin";
+import HomepageBeforeLogin from "./pages/landingPage.jsx";
 import AuthFlow from "./pages/AuthFlow";
 import MainPageAfterLogin from "./pages/mainpageafterlogin";
 import FileUploadApp from "./pages/FileUploadApp";
-import SummaryPage from "./pages/summary_page";
-import NewsPage from "./pages/news_page";
-import TrendsPage from "./pages/Trends_KPI";
+import SummaryPage from "./pages/summaryPage";
+import NewsPage from "./pages/newsPage";
+import TrendsPage from "./pages/trendsAndKpi.jsx";
 import SectorOverviewDashboard from "./pages/sectorOverview";
 import BlogPage from "./pages/blogPage";
 import CompanySearch from "./pages/CompanySerach"
 import Wodroftheday from "./pages/Wordoftheday";
 import API_key from "./pages/API_key.jsx"; 
-import About_us from "./pages/About_us.jsx";
+import About_us from "./pages/aboutUs.jsx";
 import AiInsights from "./pages/AiInsights.jsx";
 import ComparisonPage from "./pages/comparison.jsx"; 
-import ProfilePage from "./pages/Profile_page.jsx";
+import ProfilePage from "./pages/profilePage.jsx";
 import FeaturesPage from "./pages/featuresPage.jsx";
+import InfoaboutFeatures from "./pages/infoaboutFeatures.jsx";
+
 
 function App() {
   return (
@@ -26,7 +28,7 @@ function App() {
       <Route path="/" element={<HomepageBeforeLogin />} />
 
       {/* Flow pages */}
-      <Route path="/homepage_beforelogin" element={<HomepageBeforeLogin />} />
+      <Route path="/landingPage" element={<HomepageBeforeLogin />} />
       <Route path="/AuthFlow" element={<AuthFlow />} />
       <Route path="/mainpageafterlogin" element={<MainPageAfterLogin />} />
       <Route path="/FileUploadApp" element={<FileUploadApp />} />
@@ -43,6 +45,7 @@ function App() {
       <Route path="/comparison" element={<ComparisonPage />} />
       <Route path="/Profile_page" element={<ProfilePage />} />
       <Route path="/featuresPage" element={<FeaturesPage />} />
+      <Route path="/infoaboutFeatures" element={<InfoaboutFeatures />} />
     </Routes>
   );
 }

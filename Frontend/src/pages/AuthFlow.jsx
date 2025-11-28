@@ -115,6 +115,7 @@ const CreateAccount = ({ onSwitch }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupColor, setPopupColor] = useState("#4CAF50");
+  const [usernameError, setUsernameError] = useState("");
 
 
   // Input focus hooks
@@ -133,7 +134,25 @@ const CreateAccount = ({ onSwitch }) => {
       return "Password must contain at least one special character (!@#$%^&*)";
     return "";
   };
+      const validateUsername = (name) => {
+  // Must start with letter, 3–20 chars, only letters/numbers/underscore
+  const usernamePattern = /^[A-Za-z][A-Za-z0-9_]{2,19}$/;
 
+  if (!usernamePattern.test(name)) {
+    if (!/^[A-Za-z]/.test(name)) {
+      return "Username must start with a letter";
+    }
+    if (name.length < 3) {
+      return "Username must be at least 3 characters long";
+    }
+    if (name.length > 20) {
+      return "Username cannot exceed 20 characters";
+    }
+    return "Username can only contain letters, numbers, and underscores";
+  }
+
+  return "";
+};
   const handleCreateAccount = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -144,6 +163,13 @@ const CreateAccount = ({ onSwitch }) => {
       return;
     }
 
+const unameError = validateUsername(username);
+  if (unameError) {
+    setUsernameError(unameError);
+    return;
+  } else {
+    setUsernameError("");
+  }
     if (!emailPattern.test(email)) {
       setEmailError("Please enter a valid email address");
       return;
@@ -256,6 +282,7 @@ const CreateAccount = ({ onSwitch }) => {
             onBlur={usernameInput.onBlur}
             style={usernameInput.inputStyle}
           />
+          {usernameError && <p style={styles.errorText}>{usernameError}</p>}
 
           <input
             type="email"
