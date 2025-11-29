@@ -17,7 +17,7 @@ import fglogo_Wbg from "../images/fglogo_Wbg.png";
 import {useNavigate } from "react-router-dom";
 
 // --- API CONFIGURATION ---
-const API_BASE =  "https://fingenie-siu7.onrender.com/api/insights/chat/";
+const API_BASE =  "https://fingenie-siu7.onrender.com/api/insights";
 
 // Format timestamps
 function fmtTime(ts) {
@@ -52,7 +52,7 @@ export default function ChatbotPage() {
 
   // 1. LOAD SESSIONS (Sidebar) ON MOUNT
   useEffect(() => {
-    fetchSessions();
+    //fetchSessions();
   }, [userId]);
 
   // 2. SCROLL TO BOTTOM ON NEW MESSAGE
@@ -116,23 +116,34 @@ export default function ChatbotPage() {
   async function sendMessage() {
     const text = inputText.trim();
     if (!text) return;
-
-    // 1. Show User Message Immediately (Optimistic UI)
+    
+    // 1. Optimistic UI: Show user message immediately
     const userMsg = { sender: "user", text, ts: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setInputText("");
     setIsSending(true);
 
     try {
+      // --- NEW LOGIC STARTS HERE ---
+      // Prepare the history payload for the stateless backend
+      // We map existing messages to {role, text} format
+      const historyPayload = messages.map(msg => ({
+        role: msg.sender === 'bot' ? 'model' : 'user',
+        text: msg.text
+      }));
+
+      // Send request with history included
       const res = await fetch(`${API_BASE}/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: userId,
           question: text,
-          session_id: currentSessionId // Send ID if continuing a chat, null if new
+          history: historyPayload, // <--- This fixes the "Amnesia" bug
+          // user_id: userId, // Not needed for stateless
+          // session_id: currentSessionId // Not needed for stateless
         }),
       });
+      // --- NEW LOGIC ENDS HERE ---
 
       const data = await res.json();
 
@@ -148,19 +159,15 @@ export default function ChatbotPage() {
       };
       setMessages(prev => [...prev, botMsg]);
 
-      // 3. Handle New Session Creation
-      if (!currentSessionId && data.session_id) {
-        setCurrentSessionId(data.session_id);
-        // Add new session to top of sidebar without refetching
-        setSessions(prev => [
-            { id: data.session_id, title: data.title || text.slice(0, 30) + "...", created_at: new Date().toISOString() },
-            ...prev
-        ]);
-      }
+      // (Removed the "New Session Creation" block because we aren't saving sessions)
 
     } catch (err) {
       console.error("API error", err);
-      const errorMsg = { sender: "bot", text: "Sorry, I encountered an error. Please try again.", ts: new Date().toISOString() };
+      const errorMsg = { 
+        sender: "bot", 
+        text: `Error: ${err.message}`, 
+        ts: new Date().toISOString() 
+      };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsSending(false);
@@ -275,7 +282,7 @@ export default function ChatbotPage() {
             <div style={styles.historyList}>
               {sessions.length === 0 && (
                   <div style={{padding: 14, fontSize: 13, color: '#8b96a3', textAlign: 'center'}}>
-                    No history yet. Start a new chat!
+                    <i>Privacy Mode Active:</i><br/>Chat history is cleared on refresh.
                   </div>
               )}
               {sessions.map((s) => (
