@@ -7,3 +7,4 @@ class BalanceSheetComparisonAdmin(admin.ModelAdmin):
     search_fields = ('company1_name', 'company2_name')
     list_filter = ('created_at',)
     readonly_fields = ('comparison_id', 'created_at')
+#ADMIN

@@ -30,7 +30,7 @@ def compare_balance_sheets_api(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method. Use POST.'}, status=405)
 
-    # Get uploaded files
+    # Get Uploaded Files
     file1 = request.FILES.get('file1')
     file2 = request.FILES.get('file2')
 

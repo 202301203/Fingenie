@@ -21,7 +21,7 @@ class TestGoogleOAuthService:
             'sub': '1234567890'
         }
         
-        # Mock settings
+        # Mock Settings
         mocker.patch("django.conf.settings.GOOGLE_OAUTH_CLIENT_ID", "dummy_client_id")
         
         result = GoogleOAuthService.verify_google_token("dummy_token")

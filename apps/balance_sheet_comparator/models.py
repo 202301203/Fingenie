@@ -9,7 +9,7 @@ class BalanceSheetComparison(models.Model):
     company1_name = models.CharField(max_length=255, default="Company 1")
     company2_name = models.CharField(max_length=255, default="Company 2")
     
-    # Store comparison results as JSON
+    # Store Comparison results as JSON
     comparison_result = models.JSONField(default=dict, blank=True)  # Detailed comparison data
     company1_metrics = models.JSONField(default=dict, blank=True)   # Company 1 financial metrics
     company2_metrics = models.JSONField(default=dict, blank=True)   # Company 2 financial metrics

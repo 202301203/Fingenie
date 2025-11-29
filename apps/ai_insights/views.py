@@ -5,7 +5,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import os
 
-# --- (THIS IS THE MOST IMPORTANT PART) ---
 # This prompt defines the AI's personality and rules.
 AI_INSIGHTS_SYSTEM_PROMPT = """
 You are "FinGenie", a helpful and insightful AI financial assistant and educator.

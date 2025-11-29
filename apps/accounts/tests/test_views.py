@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from django.contrib.auth.models import User
 from unittest.mock import MagicMock
 
-# Ensure a stable reference to the views module for tests that use the name `views`
+# Ensure a Stable reference to the views module for tests that use the name `views`
 from apps.accounts import views
 
 @pytest.mark.django_db

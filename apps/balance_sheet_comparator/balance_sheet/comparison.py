@@ -23,7 +23,7 @@ class CompanyModel(BaseModel):
     fiscal_year_end: Optional[str] = None
     currency: Optional[str] = None
     units: Optional[str] = None
-    # Balance sheet entries may contain mixed types (strings or numbers), so accept Any
+    # Balance SHEET entries may contain mixed types (strings or numbers), so accept Any
     balance_sheet: Optional[Dict[str, Any]] = Field(default_factory=dict)
     ratios: Optional[Dict[str, Optional[float]]] = Field(default_factory=dict)
 

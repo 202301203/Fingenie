@@ -8,7 +8,7 @@ def test_user_profile_creation_signal():
     user = User.objects.create_user(username="testuser", password="password")
     assert hasattr(user, 'profile')
     assert isinstance(user.profile, UserProfile)
-    assert user.profile.country_code == '+91'  # Default value
+    assert user.profile.country_code == '+91'  # Default Value
 
 @pytest.mark.django_db
 def test_user_profile_str():

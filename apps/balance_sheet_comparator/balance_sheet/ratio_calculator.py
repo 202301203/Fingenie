@@ -6,7 +6,7 @@ def calculate_ratios_from_items(financial_items: List[Dict[str, Any]]) -> Dict[s
     Calculate financial ratios from extracted financial items.
     Matches the format used in dataprocessor app.
     """
-    # Build a map of items for quick lookup
+    # Build a MAP of items for quick lookup
     items_map = {}
     for item in financial_items:
         particulars = item.get('particulars', '').lower()

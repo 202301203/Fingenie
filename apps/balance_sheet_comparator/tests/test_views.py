@@ -13,7 +13,7 @@ def test_compare_view_success(client, mocker):
     Valid multipart POST with two PDF files and an api_key should return 200 and the expected JSON shape.
     All external work (PDF loading, AI extraction, ratio calculation, DB create) is mocked.
     """
-    # Arrange: mocks
+    # Arrange: Mocks
     load_pdf_mock = mocker.patch("apps.balance_sheet_comparator.views.load_pdf")
     prepare_context_mock = mocker.patch("apps.balance_sheet_comparator.views.prepare_context")
     extract_raw_mock = mocker.patch("apps.balance_sheet_comparator.views.extract_raw_financial_data")

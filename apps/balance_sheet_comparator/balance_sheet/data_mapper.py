@@ -14,7 +14,7 @@ def normalize_number(value: Any) -> Optional[float]:
         return float(value)
     
     if isinstance(value, str):
-        # Remove whitespace
+        # Remove Whitespace
         value = value.strip()
         
         # Handle empty strings

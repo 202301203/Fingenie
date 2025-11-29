@@ -12,7 +12,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# --- PDF Loading Functions ---
 
 def load_pdf(pdf_path: str) -> List["Document"]:
     """Load PDF with multiple fallback methods."""
@@ -411,7 +410,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
             import traceback
             logger.error(traceback.format_exc())
 
-        # As a last resort, use deterministic fallback extraction so the user gets a result
+        # As a last Resort, use deterministic fallback extraction so the user gets a result
         logger.warning("AI extraction failed for all models; running deterministic fallback extractor...")
         deterministic = _deterministic_fallback_extraction(context_text)
         if deterministic.get('success'):

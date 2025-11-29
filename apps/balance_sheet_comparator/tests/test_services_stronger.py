@@ -19,7 +19,7 @@ def test_simple_text_number_additional_cases():
 
 
 def test_deterministic_no_keywords_picks_top_numbers():
-    # Provide text with numbers but no common keywords; should still pick top numeric lines
+    # Provide text with Numbers but no common keywords; should still pick top numeric lines
     text = "\n".join([f"Some text {i} {1000 + i}" for i in range(15)])
     res = services._deterministic_fallback_extraction(text)
     assert res['success'] is True

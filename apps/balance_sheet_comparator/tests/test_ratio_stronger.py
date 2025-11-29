@@ -20,7 +20,7 @@ def test_calculate_ratios_precise_values():
 
     ratios = rc.calculate_ratios(canonical)
 
-    # Exact arithmetic checks
+    # Exact arithmetic 
     assert ratios['current_ratio'] == pytest.approx(500.0 / 125.0)
     assert ratios['quick_ratio'] == pytest.approx((500.0 - 30.0) / 125.0)
     assert ratios['cash_ratio'] == pytest.approx(120.0 / 125.0)

@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+#URLS for balance_sheet_comparator app
 app_name = 'balance_sheet_comparator'
 
 urlpatterns = [
