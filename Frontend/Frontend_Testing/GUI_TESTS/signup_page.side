@@ -1,0 +1,131 @@
+{
+  "id": "00d911d6-0dd5-4891-8ff5-63a818a43c60",
+  "version": "2.0",
+  "name": "GUI Testing",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "348f7fcc-d69a-47cf-a85c-aec81f8523be",
+    "name": "signup_page",
+    "commands": [{
+      "id": "19dee379-da12-4580-b426-a040a45f59a6",
+      "comment": "",
+      "command": "open",
+      "target": "/AuthFlow",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f02bff1d-f437-4865-b7e3-96fb942efddc",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1550x830",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "78989d2c-8cc0-4531-9e72-f8427d55b660",
+      "comment": "",
+      "command": "click",
+      "target": "css=input:nth-child(4)",
+      "targets": [
+        ["css=input:nth-child(4)", "css:finder"],
+        ["xpath=//input[@value='']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "7a11a12e-b513-4987-83fa-651757c04973",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(4)",
+      "targets": [
+        ["css=input:nth-child(4)", "css:finder"],
+        ["xpath=//input[@value='KVP']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "KVP"
+    }, {
+      "id": "f82ea94b-318b-4f14-87fe-b8736e0dac18",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(5)",
+      "targets": [
+        ["css=input:nth-child(5)", "css:finder"],
+        ["xpath=//input[@value='kvp01@gmail.com']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input[2]", "xpath:idRelative"],
+        ["xpath=//input[2]", "xpath:position"]
+      ],
+      "value": "kvp01@gmail.com"
+    }, {
+      "id": "350750f1-b071-4c23-8cbb-3eefd69f54fa",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(6)",
+      "targets": [
+        ["css=input:nth-child(6)", "css:finder"],
+        ["xpath=//input[@value='KRESHA@123']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input[3]", "xpath:idRelative"],
+        ["xpath=//input[3]", "xpath:position"]
+      ],
+      "value": "KRESHA@123"
+    }, {
+      "id": "68e038f1-e114-4462-a6c9-146aaac8d2cf",
+      "comment": "",
+      "command": "click",
+      "target": "css=button",
+      "targets": [
+        ["css=button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Create an account')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "86c49e41-d193-48f9-aae3-7e72714ea227",
+      "comment": "",
+      "command": "click",
+      "target": "css=input:nth-child(6)",
+      "targets": [
+        ["css=input:nth-child(6)", "css:finder"],
+        ["xpath=//input[@value='KRESHA@123']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input[3]", "xpath:idRelative"],
+        ["xpath=//input[3]", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6b07f8ee-bffb-4ff4-90a7-84cc0f978764",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(6)",
+      "targets": [
+        ["css=input:nth-child(6)", "css:finder"],
+        ["xpath=//input[@value='kKRESHA@123']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input[3]", "xpath:idRelative"],
+        ["xpath=//input[3]", "xpath:position"]
+      ],
+      "value": "kKRESHA@123"
+    }, {
+      "id": "171df603-2e16-417f-9204-ce3ad8673314",
+      "comment": "",
+      "command": "click",
+      "target": "css=button",
+      "targets": [
+        ["css=button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Create an account')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "d5b36051-bd65-4a8b-bdd4-1709d2962adc",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["348f7fcc-d69a-47cf-a85c-aec81f8523be"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}

@@ -48,15 +48,22 @@ const useInputFocus = () => {
 // Shared Google Auth Handler
 const useGoogleAuth = () => {
   const navigate = useNavigate();
+  const [popupMessage, setPopupMessage] = useState("");
+const [showPopup, setShowPopup] = useState(false);
+
+const showPopupBox = (message) => {
+  setPopupMessage(message);
+  setShowPopup(true);
+};
 
   const handleGoogleSuccess = async (credentialResponse) => {
     const token = credentialResponse.credential;
 
     try {
       console.log("Sending Google token to backend...");
-      
+
       const csrfToken = await getCSRFToken();
-      
+
       const response = await fetch(`/accounts/api/google-login/`, {
         method: "POST",
         headers: {
@@ -68,26 +75,25 @@ const useGoogleAuth = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         if (data.is_new_user) {
-          alert(`Welcome to Fingenie, ${data.username}! Your account has been created via Google.`);
-        } else {
-          alert(`Welcome back, ${data.username}!`);
+showPopupBox(`Welcome to Fingenie, ${data.username}! Your account has been created via Google.`);        } else {
+        showPopupBox(`Welcome back, ${data.username}!`);
         }
         navigate("/mainpageafterlogin");
       } else {
-        alert(data.error || "Google authentication failed");
+      showPopupBox(data.error || "Google authentication failed");
       }
     } catch (err) {
       console.error("Google authentication failed:", err);
-      alert("Google authentication failed. Please try again.");
+    showPopupBox("Google authentication failed. Please try again.");
     }
   };
 
   const handleGoogleError = () => {
     console.error("Google Sign-In was cancelled or failed");
-    alert("Google Sign-In was cancelled or failed. Please try again.");
+    showPopupBox("Google Sign-In was cancelled or failed. Please try again.");
   };
 
   return { handleGoogleSuccess, handleGoogleError };
@@ -98,29 +104,19 @@ const CreateAccount = ({ onSwitch }) => {
   const navigate = useNavigate();
   const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
   const [username, setUsername] = useState("");
-  //const [countryCode, setCountryCode] = useState("+91");
-//  const [contact, setContact] = useState("");
- // const [contactError, setContactError] = useState("");
+
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
- // const [showPassword, setShowPassword] = useState(false);
-   const [isLoading, setIsLoading] = useState(false);
- 
+  const [isLoading, setIsLoading] = useState(false);
+
   const createBtnProps = useInteractionState(styles.button, styles.buttonHover);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupColor, setPopupColor] = useState("#4CAF50");
+  const [usernameError, setUsernameError] = useState("");
 
-  const googleBtnProps = useInteractionState(
-    styles.googleButton,
-    styles.googleButtonHover
-  );
-  //const linkProps = useInteractionState(styles.link, styles.linkHover);
-
-
-  // Input focus hooks
 
   // Input focus hooks
   const usernameInput = useInputFocus();
@@ -138,7 +134,25 @@ const CreateAccount = ({ onSwitch }) => {
       return "Password must contain at least one special character (!@#$%^&*)";
     return "";
   };
+      const validateUsername = (name) => {
+  // Must start with letter, 3–20 chars, only letters/numbers/underscore
+  const usernamePattern = /^[A-Za-z][A-Za-z0-9_]{2,19}$/;
 
+  if (!usernamePattern.test(name)) {
+    if (!/^[A-Za-z]/.test(name)) {
+      return "Username must start with a letter";
+    }
+    if (name.length < 3) {
+      return "Username must be at least 3 characters long";
+    }
+    if (name.length > 20) {
+      return "Username cannot exceed 20 characters";
+    }
+    return "Username can only contain letters, numbers, and underscores";
+  }
+
+  return "";
+};
   const handleCreateAccount = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -149,6 +163,13 @@ const CreateAccount = ({ onSwitch }) => {
       return;
     }
 
+const unameError = validateUsername(username);
+  if (unameError) {
+    setUsernameError(unameError);
+    return;
+  } else {
+    setUsernameError("");
+  }
     if (!emailPattern.test(email)) {
       setEmailError("Please enter a valid email address");
       return;
@@ -168,7 +189,7 @@ const CreateAccount = ({ onSwitch }) => {
 
     try {
       const csrfToken = await getCSRFToken();
-      
+
       const response = await fetch(`/accounts/api/register/`, {
         method: "POST",
         headers: {
@@ -176,9 +197,9 @@ const CreateAccount = ({ onSwitch }) => {
           "X-CSRFToken": csrfToken,
         },
         credentials: "include",
-        body: JSON.stringify({ 
-          username, 
-          email, 
+        body: JSON.stringify({
+          username,
+          email,
           password,
         }),
       });
@@ -261,6 +282,7 @@ const CreateAccount = ({ onSwitch }) => {
             onBlur={usernameInput.onBlur}
             style={usernameInput.inputStyle}
           />
+          {usernameError && <p style={styles.errorText}>{usernameError}</p>}
 
           <input
             type="email"
@@ -323,7 +345,7 @@ const CreateAccount = ({ onSwitch }) => {
 // 2. & 3. Login Page
 const LoginPage = ({ onSwitch }) => {
   const navigate = useNavigate();
-   const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
+  const { handleGoogleSuccess, handleGoogleError } = useGoogleAuth();
 
 
   const [loginType, setLoginType] = useState("email"); // 'email' or 'username'
@@ -331,8 +353,8 @@ const LoginPage = ({ onSwitch }) => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const loginBtnProps = useInteractionState(styles.button, styles.buttonHover);
   const signUpLinkProps = useInteractionState(styles.link, styles.linkHover);
   const identifierInput = useInputFocus();
@@ -402,15 +424,15 @@ const LoginPage = ({ onSwitch }) => {
     setLoginType(type);
     setIdentifier("");
     setEmailError("");
- // Clear input on toggle for better UX
+    // Clear input on toggle for better UX
   };
 
   return (
     <>
-    <div style={styles.creativeBG} />
+      <div style={styles.creativeBG} />
       {showPopup && (
         <div style={styles.popupOverlayStyle}>
-          <div style={{...styles.popupBoxStyle, backgroundColor: popupColor}}>
+          <div style={{ ...styles.popupBoxStyle, backgroundColor: popupColor }}>
             <h3>
               {popupColor === "#4CAF50" ? "Success" : "Error"}
             </h3>
@@ -551,16 +573,17 @@ export const AuthFlow = () => {
 const styles = {
 
   appContainer: {
-   background: `
+    background: `
     linear-gradient(
       to right,
-      #e0f2f1 0%,      /* left glow */
-      rgba(202, 211, 231, 0.0) 20%,    /* fade to center */
-      rgba(202, 211, 231, 0.0) 80%,    /* fade out to right glow */
-      #e0f2f1 100%    /* right glow */
+      #e0f2f1 0%,
+      rgba(202, 211, 231, 0.0) 20%,
+      rgba(202, 211, 231, 0.0) 80%,
+      #e0f2f1 100%
     )
   `,
     minHeight: "100vh",
+    padding: "20px",        // important for mobile
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -568,27 +591,52 @@ const styles = {
   },
 
   "@keyframes fadeIn": {
-    from: { opacity: 0, transform: "scale(0.9)" },
+    from: { opacity: 0, transform: "scale(0.95)" },
     to: { opacity: 1, transform: "scale(1)" },
   },
 
-  modal: {
-      background: 'linear-gradient(180deg, #e3e8f1ff, #CAD3E7)',
 
-    backdropFilter: 'blur(25px)',
-    WebkitBackdropFilter: 'blur(25px)',
-    borderRadius: '28px',
-    border: '1px solid #1c1c1c66',
-    padding: "25px 50px",
-    width: "400px",
-    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
+  outerContainer: {
+    width: "100%",
+    minHeight: "100vh",
+
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+
+    padding: "20px",
+    boxSizing: "border-box",
+
+    background: `
+    linear-gradient(
+      to right,
+      #e0f2f1 0%,
+      rgba(202, 211, 231, 0.0) 20%,
+      rgba(202, 211, 231, 0.0) 80%,
+      #e0f2f1 100%
+    )
+  `,
+  },
+
+  modal: {
+    background: "linear-gradient(180deg, #e3e8f1ff, #CAD3E7)",
+    backdropFilter: "blur(25px)",
+    WebkitBackdropFilter: "blur(25px)",
+    borderRadius: "28px",
+    border: "1px solid #1c1c1c66",
+    padding: "25px 40px",
+    width: "90%",            // responsive width
+    maxWidth: "420px",       // controls max on desktop
+    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
     textAlign: "center",
     fontFamily: "Bricolage Grotesque, sans-serif",
     position: "relative",
   },
 
+
   googleContainer: {
-    marginTop: "20px",
+    marginTop: "10px",
     display: "flex",
     justifyContent: "center",
   },
@@ -631,14 +679,6 @@ const styles = {
     margin: "8px 0",
   },
 
-  countryCodeSelect: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #c2c9cc",
-    backgroundColor: "#fff",
-    fontFamily: "Bricolage Grotesque, sans-serif",
-    cursor: "pointer",
-  },
 
   errorText: {
     color: "red",
@@ -669,36 +709,18 @@ const styles = {
     backgroundColor: "#57556a",
     transform: "translateY(-1px)",
   },
-  googleButton: {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "24px",
-    border: "1px solid #c2c9cc",
-    backgroundColor: "#dfe4e6",
-    color: "#353342",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "background-color 0.2s ease-in-out",
-  },
-  googleButtonHover: {
-    backgroundColor: "#e7ebee",
-  },
-  googleIcon: {
-    width: "30px",
-    height: "30px",
-    marginRight: "10px",
-  },
+
   divider: {
-    display: "flex",
+    display: "flex",        // <-- this is important
+    flexDirection: "row",   // <-- this fixes the issue
     alignItems: "center",
     textAlign: "center",
     margin: "20px 0",
     color: "#000000ff",
+    width: "100%",          // extra safe
+    maxWidth: "420px",      // match modal width for clean layout
   },
+
   dividerLine: {
     flexGrow: 1,
     height: "1px",

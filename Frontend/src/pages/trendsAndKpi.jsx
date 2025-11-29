@@ -273,11 +273,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     };
 
     const handleSubmit = async () => {
-        // 🚨 API key must be filled
-        if (!apiKey.trim()) {
-            setValidationError("API key is required before analysis.");
-            return;
-        }
+        
 
         if (!isReadyToSubmit) {
             if (files.length < MIN_FILES) {
@@ -296,8 +292,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
                 formData.append('files', file);
             });
 
-            // ⛔ API KEY NOW MANDATORY
-            formData.append('api_key', apiKey.trim());
+          
 
             const response = await fetch('/trends/api/process-financial-statements/', {
                 method: 'POST',
@@ -344,65 +339,6 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 
             <div style={styles.fileUploadContainer}>
                 <h2 style={{ color: 'Black', textAlign: 'center', marginBottom: '20px' }}>Upload Financial Documents</h2>
-
-                <div style={{
-                    margin: '1rem 0',
-                    textAlign: 'left',
-                    padding: '1rem', // Added padding and background for better appearance
-                    backgroundColor: '#a6b1caff',
-                    borderRadius: '12px',
-                    border: '1px solid #9ea8b8',
-                }}>
-                    {/* Container for Label and Button */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <label style={{
-                            display: 'block',
-                            color: '#0b0b0bff',
-                            fontWeight: '600',
-                            fontSize: '14px',
-                            margin: 0,
-                        }}>
-                            API Key
-                        </label>
-
-                        {/* New Button */}
-                        <button
-                            onClick={() => navigate("/API_key")}
-                            style={{
-                                backgroundColor: '#64748b', // Darker color for button
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '13px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.2rem',
-                                transition: 'background-color 0.2s',
-                            }}
-                            title="Click for instructions"
-                        >
-                            how to get API key? <span style={{ fontSize: '14px' }}>🤔</span>
-                        </button>
-                    </div>
-
-                    {/* Input Field */}
-                    <input
-                        type="text"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Paste API key here"
-                        style={{
-                            width: '100%',
-                            padding: '0.65rem',
-                            borderRadius: '8px',
-                            border: '1px solid #a7a7a7',
-                            boxSizing: 'border-box'
-                        }}
-                    />
-                </div>
 
                 <div style={{ backgroundColor: '#ba8686ff', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                     <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Upload Requirements:</p>

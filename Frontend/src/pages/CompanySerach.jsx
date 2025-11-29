@@ -452,7 +452,7 @@ const generateDemoHistoricalData = (symbol, period = '1y') => {
     case '3m': days = 90; break;
     case '6m': days = 180; break;
     case '5y': days = 1825; break;
-    default: days = 365; // 1 year
+    default: days = 365; 
   }
 
   for (let i = days; i >= 0; i--) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect ,useRef, useId,useMemo} from 'react';
-import { Bot, TrendingUp, PieChart, Search, BookOpen, Award, User, Menu, X, Activity, Cpu, GitCompare, History, Settings, LogOut, Wrench, BarChart3,ArrowRight } from 'lucide-react';
+import { Bot, TrendingUp, PieChart, Search, BookOpen, BarChart3,ArrowRight } from 'lucide-react';
 import mainlogo from '../images/mainlogo.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
@@ -84,7 +84,7 @@ const FeatureCard = ({ feature, index }) => {
 
   return (
     <div
-      onClick={() => navigate(feature.route)}   // ⭐ navigation here
+      onClick={() => navigate(feature.route)}   
       style={{
         ...styles.featureCard,
         background: `linear-gradient(135deg, ${feature.bgColor}, #f1eeee6e)`,
@@ -251,8 +251,7 @@ const FinGenieLanding = () => {
 <div style={styles.fullWidthBox}
 onClick={() => navigate("/wordoftheday")}
 >
-  {/* 🔥 Curved animation here */}
-  {/* ⭐ Static text that does NOT move */}
+
   <div style={styles.quizText}
 >
     Take a fun quiz!
@@ -269,20 +268,34 @@ onClick={() => navigate("/wordoftheday")}
 };
 
 const styles = {
-  creativeBG: {
-    zIndex: 0,
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    width: '100vw', height: '100vh',
-    background: 'radial-gradient(ellipse 80% 50% at top, #e0f2f1 0%, #DEE6E6 40%, #f8f8f8 70%)',
-    pointerEvents: 'none'
-  },
+creativeBG: {
+  zIndex: 0,
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  width: '100vw',
+  height: '100vh',
+  pointerEvents: 'none',
+
+  /* Order reversed → radial gradient LAST = on top */
+  background:
+    'linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), ' +
+    'linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px), ' +
+    'radial-gradient(ellipse 80% 50% at top, #e0f2f1 0%, #DEE6E6 40%, #f8f8f8 70%)',
+
+  /* Keep your 2x smaller grid */
+  backgroundSize: '25px 25px, 25px 25px, 100% 100%',
+}
+
+,
   pageContainer: {
     position: 'relative',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    fontFamily: '"Inter", "Montserrat", "Bricolage Grotesque", sans-serif',
+    fontFamily: '"Bricolage Grotesque", sans-serif',
     color: '#2d3748',
     zIndex: 1,
     overflowX: 'hidden',
@@ -352,9 +365,9 @@ exploreButtonHover: {
   },
   featuresSection: {
     padding: '2rem 3rem',
-    maxWidth: '1400px',
     margin: '0 auto',
-    width: '100%'
+    alignItems: 'center',
+    width: '95%'
   },
   featuresGrid: {
     display: 'grid',
@@ -407,16 +420,22 @@ fullWidthBox: {
   width: "50%",
   position: "relative",
   borderRadius: '15px',
-margin: '2rem auto',
+  margin: '2rem auto',
   padding: "1.5rem 0",
   display: "flex",
   flexDirection: "column",
+  justifyContent: "center",  
   alignItems: "center",
-  gap: "0rem",   // space between curved text and quiz text
-  background: "linear-gradient(135deg, #eef4ce66, #d9dfb766)", // ⭐ gradient added
+  
+  background: "linear-gradient(135deg, #eef4ce66, #ece81f66)", 
       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     border: '1px solid #969a7fff',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    "@media (max-width: 600px)": {
+    width: "85%",               // ← bigger box on mobile
+    minHeight: "140px",         // ← slightly larger so text fits comfortably
+    padding: "1rem 0",
+  }
 },
 quizText: {
   fontSize: "1.4rem",
@@ -426,6 +445,9 @@ quizText: {
   textTransform: "uppercase",
   letterSpacing: "1px",
   cursor: "pointer",
+  "@media (max-width: 600px)": {
+    fontSize: "1.2rem",         // ← smaller on mobile so no wrapping
+  }
 },
 
 

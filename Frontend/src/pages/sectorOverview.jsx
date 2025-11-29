@@ -166,7 +166,6 @@ const SectorOverviewDashboard = () => {
       
       // Transform the API response to match our frontend structure
       const transformedSectors = Object.entries(sectorsData).map(([sectorName, sectorData]) => {
-        // FIX: Ensure the companies have the correct property names
         const companies = (sectorData.stocks || []).map(stock => ({
           symbol: stock.symbol,
           name: stock.name || stock.symbol,
@@ -527,7 +526,7 @@ const styles = {
   page: {
     minHeight: '100vh',
     backgroundColor: '#ffffffff',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '"Bricolage Grotesque", sans-serif',
     display: 'flex',
     flexDirection: 'column'
   },

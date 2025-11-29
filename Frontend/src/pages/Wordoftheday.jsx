@@ -26,7 +26,7 @@ const styles = {
         flexDirection: 'column',
         minHeight: '100vh',
         backgroundColor: COLORS.PageBackground,
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        fontFamily: '"Bricolage Grotesque", sans-serif',
     },
 
     // --- QUIZ CONTENT LAYOUT (MODIFIED FOR SEPARATE BLOCKS) ---

@@ -610,15 +610,6 @@ const FinanceBlog = () => {
               <Heart size={20} fill={selectedArticle.is_liked ? '#e74c3c' : 'none'} />
               <span style={{marginLeft: '6px'}}>{selectedArticle.likes || 0}</span>
             </button>
-            <button style={styles.actionButton}>
-              <Share2 size={20} />
-            </button>
-            <button 
-              style={{...styles.actionButton, color: selectedArticle.is_bookmarked ? '#3498db' : '#6c757d'}}
-              onClick={() => handleBookmark(selectedArticle.id)}
-            >
-              <Bookmark size={20} fill={selectedArticle.is_bookmarked ? '#3498db' : 'none'} />
-            </button>
           </div>
         </div>
       )}
@@ -729,90 +720,7 @@ const styles = {
   container: {
     minHeight: '100vh',
     backgroundColor: '#ffffffff',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 2rem',
-    backgroundColor: '#DEE6E6',
-    
-    border: '1px solid #000000ff',
-    borderRadius: '8px',
-
-    position: 'sticky',
-    top: 0,
-    zIndex: 100
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem'
-  },
-
-  navLink: {
-    fontSize: '0.95rem',
-    fontWeight: '500',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'color 0.3s ease',
-    textDecoration: 'none',
-    position: 'relative'
-  },
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  userIcon: {
-    cursor: 'pointer',
-    color: '#4a5568',
-    transition: 'color 0.3s ease'
-  },
-    toolsMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-      userMenu: {
-    position: 'relative',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  HFdropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '0.5rem',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '200px',
-    zIndex: 1000
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    fontSize: '0.95rem'
+    fontFamily: '"Bricolage Grotesque", sans-serif',
   },
 
   filterBar: {
@@ -820,14 +728,17 @@ const styles = {
     borderBottom: '1px solid #dee2e6',
     padding: '16px 0',
   },
+
   filterContent: {
-    maxWidth: '1400px',
+    width: '90%',
     margin: '0 auto',
     padding: '0 32px',
     display: 'flex',
     alignItems: 'center',
     gap: '16px',
+    flexWrap: 'wrap',           // allow wrapping on small screens
   },
+
   searchSection: {
     display: 'flex',
     alignItems: 'center',
@@ -835,8 +746,10 @@ const styles = {
     border: '1px solid #252525ff',
     borderRadius: '20px',
     flex: 1,
+    minWidth: '200px',
     maxWidth: '300px',
   },
+
   searchInput: {
     border: 'none',
     outline: 'none',
@@ -845,32 +758,37 @@ const styles = {
     width: '100%',
     backgroundColor: 'transparent',
   },
+
   categoriesButton: {
-    backgroundColor: '#ffffffff',
-    color: '#000000ff',
-    border: '1px solid #000000ff',
+    backgroundColor: '#fff',
+    color: '#000',
+    border: '1px solid #000',
     borderRadius: '20px',
     padding: '10px 24px',
     fontSize: '14px',
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap',
   },
+
   filterButton: {
-    backgroundColor: '#ffffff',
-    color: '#000000ff',
-    border: '1px solid #000000ff',
+    backgroundColor: '#fff',
+    color: '#000',
+    border: '1px solid #000',
     borderRadius: '20px',
     padding: '10px 24px',
     fontSize: '14px',
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap',
   },
+
   createButton: {
     backgroundColor: '#E6EFB7',
     color: '#3a3f44',
-    border: '1px solid #000000ff',
+    border: '1px solid #000',
     borderRadius: '20px',
     padding: '10px 24px',
     fontSize: '14px',
@@ -880,7 +798,46 @@ const styles = {
     alignItems: 'center',
     marginLeft: 'auto',
     transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap',
   },
+
+  /* --- RESPONSIVE MEDIA QUERIES --- */
+  '@media (max-width: 900px)': {
+    filterContent: {
+      padding: '0 16px',
+      gap: '12px',
+    },
+    createButton: {
+      marginLeft: 0,   // no forced push to right
+      width: '100%',   // full width on tablet
+      justifyContent: 'center',
+    },
+  },
+
+  '@media (max-width: 600px)': {
+    filterContent: {
+      flexDirection: 'column',  // stack vertically
+      alignItems: 'stretch',
+      gap: '12px',
+    },
+    searchSection: {
+      maxWidth: '100%',
+      minWidth: '100%',
+    },
+    categoriesButton: {
+      width: '100%',
+      textAlign: 'center',
+    },
+    filterButton: {
+      width: '100%',
+      textAlign: 'center',
+    },
+    createButton: {
+      width: '100%',
+      justifyContent: 'center',
+    },
+  },
+
   notification: {
     position: 'fixed',
     top: '100px',
@@ -935,28 +892,41 @@ const styles = {
     color: '#6c757d',
   },
   contentGrid: {
-    display: 'grid',
+     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '40px',
+    gap: '20px',
   },
+
   section: {
     backgroundColor: '#ffffffff',
     borderRadius: '20px',
     padding: '32px',
     border: '1px solid #000000ff',
   },
+
   sectionTitle: {
     fontSize: '28px',
     fontWeight: '700',
     color: '#111111ff',
     marginBottom: '28px',
     marginTop: '0',
+
+    '@media (max-width: 600px)': {
+      fontSize: '22px',
+      marginBottom: '20px',
+    },
   },
+
   cardGrid: {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
+
+    '@media (max-width: 600px)': {
+      gap: '18px',
+    },
   },
+
   card: {
     backgroundColor: '#ffffff',
     borderRadius: '20px',
@@ -966,9 +936,15 @@ const styles = {
     cursor: 'pointer',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
   },
+
   cardContent: {
     padding: '24px',
+
+    '@media (max-width: 600px)': {
+      padding: '16px',
+    },
   },
+
   cardTitle: {
     fontSize: '25px',
     fontWeight: '600',
@@ -976,14 +952,24 @@ const styles = {
     marginBottom: '12px',
     marginTop: '0',
     lineHeight: '1.4',
+
+    '@media (max-width: 600px)': {
+      fontSize: '20px',
+    },
   },
+
   cardImageWrapper: {
     width: '100%',
     height: '180px',
     overflow: 'hidden',
     position: 'relative',
     marginBottom: '12px',
+
+    '@media (max-width: 600px)': {
+      height: '140px', // adjust height for small screens
+    },
   },
+
   cardImage: {
     width: '100%',
     height: '100%',
@@ -991,6 +977,7 @@ const styles = {
     opacity: '0.7',
     mixBlendMode: 'multiply',
   },
+
   categoryBadge: {
     display: 'inline-block',
     fontSize: '11px',
@@ -1002,24 +989,39 @@ const styles = {
     marginBottom: '12px',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
+
+    '@media (max-width: 600px)': {
+      fontSize: '10px',
+      padding: '3px 10px',
+    },
   },
+
   cardSnippet: {
     fontSize: '14px',
     color: '#2e3235ff',
     lineHeight: '1.6',
     marginBottom: '14px',
     display: 'block',
+
+    '@media (max-width: 600px)': {
+      fontSize: '13px',
+    },
   },
+
   readMore: {
     fontSize: '14px',
     color: '#6c757d',
-    textDecoration: 'none',
+    textDecoration: 'underline',
     fontWeight: '500',
     display: 'inline-block',
     marginBottom: '16px',
     transition: 'color 0.2s',
-    textDecoration: 'underline',
+
+    '@media (max-width: 600px)': {
+      fontSize: '13px',
+    },
   },
+
   cardMeta: {
     display: 'flex',
     alignItems: 'center',
@@ -1028,6 +1030,11 @@ const styles = {
     flexWrap: 'wrap',
     gap: '6px',
     justifyContent: 'flex-end',
+
+    '@media (max-width: 600px)': {
+      justifyContent: 'flex-start',
+      fontSize: '11px',
+    },
   },
   metaLabel: {
     color: '#868e96',

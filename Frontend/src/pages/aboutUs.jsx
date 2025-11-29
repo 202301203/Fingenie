@@ -30,12 +30,13 @@ const styles = {
    
     mainContent: {
         flexGrow: 1,
-        maxWidth: '1200px',
+        width: '90%',
         margin: '40px auto',
         padding: '40px',
         backgroundColor: COLORS.CardBackground,
         borderRadius: '16px',
         boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+        border: `1px solid ${COLORS.PrimaryText}`,
     },
     sectionTitle: {
         fontSize: '2em',

@@ -1,10 +1,10 @@
 import React from "react";
 import { ArrowRight, FileText, GitCompare, Activity, Search, BookOpen, BarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
 import Footer from "../components/Footer";
+import fglogo_Wbg from '../images/fglogo_Wbg.png';
 
-const FeaturesPage = () => {
+const InfoaboutFeatures = () => {
   const navigate = useNavigate();
 
   const features = [
@@ -17,7 +17,7 @@ const FeaturesPage = () => {
         "AI analyses liquidity, stability, profitability & more.",
         "You get: pros & cons, financial health summary, animated gauge charts, and computed ratios."
       ],
-      link: "/FileUploadApp"
+      link: "/AuthFlow"
     },
 
     {
@@ -29,7 +29,7 @@ const FeaturesPage = () => {
         "AI extracts key metrics like revenue, margins, debt ratios, and trends.",
         "You get: a clear comparison chart + insights explaining which company performs better and why."
       ],
-      link: "/comparison"
+      link: "/AuthFlow"
     },
 
     {
@@ -41,7 +41,7 @@ const FeaturesPage = () => {
         "View trends for revenue, profits, equity, liabilities, liquidity, and more.",
         "AI highlights major improvements, declines, and hidden risks."
       ],
-      link: "/Trends_KPI"
+      link: "/AuthFlow"
     },
 
     {
@@ -52,7 +52,7 @@ const FeaturesPage = () => {
         "Search by company name or ticker.",
         "Get Overview, Charts, Ratios, Peer Analysis, Balance Sheet, Income Statement, and Cash Flow."
       ],
-      link: "/searchCompanies"
+      link: "/AuthFlow"
     },
 
     {
@@ -64,7 +64,7 @@ const FeaturesPage = () => {
         "Search any topic like stock markets, finance tips, or company deep dives.",
         "Write and publish your own blogs easily."
       ],
-      link: "/blogPage"
+      link: "/AuthFlow"
     },
 
     {
@@ -76,10 +76,35 @@ const FeaturesPage = () => {
         "View sector-wide graphs for revenue, earnings, risks, debt & valuation.",
         "Create custom groups of companies to compare within a sector."
       ],
-      link: "/sectorOverview"
+      link: "/AuthFlow"
     }
   ];
-
+    const Header = () => (
+      <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logo}>
+            <img
+              src={fglogo_Wbg}
+              style={{ height: "80px", width: "auto" }}
+              alt="logo"
+            />
+          </div>
+        </div>
+        <nav style={styles.nav}>
+          <span style={styles.navLink}
+          onClick={() => navigate("/NewsPage")}>News</span>
+          <span style={styles.navLink}
+          onClick={() => navigate("/About_us")}>About us</span>
+          <button
+                onClick={() => navigate("/AuthFlow")}
+                style={styles.signupButton}
+              >
+  
+              Sign up
+            </button>
+        </nav>
+      </header>
+    );
   return (
     <>
     <Header />
@@ -122,12 +147,53 @@ const FeaturesPage = () => {
   );
 };
 
-export default FeaturesPage;
+export default InfoaboutFeatures;
 
 const styles = {
   pageWrapper: {
    // padding: "2rem auto",
     backgroundColor: "#F6F7F9",
+  },
+   header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.5rem 2rem',
+    backgroundColor: '#DEE6E6',
+    border: '1px solid #000000ff',
+    borderRadius: '8px',
+
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
+  },
+  logo: {
+  },
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '32px',
+  },
+  navLink: {
+    fontSize: '15px',
+    color: '#37474f',
+    textDecoration: 'none',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'color 0.3s ease',
+  },
+    signupButton: {
+    background: '#3e555fff',
+    color: '#ffffff',
+    padding: '10px 20px',
+    fontSize: '16px',
+    fontWeight: '600',
+    borderRadius: '20px',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 4px 16px rgba(26, 35, 126, 0.3)',
+    transition: 'all 0.3s ease',
+    marginBottom: '16px',
   },
   pageTitle: {
     textAlign: "center",

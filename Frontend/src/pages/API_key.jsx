@@ -153,7 +153,7 @@ const APIKeyPage = () => {
                     </p>
 
                     <a 
-                        href="https://console.x.ai" 
+                        href="https://console.x.ai/team/3604c4c2-9b59-4cd0-a150-b419d9555e52/api-keys" 
                         target="_blank" 
                         rel="noopener noreferrer" 
                         style={styles.externalLink}

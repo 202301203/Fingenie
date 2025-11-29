@@ -300,7 +300,6 @@ export default function FinGenieApp() {
       }
 
       // Ratios section on new page
-      // Ratios section on new page
       pdf.addPage();
       yPosition = 40;
 
@@ -780,7 +779,7 @@ const styles = {
     minHeight: '100vh',
     backgroundColor: '#f8f8f8',
     color: 'white',
-    fontFamily: 'Arial, sans-serif',
+    fontFamily: '"Bricolage Grotesque", sans-serif',
     display: 'flex',
     flexDirection: 'column',
   },
