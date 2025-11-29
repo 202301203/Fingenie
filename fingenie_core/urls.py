@@ -22,9 +22,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', include('apps.accounts.urls')),  # Link to homepage app URLs
     path('admin/', admin.site.urls),
-    path('accounts/',include('apps.accounts.urls')),
+    path('accounts/', include('apps.accounts.urls')),  # Accounts authentication endpoints
     path('dataprocessor/', include('apps.dataprocessor.urls')), # Link to your app's URLs
     path('stock/', include('apps.stockgraph.urls')), # Link to stock graph app URLs
     path('sector/',include('apps.sector_overview.urls')),

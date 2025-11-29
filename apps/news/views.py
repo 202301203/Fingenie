@@ -1,3 +1,4 @@
+import os
 import requests
 from django.conf import settings
 from django.http import JsonResponse
@@ -23,7 +24,8 @@ def article_api(request):
         page_size = 20  # Show 20 articles per page
 
         # --- API key and endpoint ---
-        api_key = settings.NEWS_API_KEY
+        api_key = os.environ.get("NEWS_API_KEY")
+
         url = 'https://newsapi.org/v2/everything'
         
         # --- Define parameters dictionary ---
@@ -71,4 +73,6 @@ def article_api(request):
         })
 
     except Exception as e:
+
         return JsonResponse({'error': f'An unexpected error occurred: {e}'}, status=500)
+

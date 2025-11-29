@@ -32,10 +32,9 @@ def ai_insights_view(request):
         # Accept alternate key names for flexibility from frontend.
         question = data.get('question') or data.get('prompt') or data.get('message')
         chat_history = data.get('history', [])  # list[{role,text}]
-        # API key can come from request, settings or environment.
+        # API key from settings or environment only.
         api_key = (
-            data.get('api_key')
-            or getattr(settings, 'GEMINI_API_KEY', None)
+            getattr(settings, 'GEMINI_API_KEY', None)
             or os.environ.get('GEMINI_API_KEY')
         )
 
@@ -43,7 +42,7 @@ def ai_insights_view(request):
             return JsonResponse({'error': 'Missing question'}, status=400)
 
         if not api_key:
-            return JsonResponse({'error': 'API key not provided and GEMINI_API_KEY not set on server.'}, status=500)
+            return JsonResponse({'error': 'GEMINI_API_KEY not set on server.'}, status=500)
 
         # Configure SDK with resolved key
         try:

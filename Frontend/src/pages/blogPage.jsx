@@ -190,17 +190,17 @@ const FinanceBlog = () => {
     setValidationError('');
     
     try {
-      // Test authentication first
-      const authCheck = await blogService.testAuth();
-      console.log('Auth check result:', authCheck);
+      // // Test authentication first
+      // const authCheck = await blogService.testAuth();
+      // console.log('Auth check result:', authCheck);
       
-      if (!authCheck.authenticated) {
-        setError('You need to be logged in to create a blog post. Please log in again.');
-        setLoading(false);
-        return;
-      }
+      // if (!authCheck.authenticated) {
+      //   setError('You need to be logged in to create a blog post. Please log in again.');
+      //   setLoading(false);
+      //   return;
+      // }
 
-      console.log('Creating blog post as user:', authCheck.user);
+      // console.log('Creating blog post as user:', authCheck.user);
       
       // Create FormData for proper file upload
       const formData = new FormData();
@@ -1270,4 +1270,6 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
+
 export default FinanceBlog;
+

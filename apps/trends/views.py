@@ -222,8 +222,7 @@ CRITICAL_METRICS = {
         'category': 'liquidity'
     }
 }
-# API_KEYS = getattr()
-
+API_KEYS = os.environ.get('API_KEYS', '').split(',')
 def extract_all_years_data(extraction: Dict[str, Any], year: str) -> Dict[str, Dict[str, float]]:
     """
     Extract data for ALL years from the extraction result, not just current year.

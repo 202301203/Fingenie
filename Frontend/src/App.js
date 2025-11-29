@@ -11,7 +11,7 @@ import TrendsPage from "./pages/trendsAndKpi.jsx";
 import SectorOverviewDashboard from "./pages/sectorOverview";
 import BlogPage from "./pages/blogPage";
 import CompanySearch from "./pages/CompanySerach"
-import Wodroftheday from "./pages/Wordoftheday";
+import Wordoftheday from "./pages/Wordoftheday";
 import API_key from "./pages/API_key.jsx"; 
 import About_us from "./pages/aboutUs.jsx";
 import AiInsights from "./pages/AiInsights.jsx";
@@ -38,7 +38,7 @@ function App() {
       <Route path="/sectorOverview" element={<SectorOverviewDashboard />} /> 
       <Route path="/blogPage" element={<BlogPage />} />
       <Route path="/companySearch" element={<CompanySearch/>}/>
-      <Route path="/wordoftheday" element={<Wodroftheday/>}/>
+      <Route path="/wordoftheday" element={<Wordoftheday/>}/>
       <Route path="/API_key" element={<API_key/>} /> 
       <Route path="/About_us" element={<About_us/>} /> 
       <Route path="/AiInsights" element={<AiInsights/>} />
