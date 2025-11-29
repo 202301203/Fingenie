@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MutPy mutation report - mutation #18</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        
+        $('.line.number34').attr('title', 'COI');
+        
+    }, 0);
+</script>
+
+</head>
+<body>
+    <div class="container">
+        
+<div class="page-header">
+    <h1>Mutation #18</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li>module - <code><module 'apps.dataprocessor.views' from 'C:\\Users\\Jay\\Downloads\\Fingenie\\apps\\dataprocessor\\views.py'></code></li>
+    <li><span class="label label-danger">survived</span></li>
+    
+    <li>duration - 0.002 s</li>
+    
+    
+</ul>
+
+<h3>Mutations</h3>
+<ul>
+    
+    <li>COI - line 34</li>
+    
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; first-line: 2; highlight: [34]; toolbar: false;">
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.conf import settings
+import os
+import uuid
+import json
+
+from .models import FinancialReport
+from .services import load_pdf_robust, prepare_context_smart, extract_raw_financial_data, generate_summary_from_data, generate_ratios_from_data
+
+
+
+
+
+
+
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from decimal import Decimal
+import datetime
+import time
+import yfinance as yf
+
+class CustomJSONEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
+@csrf_exempt
+def process_financial_statements_api(request):if not (request.method != 'POST'):
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return JsonResponse({'error': 'No file uploaded'}, status=400)
+    
+    temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_uploads')
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, f'{uuid.uuid4()}.pdf')
+    
+    google_api_key = request.POST.get('api_key')
+    
+    if not google_api_key:
+        return JsonResponse({'error': 'Missing API key'}, status=500)
+    if not google_api_key:
+        return JsonResponse({'error': 'Missing Google API key'}, status=500)
+    
+    try:
+        
+        with open(temp_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+        
+        
+        documents = load_pdf_robust(temp_path)
+        context = prepare_context_smart(documents)
+        if len(context.strip()) < 100:
+            return JsonResponse({'error': 'Insufficient financial content found', 'success': False}, status=400)
+        
+        
+        extracted_data = extract_raw_financial_data(context, google_api_key)
+        if not (extracted_data.get('success')):
+            error_msg = extracted_data.get('error', 'Data extraction failed')
+            return JsonResponse({'error': error_msg, 'success': False}, status=400)
+        
+        
+        summary_result = generate_summary_from_data(extracted_data.get('financial_items', []), google_api_key)
+        if not (summary_result.get('success')):
+            
+            summary_data = {'pros': [], 'cons': [], 'financial_health_summary': 'Summary generation failed'}
+        else:
+            summary_data = {\
+                'pros': summary_result.get('pros', []), \
+                'cons': summary_result.get('cons', []), \
+                'financial_health_summary': summary_result.get('financial_health_summary', '')}
+        
+        
+        
+        ratios_result = generate_ratios_from_data(extracted_data.get('financial_items', []), google_api_key)
+        if not (ratios_result.get('success')):
+            
+            ratios_data = []
+        else:
+            ratios_data = ratios_result.get('financial_ratios', [])
+        
+        
+        report_id = str(uuid.uuid4())
+        
+        
+        
+        
+        report = FinancialReport.objects.create(
+            report_id=report_id, 
+            company_name=extracted_data.get('company_name', 'Unknown Company'), 
+            ticker_symbol=extracted_data.get('ticker_symbol', ''), 
+            user=None, 
+            uploaded_pdf=uploaded_file, 
+            pdf_original_name=uploaded_file.name)
+        
+        
+        
+        report.set_summary(summary_data)
+        report.set_ratios(ratios_data)
+        report.save()
+        
+        
+        os.remove(temp_path)
+        
+        
+        return JsonResponse({\
+            'success': True, \
+            'report_id': report_id, \
+            'company_name': extracted_data.get('company_name', 'Unknown Company'), \
+            'ticker_symbol': extracted_data.get('ticker_symbol', ''), \
+            'summary': report.get_summary(), \
+            'ratios': report.get_ratios(), \
+            'metadata': {\
+            'file_name': uploaded_file.name, \
+            'size_kb': round(uploaded_file.size / 1024, 2), \
+            'uploaded_pdf': True}}, 
+            
+            encoder=CustomJSONEncoder)
+    
+    except Exception as e:
+        import traceback
+        print(f'Error in processing: {str(e)}')
+        print(traceback.format_exc())
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+def get_report_by_id_api(request, report_id):try:
+        print(f' Looking for report: {report_id}')
+        
+        report = FinancialReport.objects.get(report_id=report_id)
+        print(f' Found report: {report.company_name}')
+        
+        
+        print(f' Summary data type: {type(report.summary)}')
+        print(f' Ratios data type: {type(report.ratios)}')
+        
+        
+        summary_data = report.get_summary()
+        ratios_data = report.get_ratios()
+        
+        print(f' Summary pros count: {len(summary_data.get('pros', []))}')
+        print(f' Summary cons count: {len(summary_data.get('cons', []))}')
+        print(f' Ratios count: {len(ratios_data)}')
+        
+        response_data = {\
+            'success': True, \
+            'report_id': str(report.report_id), \
+            'company_name': report.company_name, \
+            'ticker_symbol': report.ticker_symbol, \
+            'summary': summary_data, \
+            'ratios': ratios_data, \
+            'created_at': report.created_at.isoformat(), \
+            'time_ago': report.time_ago, \
+            'has_uploaded_pdf': report.has_uploaded_pdf, \
+            'uploaded_pdf_name': report.pdf_original_name}
+        
+        
+        print(f' Sending response for report: {report_id}')
+        return JsonResponse(response_data)
+    
+    except FinancialReport.DoesNotExist:
+        print(f' Report not found or access denied: {report_id}')
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
+    except Exception as e:
+        print(f' Error in get_report_by_id_api: {str(e)}')
+        import traceback
+        print(f'Stack trace: {traceback.format_exc()}')
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+def get_latest_report_api(request):try:
+        print(' Looking for latest report...')
+        
+        report = FinancialReport.objects.order_by('-created_at').first()
+        if not report:
+            print(' No reports found for user')
+            return JsonResponse({'error': 'No reports found'}, status=404)
+        
+        print(f' Found latest report: {report.company_name}')
+        
+        
+        response_data = {\
+            'success': True, \
+            'report_id': str(report.report_id), \
+            'company_name': report.company_name, \
+            'ticker_symbol': report.ticker_symbol, \
+            'summary': report.get_summary(), \
+            'ratios': report.get_ratios(), \
+            'created_at': report.created_at.isoformat(), \
+            'time_ago': report.time_ago, \
+            'has_uploaded_pdf': report.has_uploaded_pdf}
+        
+        
+        print(f' Sending latest report response')
+        return JsonResponse(response_data)
+    
+    except Exception as e:
+        print(f' Error in get_latest_report_api: {str(e)}')
+        import traceback
+        print(f'Stack trace: {traceback.format_exc()}')
+        return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+
+
+
+
+
+@csrf_exempt
+def user_summary_history(request):'''Get public financial analysis history (all reports).'''
+    try:
+        reports = FinancialReport.objects.order_by('-created_at')
+        
+        reports_data = []
+        for report in reports:
+            reports_data.append({\
+                'report_id': str(report.report_id), \
+                'company_name': report.company_name, \
+                'ticker_symbol': report.ticker_symbol, \
+                'summary_preview': report.financial_health_summary[:100] + '...' if report.financial_health_summary else '', \
+                'full_summary': report.financial_health_summary, \
+                'date': report.created_at.strftime('%b %d, %Y'), \
+                'time_ago': report.time_ago, \
+                'uploaded_pdf': report.has_uploaded_pdf, \
+                'pdf_name': report.pdf_original_name})
+        
+        
+        return JsonResponse({\
+            'success': True, \
+            'reports': reports_data, \
+            'total_reports': len(reports_data)})
+    
+    
+    except Exception as e:
+        print(f'Error in user_summary_history: {str(e)}')
+        return JsonResponse({\
+            'success': False, \
+            'error': 'Failed to load summary history'}, 
+            status=500)
+
+
+@csrf_exempt
+def delete_report_api(request, report_id):'''Delete a report by id (public). WARNING: consider re-adding auth for production.'''
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    try:
+        
+        report = FinancialReport.objects.get(report_id=report_id)
+        company_name = report.company_name
+        report.delete()
+        
+        return JsonResponse({\
+            'success': True, \
+            'message': f'Report for {company_name} deleted successfully'})
+    
+    
+    except FinancialReport.DoesNotExist:
+        return JsonResponse({'error': 'Report not found or access denied'}, status=404)
+    except Exception as e:
+        print(f'Error deleting report: {str(e)}')
+        return JsonResponse({'error': 'Failed to delete report'}, status=500)
+
+
+@csrf_exempt
+def get_recent_analyses(request):'''Get recent analyses (public feed).'''
+    try:
+        limit = request.GET.get('limit', 5)
+        reports = FinancialReport.objects.order_by('-created_at')[:int(limit)]
+        
+        analyses_data = []
+        for report in reports:
+            analyses_data.append({\
+                'report_id': str(report.report_id), \
+                'company_name': report.company_name, \
+                'ticker_symbol': report.ticker_symbol, \
+                'summary_preview': report.financial_health_summary[:50] + '...' if report.financial_health_summary else 'Analysis completed', \
+                'date': report.created_at.strftime('%b %d, %Y'), \
+                'time_ago': report.time_ago})
+        
+        
+        return JsonResponse({\
+            'success': True, \
+            'analyses': analyses_data})
+    
+    
+    except Exception as e:
+        print(f'Error in get_recent_analyses: {str(e)}')
+        return JsonResponse({\
+            'success': False, \
+            'error': 'Failed to load recent analyses'}, 
+            status=500)
+
+
+@csrf_exempt
+def get_stock_data_api(request, ticker_symbol, period='1M'):'''Return recent stock price data for the given ticker.
+
+    Supports URL period or query param `?period=`. Period examples: 1D, 5D, 1M, 3M, 6M, 1Y.
+    Maps to yfinance periods: 1d, 5d, 1mo, 3mo, 6mo, 1y.
+    '''
+    try:
+        qp_period = request.GET.get('period')
+        sel_period = (qp_period or period or '1M').upper()
+        period_map = {\
+            '1D': '1d', '5D': '5d', \
+            '1M': '1mo', '3M': '3mo', '6M': '6mo', \
+            '1Y': '1y', '2Y': '2y', '5Y': '5y', '10Y': '10y'}
+        
+        yf_period = period_map.get(sel_period, '1mo')
+        
+        
+        interval = '1d'
+        if yf_period in ('1d', '5d'):
+            interval = '30m'
+        elif yf_period in ('1mo', '3mo'):
+            interval = '1d'
+        else:
+            interval = '1wk'
+        
+        ticker = ticker_symbol.strip()
+        
+        def fetch_history():
+            last_exception = None
+            for attempt in range(3):
+                try:
+                    df = yf.download(ticker, period=yf_period, interval=interval, progress=False, auto_adjust=False, threads=False)
+                    if (df is not None and not (df.empty)):
+                        return df
+                except Exception as e:
+                    last_exception = e
+                
+                try:
+                    tk = yf.Ticker(ticker)
+                    df2 = tk.history(period=yf_period, interval=interval)
+                    if (df2 is not None and not (df2.empty)):
+                        return df2
+                except Exception as e2:
+                    last_exception = e2
+                time.sleep(1)
+            if last_exception:
+                print(f'Stock fetch failed for {ticker}: {last_exception}')
+            return None
+        
+        df = fetch_history()
+        
+        if (df is None or df.empty):
+            return JsonResponse({\
+                'success': True, \
+                'ticker': ticker, \
+                'period': sel_period, \
+                'interval': interval, \
+                'data': [], \
+                'note': 'No data returned from provider'})
+        
+        
+        
+        points = []
+        for (idx, row) in df.iterrows():
+            
+            ts = idx.to_pydatetime() if hasattr(idx, 'to_pydatetime') else idx
+            
+            price = None
+            if ('Close' in row and not (row['Close'] is None)):
+                try:
+                    price = float(row['Close'])
+                except Exception:
+                    price = None
+            if (price is None and 'Adj Close' in row and not (row['Adj Close'] is None)):
+                try:
+                    price = float(row['Adj Close'])
+                except Exception:
+                    price = None
+            if price is None:
+                continue
+            points.append({\
+                'timestamp': ts.isoformat(), \
+                'price': price})
+        
+        
+        return JsonResponse({\
+            'success': True, \
+            'ticker': ticker, \
+            'period': sel_period, \
+            'interval': interval, \
+            'point_count': len(points), \
+            'data': points})
+    
+    
+    except Exception as e:
+        print(f'Error fetching stock data for {ticker_symbol}: {e}')
+        return JsonResponse({'success': False, 'error': 'Failed to fetch stock data'}, status=500)</pre>
+
+    </div>
+</body>
+</html>

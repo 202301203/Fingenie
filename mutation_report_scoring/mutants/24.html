@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MutPy mutation report - mutation #24</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        
+        $('.line.number39').attr('title', 'AOR');
+        
+    }, 0);
+</script>
+
+</head>
+<body>
+    <div class="container">
+        
+<div class="page-header">
+    <h1>Mutation #24</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li>module - <code><module 'apps.dataprocessor.scoring' from 'C:\\Users\\Jay\\Downloads\\Fingenie\\apps\\dataprocessor\\scoring.py'></code></li>
+    <li><span class="label label-danger">survived</span></li>
+    
+    <li>duration - 0.016 s</li>
+    
+    
+    <li>tests run - 11</li>
+    
+</ul>
+
+<h3>Mutations</h3>
+<ul>
+    
+    <li>AOR - line 39</li>
+    
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; first-line: 1; highlight: [39]; toolbar: false;">import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+
+
+def normalize(value, mean, std, invert=False, clip=(0, 100)):
+    '''Scale values to a 0–100 range.'''
+    if (value is None or np.isnan(value)):
+        return 50
+    
+    score = 50 + (15 * ((value - mean) / std))
+    score = np.clip(score, clip[0], clip[1])
+    
+    if invert:
+        score = 100 - score
+    
+    return score
+
+
+def compute_subscores(data):
+    '''Compute normalized financial health scores.'''
+    bs = data['balance_sheet']
+    is_ = data['income_statement']
+    cf = data['cash_flow']
+    prev = data.get('previous_year', {})
+    
+    
+    current_ratio = bs['current_assets'] / max(bs['current_liabilities'], 1)
+    quick_ratio = (bs['current_assets'] - bs.get('inventory', 0)) / max(bs['current_liabilities'], 1)
+    liquidity = \
+        (0.6 * normalize(current_ratio, mean=1.5, std=0.75)) + \
+        (0.4 * normalize(quick_ratio, mean=1.0, std=0.5))
+    
+    
+    
+    debt_to_equity = bs['total_liabilities'] // max(bs['equity'], 1)
+    interest_cover = is_['ebit'] / max(is_.get('interest_expense', 1), 1)
+    retained_ratio = bs['retained_earnings'] / bs['total_assets']
+    stability = \
+        ((0.4 * normalize(debt_to_equity, mean=1.5, std=1.0, invert=True)) + \
+        (0.4 * normalize(interest_cover, mean=4.0, std=2.0))) + \
+        (0.2 * normalize(retained_ratio, mean=0.3, std=0.15))
+    
+    
+    
+    roa = is_['net_income'] / bs['total_assets']
+    roe = is_['net_income'] / max(bs['equity'], 1)
+    net_margin = is_['net_income'] / is_['revenue']
+    profitability = \
+        ((0.4 * normalize(roa, mean=0.08, std=0.05)) + \
+        (0.3 * normalize(roe, mean=0.12, std=0.08))) + \
+        (0.3 * normalize(net_margin, mean=0.1, std=0.05))
+    
+    
+    
+    asset_turnover = is_['revenue'] / bs['total_assets']
+    op_cf_ratio = cf['operating_cash_flow'] / bs['total_assets']
+    revenue_growth = \
+        (is_['revenue'] - prev.get('revenue', is_['revenue'])) / \
+        max(prev.get('revenue', is_['revenue']), 1)
+    
+    efficiency = \
+        ((0.4 * normalize(asset_turnover, mean=1.0, std=0.4)) + \
+        (0.3 * normalize(op_cf_ratio, mean=0.1, std=0.08))) + \
+        (0.3 * normalize(revenue_growth, mean=0.1, std=0.15))
+    
+    
+    
+    m_score = data.get('beneish_m_score', -2.0)
+    z_score = data.get('altman_z_score', 3.0)
+    transparency = \
+        (0.6 * normalize(m_score, mean=-2.2, std=0.4, invert=True)) + \
+        (0.4 * normalize(z_score, mean=3.0, std=1.0))
+    
+    
+    overall = \
+        ((((0.15 * liquidity) + \
+        (0.2 * stability)) + \
+        (0.25 * profitability)) + \
+        (0.2 * efficiency)) + \
+        (0.2 * transparency)
+    
+    
+    return {\
+        'Liquidity': liquidity, \
+        'Stability': stability, \
+        'Profitability': profitability, \
+        'Efficiency': efficiency, \
+        'Transparency': transparency, \
+        'Overall': overall}
+
+
+
+
+
+
+def draw_single_gauge(score, label, desc, meaning):
+    '''Draw a half-circle gauge for a given score.'''
+    (fig, ax) = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(5, 3))
+    ax.set_theta_offset(np.pi)
+    ax.set_theta_direction(-1)
+    ax.set_ylim(0, 10)
+    ax.set_axis_off()
+    
+    zones = [\
+        (0, 0.628, '#FF4C4C', 'Poor'), \
+        (0.628, 1.257, '#FFA64D', 'Weak'), \
+        (1.257, 1.885, '#FFD93D', 'Fair'), \
+        (1.885, 2.513, '#9FEF77', 'Good'), \
+        (2.513, 3.142, '#3CB371', 'Excellent')]
+    
+    
+    for (start, end, color, _) in zones:
+        ax.barh(5, width=end - start, left=start, height=5, 
+            color=color, alpha=0.9, edgecolor='white')
+    
+    theta = np.interp(score, [0, 100], [0, np.pi])
+    ax.plot([theta, theta], [0, 5], color='black', lw=4, zorder=5)
+    
+    for val in [0, 25, 50, 75, 100]:
+        theta_val = np.interp(val, [0, 100], [0, np.pi])
+        ax.text(theta_val, 5.8, f'{val}', fontsize=7, ha='center', va='center')
+    
+    ax.set_title(f'{label}
+({desc})', fontsize=13, pad=20, fontweight='bold')plt.xlabel(f'Score: {score}', fontsize=11, labelpad=25, fontweight='bold')
+    plt.show()
+    
+    print(f'{label} Score: {score}/100')
+    print(f'   {meaning}
+')</pre>
+
+    </div>
+</body>
+</html>

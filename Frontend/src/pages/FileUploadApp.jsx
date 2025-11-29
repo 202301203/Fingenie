@@ -309,7 +309,12 @@ const FileUploadApp = () => {
                         navigate('/summary_page', { state: json });
                       } catch (err) {
                         console.error('Upload error', err);
-                        alert('An error occurred while uploading. Check console for details.');
+                        let message = "Network error. Please try again.";
+                        if (err.response && err.response.data) {
+                          // If backend sent a readable message
+                          message = err.response.data.message || err.response.data.err || JSON.stringify(err.response.data);
+                        }
+                       alert(message);
                       } finally {
                         setIsProcessing(false);
                       }

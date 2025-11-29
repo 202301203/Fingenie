@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MutPy mutation report - mutation #80</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        
+        $('.line.number190').attr('title', 'SIR');
+        
+    }, 0);
+</script>
+
+</head>
+<body>
+    <div class="container">
+        
+<div class="page-header">
+    <h1>Mutation #80</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li>module - <code><module 'apps.dataprocessor.services' from 'C:\\Users\\Jay\\Downloads\\Fingenie\\apps\\dataprocessor\\services.py'></code></li>
+    <li><span class="label label-warning">incompetent</span></li>
+    
+    
+</ul>
+
+<h3>Mutations</h3>
+<ul>
+    
+    <li>SIR - line 190</li>
+    
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; first-line: 1; highlight: [190]; toolbar: false;">import os
+import json
+import re
+import logging
+import pandas as pd
+import pdfplumber
+import pytesseract
+from typing import List, Optional, Dict, Any, Literal
+
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader
+from langchain_groq import ChatGroq
+from langchain_core.documents import Document
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+
+class FinancialItem(BaseModel):
+    particularsstrField(..., description="Full descriptive name with category, e.g., 'Assets: Current assets: Cash and cash equivalents'")
+    current_yearOptional[float]Field(None, description="The current year's financial amount as a number, or null")
+    previous_yearOptional[float]Field(None, description="The previous year's financial amount as a number, or null")
+
+class FinancialExtractionResult(BaseModel):
+    company_nameOptional[str]Field(None, description='The full legal name of the company.')
+    ticker_symbolOptional[str]Field(None, description='The stock market ticker symbol, including the exchange suffix if available (e.g., RELIANCE.NS, MSFT).')
+    financial_itemsList[FinancialItem]
+
+
+class FinancialSummary(BaseModel):
+    prosList[str]Field(..., description='List of positive financial or business points, using precise terminology and numbers.')
+    consList[str]Field(..., description='List of negative financial or business points, using precise terminology and numbers.')
+    financial_health_summarystrField(..., description="Overall assessment of company's financial health based on the aggregate pros and cons, providing a big-picture view of strengths and concerns.")
+
+class RatioItem(BaseModel):
+    ratio_nameLiteral[\
+        ('Current Ratio', \
+        'Quick Ratio', \
+        'Debt to Equity Ratio', \
+        'Asset Turnover Ratio', \
+        'Return on Assets (ROA)', \
+        'Return on Equity (ROE)')]\
+        Field(..., description='Name of the financial ratio')
+    formulastrField(..., description='Formula used for calculation')
+    calculationstrField(..., description='Step-by-step calculation')
+    resultfloatField(..., description='Numeric result of the ratio')
+    interpretationstrField(..., description='One-line interpretation of the ratio')
+
+class FinancialRatios(BaseModel):
+    financial_ratiosList[RatioItem]Field(..., description='List of calculated financial ratios')
+
+
+
+def detect_file_type(file_path: str) -> str:
+    '''Detect if file is PDF or Excel.'''
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        return 'pdf'
+    elif ext in ['.xlsx', '.xls', '.csv']:
+        return 'excel'
+    else:
+        raise ValueError(f'Unsupported file format: {ext}')
+
+def load_financial_document(file_path: str) -> List[Document]:
+    '''Load financial document from PDF or Excel.'''
+    file_type = detect_file_type(file_path)
+    
+    if file_type == 'pdf':
+        return load_pdf_robust(file_path)
+    else:
+        return load_excel_file(file_path)
+
+def load_excel_file(file_path: str) -> List[Document]:
+    '''Load Excel file and convert to text format.'''
+    try:
+        loader = UnstructuredExcelLoader(file_path)
+        docs = loader.load()
+        if (docs and len(docs[0].page_content.strip()) > 100):
+            return docs
+    except Exception as e:
+        print(f'UnstructuredExcelLoader failed: {e}, trying pandas fallback')
+    
+    
+    try:
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == '.csv':
+            df = pd.read_csv(file_path)
+        else:
+            df = pd.read_excel(file_path)
+        
+        
+        text_content = 'FINANCIAL STATEMENT DATA:\n\n'
+        for col in df.columns:
+            text_content += f'{col}: '
+            
+            values = df[col].dropna().head(10).astype(str).tolist()
+            text_content += ' | '.join(values) + '\n'
+        
+        return [Document(page_content=text_content, metadata={'source': file_path})]
+    except Exception as e:
+        print(f'Pandas loading failed: {e}')
+        return [Document(page_content='', metadata={'source': file_path})]
+
+
+
+def load_pdf_robust(pdf_path: str) -> List[Document]:
+    '''Load PDF with multiple fallback methods.'''
+    print('Loading PDF...')
+    documents = []
+    
+    
+    try:
+        loader = PyPDFLoader(pdf_path)
+        docs = loader.load()
+        total_chars = sum((len(d.page_content.strip()) for d in docs))
+        
+        if total_chars > 2000:
+            print(f'Standard extraction successful: {len(docs)} pages, {total_chars} chars')
+            return docs
+        else:
+            print(f'Standard extraction poor quality: {total_chars} chars - trying OCR')
+    except Exception as e:
+        print(f'Standard extraction failed: {e} - trying OCR')
+    
+    
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for (page_num, page) in enumerate(pdf.pages, 1):
+                
+                text = (page.extract_text() or '')
+                
+                if len(text.strip()) < 100:
+                    try:
+                        
+                        pil_image = page.to_image().original
+                        ocr_text = pytesseract.image_to_string(pil_image)
+                        if len(ocr_text.strip()) > len(text.strip()):
+                            text = ocr_text
+                    except Exception as ocr_e:
+                        print(f'OCR failed on page {page_num}: {ocr_e}')
+                
+                if text.strip():
+                    documents.append(Document(
+                        page_content=text, 
+                        metadata={'page': page_num, 'source': pdf_path}))
+        
+        
+        print(f'pdfplumber extraction: {len(documents)} pages')
+        return documents
+    
+    except Exception as e:
+        print(f'pdfplumber failed entirely: {e}')
+        return []
+
+
+
+def prepare_context_smart(documents: List[Document]) -> str:
+    '''Prepare context with financial focus.'''
+    all_text = '\n'.join([doc.page_content for doc in documents])
+    
+    
+    if len(all_text) > 30000:
+        
+        lines = all_text.split('\n')
+        financial_lines = []
+        other_lines = []
+        
+        financial_keywords = [\
+            'balance sheet', 'assets', 'liabilities', 'equity', 'share capital', \
+            'reserves', 'current assets', 'non-current assets', 'profit', 'loss', \
+            'revenue', 'sales', 'income', 'expenses', 'total', 'crores', 'lakhs', \
+            'financial statements', 'consolidated', 'standalone', 'cash flow', \
+            'statement', 'account', 'financial', 'fiscal year', 'auditor']
+        
+        
+        for line in lines:
+            line_lower = line.lower()
+            if any((keyword in line_lower for keyword in financial_keywords)):
+                financial_lines.append(line)
+            elif len(line.strip()) > 10:
+                other_lines.append(line)
+        
+        
+        if len(financial_lines) > 100:
+            context_text = '\n'.join(financial_lines[:200] + other_lines[:50])
+        else:
+            context_text = '\n'.join(lines[:500])
+    else:
+        context_text = all_text
+    
+    return context_text[:]
+
+
+
+def create_groq_llm(api_key: str, purpose: str = 'extraction'):
+    '''Create Groq LLM with reliable model selection.'''
+    
+    
+    model_selection = {\
+        'extraction': 'llama-3.1-8b-instant', \
+        'analysis': 'llama-3.1-8b-instant', \
+        'pros_cons': 'llama-3.1-8b-instant', \
+        'ratios': 'llama-3.1-8b-instant', \
+        'summary': 'llama-3.1-8b-instant'}
+    
+    
+    temperature = 0.1
+    
+    model = model_selection.get(purpose, 'llama-3.1-8b-instant')
+    
+    llm = ChatGroq(
+        model=model, 
+        groq_api_key=api_key, 
+        temperature=temperature, 
+        max_tokens=4096, 
+        timeout=60, 
+        max_retries=1)
+    
+    return llm
+
+
+
+EXTRACTION_PROMPT = '\nYou are an expert financial analyst with deep expertise in extracting financial data from statements. Your task is to accurately identify and extract all financial line items with their values.\n\n*CRITICAL PRIORITIES:*\n1. *COMPANY IDENTIFICATION*: First, find the full legal company name and stock ticker symbol\n   - For Indian stocks: Add .NS suffix (e.g., RELIANCE.NS, TCS.NS)\n   - For US stocks: Use standard symbol (e.g., AAPL, MSFT)\n   - For other markets: Use appropriate exchange suffix\n   - If not found, set to null\n\n2. *FINANCIAL DATA EXTRACTION*: Extract ALL financial line items with complete hierarchical structure\n   - Preserve the full category path (e.g., "Assets: Current Assets: Cash and Cash Equivalents")\n   - Convert all amounts to pure numbers (remove commas, currency symbols)\n   - Use negative numbers for losses, expenses, or amounts in parentheses\n   - Use null for genuinely missing values\n\n3. *FINANCIAL CATEGORIES TO FOCUS ON*:\n   - ASSETS: Current Assets, Non-Current Assets, Fixed Assets, Investments, Cash\n   - LIABILITIES: Current Liabilities, Non-Current Liabilities, Borrowings, Provisions\n   - EQUITY: Share Capital, Reserves, Retained Earnings\n   - INCOME: Revenue, Sales, Other Income\n   - EXPENSES: Cost of Goods Sold, Operating Expenses, Finance Costs\n   - PROFIT/LOSS: Gross Profit, Operating Profit, Net Profit\n   - CASH FLOW: Operating Activities, Investing Activities, Financing Activities\n\n*DATA PROCESSING RULES:*\n- Convert "1,00,000" to 100000\n- Convert "(50,000)" to -50000\n- Convert "NIL" or "-" to null\n- Preserve decimal points for accuracy\n- Maintain the exact descriptive names from the document\n\n*DOCUMENT CONTENT:*\n{context}\n\nReturn ONLY valid JSON that strictly follows the specified schema. No additional text or explanations.\n'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[(str, Any)]:
+    '''Extract raw data using Gemini 2.5 Flash with structured output.'''
+    try:
+        llm = create_groq_llm(api_key, 'extraction')
+        
+        print('Using Gemini 2.5 Flash for financial data extraction...')
+        
+        
+        structured_llm = llm.with_structured_output(FinancialExtractionResult)
+        formatted_prompt = EXTRACTION_PROMPT.format(context=context_text)
+        
+        print('Extracting financial data with AI...')
+        result = structured_llm.invoke(formatted_prompt)
+        
+        print(f'âœ… Successfully extracted {len(result.financial_items)} financial items')
+        
+        return {\
+            'company_name': result.company_name, \
+            'ticker_symbol': result.ticker_symbol, \
+            'financial_items': [\
+            {\
+            'particulars': item.particulars, \
+            'current_year': item.current_year, \
+            'previous_year': item.previous_year} for \
+            \
+            item in result.financial_items], \
+            \
+            'success': True}
+    
+    
+    except Exception as e:
+        print(f'âŒ Extraction failed: {e}')
+        
+        return extract_financial_data_manual(context_text, api_key)
+
+def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[(str, Any)]:
+    '''Manual extraction fallback using Gemini 2.5 Flash.'''
+    try:
+        llm = create_groq_llm(api_key, 'extraction')
+        
+        manual_prompt = f'
+        {EXTRACTION_PROMPT.format(context=context_text)}
+        
+        Return ONLY valid JSON in this exact format:
+        {
+            "company_name": "Company Name or null",
+            "ticker_symbol": "TICKER.NS or null", 
+            "financial_items": [
+                {
+                    "particulars": "Assets: Current Assets: Cash and Cash Equivalents",
+                    "current_year": 1500000.50,
+                    "previous_year": 1200000.75
+                },
+                {
+                    "particulars": "Liabilities: Current Liabilities: Trade Payables",
+                    "current_year": 500000.25,
+                    "previous_year": 450000.00
+                }
+            ]
+        }
+        '
+        
+        print('Using manual extraction fallback...')
+        response = llm.invoke(manual_prompt)
+        content = response.content.strip()
+        
+        
+        content = re.sub('^json\\s*', '', content)
+        content = re.sub('\\s*$', '', content)
+        content = content.strip()
+        
+        
+        data = json.loads(content)
+        
+        
+        if (isinstance(data, dict) and 'financial_items' in data):
+            print(f'âœ… Manual extraction successful: {len(data['financial_items'])} items')
+            return {\
+                'company_name': data.get('company_name'), \
+                'ticker_symbol': data.get('ticker_symbol'), \
+                'financial_items': data.get('financial_items', []), \
+                'success': True}
+        else:
+            
+            return {'error': 'Invalid JSON structure in response', 'success': False}
+    
+    except Exception as e:
+        print(f'âŒ Manual extraction failed: {e}')
+        return {'error': f'Extraction failed: {str(e)}', 'success': False}
+
+
+
+SUMMARY_PROMPT = "\nAs a senior financial analyst, analyze the extracted financial data and provide a comprehensive assessment.\n\n*ANALYSIS REQUIREMENTS:*\n\n1. *PROS (Strengths)*: \n   - Identify positive financial trends and strengths\n   - Include specific numbers, percentages, and comparisons\n   - Focus on revenue growth, profitability, asset quality, liquidity\n\n2. *CONS (Weaknesses)*:\n   - Identify concerning financial trends and weaknesses\n   - Include specific numbers, percentages, and comparisons\n   - Focus on declining metrics, high liabilities, cash flow issues\n\n3. *FINANCIAL HEALTH SUMMARY*:\n   - Provide an overall assessment of the company's financial health\n   - Synthesize the key findings from pros and cons\n   - Mention the most significant strengths and critical concerns\n   - Give a big-picture view of the company's financial position\n\n*ANALYSIS GUIDELINES:*\n- Be specific and quantitative - always include numbers\n- Calculate percentage changes where possible: ((Current - Previous) / Previous) * 100\n- Focus on material items that significantly impact financial health\n- Maintain objective, professional tone\n- Base conclusions strictly on the provided data\n\n*FINANCIAL DATA:*\n{financial_data_json}\n"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def generate_summary_from_data(financial_items: List[Dict[(str, Any)]], api_key: str) -> Dict[(str, Any)]:
+    '''Generates a structured Pros/Cons summary using Gemini 2.5 Flash.'''
+    try:
+        llm = create_groq_llm(api_key, 'summary')
+        
+        financial_data_json = json.dumps({'financial_items': financial_items}, indent=2)
+        formatted_prompt = SUMMARY_PROMPT.format(financial_data_json=financial_data_json)
+        
+        print('Generating financial summary with Gemini 2.5 Flash...')
+        
+        structured_llm = llm.with_structured_output(FinancialSummary)
+        result = structured_llm.invoke(formatted_prompt)
+        
+        print(f'âœ… Summary generated: {len(result.pros)} pros, {len(result.cons)} cons')
+        
+        return {\
+            'pros': result.pros, \
+            'cons': result.cons, \
+            'financial_health_summary': result.financial_health_summary, \
+            'success': True}
+    
+    
+    except Exception as e:
+        print(f'âŒ Summary generation failed: {e}')
+        return {'error': f'Summary generation failed: {str(e)}', 'success': False}
+
+
+
+RATIO_PROMPT = "\nAs a financial analyst, calculate key financial ratios from the provided data and interpret their meaning.\n\n*RATIOS TO CALCULATE:*\n1. Current Ratio = Current Assets / Current Liabilities\n2. Quick Ratio = (Current Assets - Inventory) / Current Liabilities  \n3. Debt to Equity Ratio = Total Debt / Shareholders' Equity\n4. Asset Turnover Ratio = Revenue / Total Assets\n5. Return on Assets (ROA) = Net Income / Total Assets\n6. Return on Equity (ROE) = Net Income / Shareholders' Equity\n\n*FOR EACH RATIO, PROVIDE:*\n- *Formula*: The exact formula used\n- *Calculation*: Step-by-step calculation with actual numbers from the data\n- *Result*: Numeric result (round to 2 decimal places)\n- *Interpretation*: One-line explanation of what the ratio indicates about the company\n\n*CALCULATION RULES:*\n- Use the most recent year's data (current_year)\n- If exact line items aren't available, use the closest reasonable substitutes\n- Clearly state any assumptions made in calculations\n- If data is insufficient, explain what's missing\n\n*FINANCIAL DATA:*\n{financial_data_json}\n"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def generate_ratios_from_data(financial_items: List[Dict[(str, Any)]], api_key: str) -> Dict[(str, Any)]:
+    '''Generates financial ratios using Gemini 2.5 Flash.'''
+    try:
+        llm = create_groq_llm(api_key, 'ratios')
+        
+        financial_data_json = json.dumps({'financial_items': financial_items}, indent=2)
+        formatted_prompt = RATIO_PROMPT.format(financial_data_json=financial_data_json)
+        
+        print('Calculating financial ratios with Gemini 2.5 Flash...')
+        
+        structured_llm = llm.with_structured_output(FinancialRatios)
+        result = structured_llm.invoke(formatted_prompt)
+        
+        print(f'âœ… Ratios calculated: {len(result.financial_ratios)} ratios')
+        
+        return {\
+            'financial_ratios': [\
+            {\
+            'ratio_name': ratio.ratio_name, \
+            'formula': ratio.formula, \
+            'calculation': ratio.calculation, \
+            'result': ratio.result, \
+            'interpretation': ratio.interpretation} for \
+            \
+            ratio in result.financial_ratios], \
+            \
+            'success': True}
+    
+    
+    except Exception as e:
+        print(f'âŒ Ratio calculation failed: {e}')
+        return {'error': f'Ratio calculation failed: {str(e)}', 'success': False}
+
+
+
+def process_financial_statements(file_path: str, google_api_key: str) -> Dict[(str, Any)]:
+    '''
+    Main function to process financial statements from PDF or Excel files using Gemini 2.5 Flash.
+    
+    Args:
+        file_path: Path to PDF or Excel file
+        google_api_key: Google Gemini API key
+        
+    Returns:
+        Dictionary containing extracted data, summary, and ratios
+    '''
+    print(f'ðŸš€ Processing financial statements from: {file_path}')
+    print(f'ðŸ“Š Using Gemini 2.5 Flash for AI analysis...')
+    
+    if not (os.path.exists(file_path)):
+        return {'error': f'File not found: {file_path}', 'success': False}
+    
+    try:
+        
+        print('ðŸ“„ Step 1: Loading document...')
+        documents = load_financial_document(file_path)
+        if (not documents or not (any((doc.page_content.strip() for doc in documents)))):
+            return {'error': 'No readable content found in document', 'success': False}
+        
+        
+        print('ðŸ”\x8d Step 2: Preparing context...')
+        context_text = prepare_context_smart(documents)
+        if len(context_text.strip()) < 100:
+            return {'error': 'Insufficient financial content found', 'success': False}
+        
+        print(f'ðŸ“ Context prepared: {len(context_text)} characters')
+        
+        
+        print('ðŸ’¾ Step 3: Extracting financial data...')
+        extraction_result = extract_raw_financial_data(context_text, google_api_key)
+        if not (extraction_result.get('success')):
+            return extraction_result
+        
+        
+        print('ðŸ“ˆ Step 4: Generating financial summary...')
+        summary_result = generate_summary_from_data(
+            extraction_result['financial_items'], 
+            google_api_key)
+        
+        
+        
+        print('ðŸ§® Step 5: Calculating financial ratios...')
+        ratio_result = generate_ratios_from_data(
+            extraction_result['financial_items'], 
+            google_api_key)
+        
+        
+        
+        final_result = {\
+            'success': True, \
+            'company_info': {\
+            'company_name': extraction_result.get('company_name'), \
+            'ticker_symbol': extraction_result.get('ticker_symbol')}, \
+            \
+            'extracted_data': extraction_result, \
+            'summary': summary_result, \
+            'ratios': ratio_result, \
+            'metadata': {\
+            'file_type': detect_file_type(file_path), \
+            'content_length': len(context_text), \
+            'items_extracted': len(extraction_result.get('financial_items', [])), \
+            'ai_model': 'gemini-pro'}}
+        
+        
+        
+        print('âœ… Processing completed successfully!')
+        return final_result
+    
+    except Exception as e:
+        print(f'Processing failed: {e}')
+        return {'error': f'Processing failed: {str(e)}', 'success': False}
+
+
+
+def ensure_service_response_structure(response: Dict[(str, Any)]) -> Dict[(str, Any)]:
+    '''Ensure service responses have consistent structure'''
+    if not (isinstance(response, dict)):
+        return {'success': False, 'error': 'Invalid response format'}
+    
+    if 'success' not in response:
+        response['success'] = True
+    
+    return response</pre>
+
+    </div>
+</body>
+</html>

@@ -271,7 +271,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
         print("Extracting financial data with AI...")
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f"✅ Successfully extracted {len(result.financial_items)} financial items")
+        print(f"âœ… Successfully extracted {len(result.financial_items)} financial items")
         
         return {
             "company_name": result.company_name,
@@ -288,7 +288,7 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
         }
         
     except Exception as e:
-        print(f"❌ Extraction failed: {e}")
+        print(f"âŒ Extraction failed: {e}")
         # Fallback to manual extraction
         return extract_financial_data_manual(context_text, api_key)
 
@@ -333,7 +333,7 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
         
         # Validate structure
         if isinstance(data, dict) and 'financial_items' in data:
-            print(f"✅ Manual extraction successful: {len(data['financial_items'])} items")
+            print(f"âœ… Manual extraction successful: {len(data['financial_items'])} items")
             return {
                 "company_name": data.get('company_name'),
                 "ticker_symbol": data.get('ticker_symbol'),
@@ -344,7 +344,7 @@ def extract_financial_data_manual(context_text: str, api_key: str) -> Dict[str, 
             return {"error": "Invalid JSON structure in response", "success": False}
             
     except Exception as e:
-        print(f"❌ Manual extraction failed: {e}")
+        print(f"âŒ Manual extraction failed: {e}")
         return {"error": f"Extraction failed: {str(e)}", "success": False}
 
 # --- SUMMARY GENERATION ---
@@ -394,7 +394,7 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
         structured_llm = llm.with_structured_output(FinancialSummary)
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f"✅ Summary generated: {len(result.pros)} pros, {len(result.cons)} cons")
+        print(f"âœ… Summary generated: {len(result.pros)} pros, {len(result.cons)} cons")
         
         return {
             "pros": result.pros,
@@ -404,7 +404,7 @@ def generate_summary_from_data(financial_items: List[Dict[str, Any]], api_key: s
         }
 
     except Exception as e:
-        print(f"❌ Summary generation failed: {e}")
+        print(f"âŒ Summary generation failed: {e}")
         return {"error": f"Summary generation failed: {str(e)}", "success": False}
 
 # --- RATIO CALCULATION ---
@@ -449,7 +449,7 @@ def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: st
         structured_llm = llm.with_structured_output(FinancialRatios)
         result = structured_llm.invoke(formatted_prompt)
         
-        print(f"✅ Ratios calculated: {len(result.financial_ratios)} ratios")
+        print(f"âœ… Ratios calculated: {len(result.financial_ratios)} ratios")
         
         return {
             "financial_ratios": [
@@ -466,7 +466,7 @@ def generate_ratios_from_data(financial_items: List[Dict[str, Any]], api_key: st
         }
 
     except Exception as e:
-        print(f"❌ Ratio calculation failed: {e}")
+        print(f"âŒ Ratio calculation failed: {e}")
         return {"error": f"Ratio calculation failed: {str(e)}", "success": False}
 
 # --- MAIN PROCESSING FUNCTION ---
@@ -482,42 +482,42 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
     Returns:
         Dictionary containing extracted data, summary, and ratios
     """
-    print(f"🚀 Processing financial statements from: {file_path}")
-    print(f"📊 Using Gemini 2.5 Flash for AI analysis...")
+    print(f"ðŸš€ Processing financial statements from: {file_path}")
+    print(f"ðŸ“Š Using Gemini 2.5 Flash for AI analysis...")
     
     if not os.path.exists(file_path):
         return {"error": f"File not found: {file_path}", "success": False}
     
     try:
         # Step 1: Load document
-        print("📄 Step 1: Loading document...")
+        print("ðŸ“„ Step 1: Loading document...")
         documents = load_financial_document(file_path)
         if not documents or not any(doc.page_content.strip() for doc in documents):
             return {"error": "No readable content found in document", "success": False}
         
         # Step 2: Prepare context
-        print("🔍 Step 2: Preparing context...")
+        print("ðŸ” Step 2: Preparing context...")
         context_text = prepare_context_smart(documents)
         if len(context_text.strip()) < 100:
             return {"error": "Insufficient financial content found", "success": False}
         
-        print(f"📝 Context prepared: {len(context_text)} characters")
+        print(f"ðŸ“ Context prepared: {len(context_text)} characters")
         
         # Step 3: Extract raw financial data
-        print("💾 Step 3: Extracting financial data...")
+        print("ðŸ’¾ Step 3: Extracting financial data...")
         extraction_result = extract_raw_financial_data(context_text, google_api_key)
         if not extraction_result.get("success"):
             return extraction_result
         
         # Step 4: Generate summary
-        print("📈 Step 4: Generating financial summary...")
+        print("ðŸ“ˆ Step 4: Generating financial summary...")
         summary_result = generate_summary_from_data(
             extraction_result["financial_items"], 
             google_api_key
         )
         
         # Step 5: Calculate ratios
-        print("🧮 Step 5: Calculating financial ratios...")
+        print("ðŸ§® Step 5: Calculating financial ratios...")
         ratio_result = generate_ratios_from_data(
             extraction_result["financial_items"],
             google_api_key
@@ -541,7 +541,7 @@ def process_financial_statements(file_path: str, google_api_key: str) -> Dict[st
             }
         }
         
-        print("✅ Processing completed successfully!")
+        print("âœ… Processing completed successfully!")
         return final_result
         
     except Exception as e:
