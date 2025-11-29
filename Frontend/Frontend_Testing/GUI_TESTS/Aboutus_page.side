@@ -1,0 +1,130 @@
+{
+  "id": "9190342d-05a6-4315-ab4d-addd08045ef9",
+  "version": "2.0",
+  "name": "GUI Testing",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "bac15262-3f00-41d5-b459-2224f3fa0021",
+    "name": "Aboutus_page",
+    "commands": [{
+      "id": "e370539e-d4f0-4ac3-9868-b105710b05c0",
+      "comment": "",
+      "command": "open",
+      "target": "/About_us",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e91452f6-2d10-48de-b075-cc7b01df3ea7",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1474x696",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9b4e1b90-8293-4bed-a426-43eb083037fc",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(1)",
+      "targets": [
+        ["css=.nav-link:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span", "xpath:idRelative"],
+        ["xpath=//span", "xpath:position"],
+        ["xpath=//span[contains(.,'Home')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "4dd2e82c-4ee9-4c00-9baa-ff147772d29e",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(2)",
+      "targets": [
+        ["css=.nav-link:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[2]", "xpath:idRelative"],
+        ["xpath=//span[2]", "xpath:position"],
+        ["xpath=//span[contains(.,'News')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "08873329-28f3-40f5-b936-0141f13ef571",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(3)",
+      "targets": [
+        ["css=.nav-link:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[3]", "xpath:idRelative"],
+        ["xpath=//span[3]", "xpath:position"],
+        ["xpath=//span[contains(.,'Ai Insights')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "da0b7567-5117-47cb-9327-455b4d4bf3e7",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(4)",
+      "targets": [
+        ["css=.nav-link:nth-child(4)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[4]", "xpath:idRelative"],
+        ["xpath=//span[4]", "xpath:position"],
+        ["xpath=//span[contains(.,'Word of the Day')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "73146ad8-2cee-4219-af62-19d863812c9e",
+      "comment": "",
+      "command": "click",
+      "target": "css=nav",
+      "targets": [
+        ["css=nav", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav", "xpath:idRelative"],
+        ["xpath=//nav", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "ce7722c6-1123-4ecc-9af6-47cbbf12dca0",
+      "comment": "",
+      "command": "click",
+      "target": "css=.lucide-wrench",
+      "targets": [
+        ["css=.lucide-wrench", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "beb284b3-94b7-4efc-8347-5f30949ce648",
+      "comment": "",
+      "command": "click",
+      "target": "css=.lucide-wrench",
+      "targets": [
+        ["css=.lucide-wrench", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "53f576c3-f113-4b29-a865-f235ec2d71f9",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(7) > .lucide",
+      "targets": [
+        ["css=div:nth-child(7) > .lucide", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "ed64d790-b550-4c7d-8977-3beb7f106432",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(7) > .lucide",
+      "targets": [
+        ["css=div:nth-child(7) > .lucide", "css:finder"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "210a0171-8f35-49f1-866b-c5a41dcbcb47",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["bac15262-3f00-41d5-b459-2224f3fa0021"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}

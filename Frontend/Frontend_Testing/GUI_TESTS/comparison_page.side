@@ -1,0 +1,114 @@
+{
+  "id": "d7d13715-b875-40ed-a4b7-a0e385f1d262",
+  "version": "2.0",
+  "name": "GUI Testing",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "e6566826-826f-4cc6-ae8f-985ab90f0509",
+    "name": "comparison_page",
+    "commands": [{
+      "id": "cb52704f-42d8-4ab0-a422-58fa40f74ba2",
+      "comment": "",
+      "command": "open",
+      "target": "/comparison",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1e2b420f-0dfc-4c1e-89fa-959c808c57f2",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1474x696",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "56f7c767-38b6-4728-95ae-1ad15044077f",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(5) > label:nth-child(1)",
+      "targets": [
+        ["css=div:nth-child(5) > label:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/label", "xpath:idRelative"],
+        ["xpath=//div[2]/label", "xpath:position"],
+        ["xpath=//label[contains(.,'Upload File 1 (Company A)')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "6857813c-20bb-4b71-a65c-7f9ba44e93a5",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "css=label:nth-child(1) > p",
+      "targets": [
+        ["css=label:nth-child(1) > p", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/label/p", "xpath:idRelative"],
+        ["xpath=//label/p", "xpath:position"],
+        ["xpath=//p[contains(.,'Upload File 1 (Company A)')]", "xpath:innerText"]
+      ],
+      "value": "C:\\\\Users\\\\lenovo\\\\Downloads\\\\FinGenie_Report (22) - Copy.pdf"
+    }, {
+      "id": "8ea4f614-90c9-4df6-9c13-85e5d9f1c73e",
+      "comment": "",
+      "command": "click",
+      "target": "css=label:nth-child(2)",
+      "targets": [
+        ["css=label:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/label[2]", "xpath:idRelative"],
+        ["xpath=//label[2]", "xpath:position"],
+        ["xpath=//label[contains(.,'Upload File 2 (Company B)')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "bf08233c-dc75-4b23-8544-82e0ab066def",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "css=label:nth-child(2) > p",
+      "targets": [
+        ["css=label:nth-child(2) > p", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/label[2]/p", "xpath:idRelative"],
+        ["xpath=//label[2]/p", "xpath:position"],
+        ["xpath=//p[contains(.,'Upload File 2 (Company B)')]", "xpath:innerText"]
+      ],
+      "value": "C:\\\\Users\\\\lenovo\\\\Downloads\\\\FinGenie_Report (22).pdf"
+    }, {
+      "id": "d864f584-ec41-4451-9178-b6d14c5081a5",
+      "comment": "",
+      "command": "click",
+      "target": "css=button:nth-child(6)",
+      "targets": [
+        ["css=button:nth-child(6)", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/button", "xpath:idRelative"],
+        ["xpath=//body/div/div/div/button", "xpath:position"],
+        ["xpath=//button[contains(.,'Compare Companies')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "50623c6a-b223-4ce8-ab8a-4d56660593e0",
+      "comment": "",
+      "command": "runScript",
+      "target": "window.scrollTo(0,228.8000030517578)",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "1f5b6c7a-56fa-4b64-a2de-024762e844a4",
+      "comment": "",
+      "command": "click",
+      "target": "css=button",
+      "targets": [
+        ["css=button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,' Compare New Files')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "3d436127-acf5-4335-aa0f-be329e8c0a39",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["e6566826-826f-4cc6-ae8f-985ab90f0509"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}

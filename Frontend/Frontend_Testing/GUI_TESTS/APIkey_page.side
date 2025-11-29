@@ -1,0 +1,187 @@
+{
+  "id": "4ec1825d-b318-461a-83b6-d9a06e58a110",
+  "version": "2.0",
+  "name": "GUI Testing",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "9441cefc-97e2-4fa4-b139-29718822b5e9",
+    "name": "APIkey_page",
+    "commands": [{
+      "id": "9781a3f7-3db5-4281-8c73-3fccd2be13b4",
+      "comment": "",
+      "command": "open",
+      "target": "/API_key",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "7dc28199-bd8a-490d-ba8c-9d340b1ad5e4",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1474x696",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "e46a0d42-e6f6-4e44-a250-4fba3a969dd5",
+      "comment": "",
+      "command": "click",
+      "target": "css=nav",
+      "targets": [
+        ["css=nav", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav", "xpath:idRelative"],
+        ["xpath=//nav", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "cbf8e61e-55fa-4b0a-bee6-e4d24a794994",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(1)",
+      "targets": [
+        ["css=.nav-link:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span", "xpath:idRelative"],
+        ["xpath=//span", "xpath:position"],
+        ["xpath=//span[contains(.,'Home')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "225b10d3-77f7-46db-adae-87e2b515db57",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(2)",
+      "targets": [
+        ["css=.nav-link:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[2]", "xpath:idRelative"],
+        ["xpath=//span[2]", "xpath:position"],
+        ["xpath=//span[contains(.,'News')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "e671b8ba-3e03-4cd0-b582-c7009d3d8e2a",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(3)",
+      "targets": [
+        ["css=.nav-link:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[3]", "xpath:idRelative"],
+        ["xpath=//span[3]", "xpath:position"],
+        ["xpath=//span[contains(.,'Ai Insights')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "27db189a-b783-4e86-846a-e6ee20aae6f3",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(4)",
+      "targets": [
+        ["css=.nav-link:nth-child(4)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[4]", "xpath:idRelative"],
+        ["xpath=//span[4]", "xpath:position"],
+        ["xpath=//span[contains(.,'Word of the Day')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "020d2b46-0ab0-4f88-86e1-c382e98a1d3c",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nav-link:nth-child(5)",
+      "targets": [
+        ["css=.nav-link:nth-child(5)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[5]", "xpath:idRelative"],
+        ["xpath=//span[5]", "xpath:position"],
+        ["xpath=//span[contains(.,'About us')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "4bf9b36a-724e-4a22-9050-2e992b167c23",
+      "comment": "",
+      "command": "click",
+      "target": "css=.lucide-wrench",
+      "targets": [
+        ["css=.lucide-wrench", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "1fe71264-e94f-4f15-b0bc-aba1722db454",
+      "comment": "",
+      "command": "click",
+      "target": "css=.lucide-wrench",
+      "targets": [
+        ["css=.lucide-wrench", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "8c2e8443-d517-419a-8ae1-231959d7882c",
+      "comment": "",
+      "command": "click",
+      "target": "css=.lucide-user",
+      "targets": [
+        ["css=.lucide-user", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "10ccd60a-edce-47d9-88ce-3eed14463069",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(7) > .lucide",
+      "targets": [
+        ["css=div:nth-child(7) > .lucide", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "638fd23a-03d0-47a9-a314-7ac5b33f74f5",
+      "comment": "",
+      "command": "doubleClick",
+      "target": "css=.lucide-user",
+      "targets": [
+        ["css=.lucide-user", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "0d231655-31df-4986-8d2f-8315c3bd631a",
+      "comment": "",
+      "command": "click",
+      "target": "linkText=https://console.x.ai",
+      "targets": [
+        ["linkText=https://console.x.ai", "linkText"],
+        ["css=div > a", "css:finder"],
+        ["xpath=//a[contains(text(),'https://console.x.ai')]", "xpath:link"],
+        ["xpath=//div[@id='root']/div/div/div/a", "xpath:idRelative"],
+        ["xpath=//a[contains(@href, 'https://console.x.ai')]", "xpath:href"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'https://console.x.ai')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "8f49a17e-d48a-4018-8e5b-cfd40660f561",
+      "comment": "",
+      "command": "storeWindowHandle",
+      "target": "root",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ce8b8603-5a32-42d6-a31e-24af07b27ee6",
+      "comment": "",
+      "command": "//selectWindow",
+      "target": "tab=1",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "a2789339-c77c-4aed-a94c-a447ce683a68",
+      "comment": "",
+      "command": "//selectWindow",
+      "target": "handle=${root}",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "b87de92d-1f87-4ae6-915a-6764bb3c728d",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["9441cefc-97e2-4fa4-b139-29718822b5e9"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}
