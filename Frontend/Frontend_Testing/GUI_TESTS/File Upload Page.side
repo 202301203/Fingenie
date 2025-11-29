@@ -1,0 +1,133 @@
+{
+  "id": "68b703ab-9ac8-4ac4-95cb-fc80715f26f3",
+  "version": "2.0",
+  "name": "File Upload Page",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "b306dc34-277d-4f83-a5b2-e9de16ed1b08",
+    "name": "File Upload Page",
+    "commands": [{
+      "id": "491a483e-5cdc-4e09-a58a-1ad5c3b17c7a",
+      "comment": "",
+      "command": "open",
+      "target": "/FileUploadApp",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "337421f4-dbc8-4b0d-b971-f9d5141b188a",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1552x832",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "14058067-8bc1-4698-a3f0-208cc54c859e",
+      "comment": "",
+      "command": "click",
+      "target": "css=input",
+      "targets": [
+        ["css=input", "css:finder"],
+        ["xpath=//input[@value='']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "e8038031-e025-4919-ad48-3e1d659dfc49",
+      "comment": "",
+      "command": "type",
+      "target": "css=input",
+      "targets": [
+        ["css=input", "css:finder"],
+        ["xpath=//input[@value='AIzaSyCuXpoV1XVpKShnSVRM2ctKwlNtVzdFBsk']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "AIzaSyCuXpoV1XVpKShnSVRM2ctKwlNtVzdFBsk"
+    }, {
+      "id": "7e5bc681-5bc5-46e8-9884-a938c77112df",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "css=input",
+      "targets": [
+        ["css=input", "css:finder"],
+        ["xpath=//input[@value='AIzaSyCuXpoV1XVpKShnSVRM2ctKwlNtVzdFBsk']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "${KEY_ENTER}"
+    }, {
+      "id": "e5300be8-8d5b-4cbe-81a0-123d82b7e2ce",
+      "comment": "",
+      "command": "click",
+      "target": "css=button:nth-child(1)",
+      "targets": [
+        ["css=button:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[3]/button", "xpath:idRelative"],
+        ["xpath=//div[3]/button", "xpath:position"],
+        ["xpath=//button[contains(.,'Upload Files')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "77565305-b4f1-4320-a8f8-f17163444666",
+      "comment": "",
+      "command": "click",
+      "target": "css=input",
+      "targets": [
+        ["css=input", "css:finder"],
+        ["xpath=//input[@type='file']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[3]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "60eb9c16-eb65-4499-84a6-2a12e0d773ca",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "css=div:nth-child(5) > button",
+      "targets": [],
+      "value": "C:\\fakepath\\GUI Testing-1_.pdf"
+    }, {
+      "id": "787d6dba-cae3-46ba-9229-93acc9ca15dc",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(5) > button",
+      "targets": [
+        ["css=div:nth-child(5) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div/div/div[5]/button", "xpath:idRelative"],
+        ["xpath=//div[5]/button", "xpath:position"],
+        ["xpath=//button[contains(.,'Generate Financial Report')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "e93ee5cb-74fe-4f5c-9872-13e68e204fc9",
+      "comment": "",
+      "command": "assertAlert",
+      "target": "An error occurred while uploading. Check console for details.",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "4895f852-c606-476b-9614-07e1a418c805",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(1) > button",
+      "targets": [
+        ["css=div:nth-child(1) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div/div/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Back')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "15056a30-f217-4141-a1e0-50c441b70ca9",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["b306dc34-277d-4f83-a5b2-e9de16ed1b08"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}

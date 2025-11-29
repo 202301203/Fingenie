@@ -1,0 +1,111 @@
+{
+  "id": "7f435b52-b6e4-4d33-8957-1b719aaf708e",
+  "version": "2.0",
+  "name": "FeaturesPage",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "fad496f8-968c-4c32-985b-46cac3959d57",
+    "name": "FeaturesPage",
+    "commands": [{
+      "id": "714c798e-a84e-4748-a19a-acd3b8973780",
+      "comment": "",
+      "command": "open",
+      "target": "/FeaturesPage",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "57cf5e0e-c310-4898-a6d8-25182115fb9f",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1552x832",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d0eaf3be-3d70-4645-a85b-efa69bc97831",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(1) > button > .lucide",
+      "targets": [
+        ["css=div:nth-child(1) > button > .lucide", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "8823be04-1eaf-49d6-b233-8931bb1a65b7",
+      "comment": "",
+      "command": "runScript",
+      "target": "window.scrollTo(0,0)",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "b7ff614a-8dce-4e35-a31a-4fc8c1f35ea5",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(2) > button",
+      "targets": [
+        ["css=div:nth-child(2) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[2]/button", "xpath:idRelative"],
+        ["xpath=//div[2]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8188d286-bf80-4073-94e9-4581ca5a7a66",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(3) > button",
+      "targets": [
+        ["css=div:nth-child(3) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[3]/button", "xpath:idRelative"],
+        ["xpath=//div[3]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "eee98167-00f3-45f3-a166-c0e935e6ee08",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(4) > button",
+      "targets": [
+        ["css=div:nth-child(4) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[4]/button", "xpath:idRelative"],
+        ["xpath=//div[4]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "4060c01a-9a3a-4c87-b801-a2fdd17699d3",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(5) > button > .lucide",
+      "targets": [
+        ["css=div:nth-child(5) > button > .lucide", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "7e1c2fc0-24fa-4f16-9e22-95a28dc4cef8",
+      "comment": "",
+      "command": "runScript",
+      "target": "window.scrollTo(0,0)",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "cfc9de22-9eb1-4951-a14b-af03053dea69",
+      "comment": "",
+      "command": "click",
+      "target": "css=div:nth-child(6) > button",
+      "targets": [
+        ["css=div:nth-child(6) > button", "css:finder"],
+        ["xpath=//div[@id='root']/div/div/div[6]/button", "xpath:idRelative"],
+        ["xpath=//div[6]/button", "xpath:position"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "307a816d-a41a-4755-8e4d-5200efdda315",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["fad496f8-968c-4c32-985b-46cac3959d57"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}
