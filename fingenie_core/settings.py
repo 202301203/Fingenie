@@ -105,6 +105,9 @@ else:
 
 CSRF_COOKIE_HTTPONLY = False
 
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'temp_uploads')
+MEDIA_URL = '/media/'
 # ===============================================================
 
 ROOT_URLCONF = 'fingenie_core.urls'
