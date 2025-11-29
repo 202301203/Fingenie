@@ -6,6 +6,8 @@ from django.conf import settings
 import os
 import uuid
 import json
+import requests
+import time
 
 from .models import FinancialReport
 from .services import (
@@ -89,14 +91,40 @@ def process_financial_statements_api(request):
 
         # Step 5: Save to DB using your model's setter methods - NOW WITH USER LINK
         report_id = str(uuid.uuid4())
+        
+        # Fallback ticker lookup if AI didn't find it
+        ticker = extracted_data.get("ticker_symbol", "")
+        company_name = extracted_data.get("company_name", "Unknown Company")
+        
+        if not ticker and company_name:
+            # Common Indian company ticker mappings
+            ticker_map = {
+                "infosys": "INFY",
+                "tcs": "TCS",
+                "reliance": "RELIANCE",
+                "wipro": "WIPRO",
+                "hcl": "HCLTECH",
+                "tech mahindra": "TECHM",
+                "hdfc bank": "HDFCBANK",
+                "icici bank": "ICICIBANK",
+                "sbi": "SBIN",
+                "bharti airtel": "BHARTIARTL"
+            }
+            company_lower = company_name.lower()
+            for key, val in ticker_map.items():
+                if key in company_lower:
+                    ticker = val
+                    print(f"✅ Fallback ticker lookup: {company_name} → {ticker}")
+                    break
+        
         # Remove user linkage: allow creation without authentication.
         # If you later want optional linkage, use:
         # user_obj = request.user if getattr(request.user, 'is_authenticated', False) else None
         # and pass user=user_obj.
         report = FinancialReport.objects.create(
             report_id=report_id,
-            company_name=extracted_data.get("company_name", "Unknown Company"),
-            ticker_symbol=extracted_data.get("ticker_symbol", ""),
+            company_name=company_name,
+            ticker_symbol=ticker,
             user=None,  # No user association
             uploaded_pdf=uploaded_file,
             pdf_original_name=uploaded_file.name,
@@ -336,27 +364,90 @@ def get_stock_data_api(request, ticker_symbol, period='1M'):
                 interval = '1wk'
 
         ticker = ticker_symbol.strip()
+        
+        # Auto-add .NS for Indian stocks if not present
+        if not any(ticker.endswith(suffix) for suffix in ['.NS', '.BO', '.US', '.L']):
+            # Assume Indian stock if no exchange suffix
+            ticker = f"{ticker}.NS"
+            print(f"📊 Added .NS suffix: {ticker_symbol} → {ticker}")
+        
         # Helper with retry & fallback
         def fetch_history():
             last_exception = None
+            
+            # Method 1: Try yfinance download (3 attempts)
             for attempt in range(3):
                 try:
-                    df = yf.download(ticker, period=yf_period, interval=interval, progress=False, auto_adjust=False, threads=False)
+                    print(f"🔄 Attempt {attempt+1}: Fetching {ticker} with period={yf_period}, interval={interval}")
+                    df = yf.download(ticker, period=yf_period, interval=interval, progress=False, auto_adjust=True, threads=False)
                     if df is not None and not df.empty:
+                        print(f"✅ Successfully fetched {len(df)} data points")
                         return df
                 except Exception as e:
+                    print(f"❌ yf.download failed: {e}")
                     last_exception = e
+                
                 # Fallback to Ticker.history
                 try:
+                    print(f"🔄 Trying Ticker.history fallback...")
                     tk = yf.Ticker(ticker)
-                    df2 = tk.history(period=yf_period, interval=interval)
+                    df2 = tk.history(period=yf_period, interval=interval, auto_adjust=True)
                     if df2 is not None and not df2.empty:
+                        print(f"✅ Fallback succeeded: {len(df2)} data points")
                         return df2
                 except Exception as e2:
+                    print(f"❌ Ticker.history failed: {e2}")
                     last_exception = e2
-                time.sleep(1)  # brief backoff
+                
+                time.sleep(2)  # Longer backoff for rate limits
+            
+            # Method 2: Try NSE India API for Indian stocks
+            if ticker.endswith('.NS'):
+                try:
+                    print(f"🔄 Trying NSE India fallback for {ticker}...")
+                    base_ticker = ticker.replace('.NS', '')
+                    # Using Yahoo Finance's query2 API directly
+                    import requests
+                    
+                    # Calculate timestamps for period
+                    end_time = int(time.time())
+                    period_days = {
+                        '1d': 1, '5d': 5, '1mo': 30, '3mo': 90, 
+                        '6mo': 180, '1y': 365, '2y': 730, '5y': 1825
+                    }
+                    days = period_days.get(yf_period, 30)
+                    start_time = end_time - (days * 24 * 60 * 60)
+                    
+                    url = f"https://query2.finance.yahoo.com/v8/finance/chart/{ticker}"
+                    params = {
+                        'period1': start_time,
+                        'period2': end_time,
+                        'interval': interval,
+                        'events': 'history'
+                    }
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    
+                    response = requests.get(url, params=params, headers=headers, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        chart = data.get('chart', {}).get('result', [{}])[0]
+                        timestamps = chart.get('timestamp', [])
+                        quotes = chart.get('indicators', {}).get('quote', [{}])[0]
+                        closes = quotes.get('close', [])
+                        
+                        if timestamps and closes:
+                            import pandas as pd
+                            df_data = {
+                                'Close': closes
+                            }
+                            df = pd.DataFrame(df_data, index=pd.to_datetime(timestamps, unit='s'))
+                            print(f"✅ NSE fallback succeeded: {len(df)} data points")
+                            return df
+                except Exception as e3:
+                    print(f"❌ NSE fallback failed: {e3}")
+            
             if last_exception:
-                print(f"Stock fetch failed for {ticker}: {last_exception}")
+                print(f"❌ All attempts failed for {ticker}: {last_exception}")
             return None
 
         df = fetch_history()

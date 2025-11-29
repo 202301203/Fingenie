@@ -52,6 +52,6 @@
     ]
   },
 
-  "proxy": "https://fingenie-siu7.onrender.com"
+  "proxy": "http://127.0.0.1:8000/"
 
 }

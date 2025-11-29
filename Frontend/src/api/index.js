@@ -1,6 +1,6 @@
 // Configuration: prefer env var `REACT_APP_API_URL`, fallback to Render URL
-// const RAW_BASE = 'http://127.0.0.1:8000/';
-const RAW_BASE = 'https://fingenie-siu7.onrender.com';
+const RAW_BASE = 'http://127.0.0.1:8000/';
+// const RAW_BASE = 'https://fingenie-siu7.onrender.com';
 const BASE = RAW_BASE.replace(/\/$/, '');
 const DJANGO_API_BASE = BASE;
 const API_BASE_URL = BASE;

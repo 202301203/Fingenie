@@ -124,6 +124,13 @@ export default function FinGenieApp() {
         throw new Error(data.error || 'Failed to load data');
       }
 
+      console.log('Company data received:', {
+        companyName: data.company_name,
+        ticker: data.ticker_symbol,
+        hasSummary: !!data.summary,
+        ratiosCount: data.ratios?.length || 0
+      });
+
       setCompanyData(data);
       setFinancialRatios(data.ratios || []);
 
@@ -152,11 +159,30 @@ export default function FinGenieApp() {
   // Fetch stock data whenever ticker / period / interval changes
   useEffect(() => {
     const fetchStockData = async () => {
-      if (!companyData?.ticker_symbol) return;
+      console.log('🔍 Stock fetch check:', {
+        hasCompanyData: !!companyData,
+        ticker: companyData?.ticker_symbol,
+        period: selectedPeriod,
+        interval: selectedInterval
+      });
+      
+      if (!companyData?.ticker_symbol) {
+        console.warn('⚠️ No ticker symbol available, skipping stock data fetch');
+        setStockData({ data: [], note: 'No ticker symbol available for this company' });
+        return;
+      }
+      
       setStockLoading(true);
       try {
-        const url = `/dataprocessor/api/stock-data/${companyData.ticker_symbol}/?period=${selectedPeriod}` + (selectedInterval ? `&interval=${selectedInterval}` : '');
+        const url = `/dataprocessor/api/stock-data/${companyData.ticker_symbol}/${selectedPeriod}` + (selectedInterval ? `?interval=${selectedInterval}` : '');
+        console.log('Fetching stock data from:', url);
+        
         const stockData = await djangoRequest(url);
+        console.log('Stock data received:', {
+          pointCount: stockData?.data?.length || stockData?.point_count || 0,
+          ticker: stockData?.ticker
+        });
+        
         setStockData(stockData.data || stockData);
       } catch (err) {
         console.error('Error fetching stock data:', err);
