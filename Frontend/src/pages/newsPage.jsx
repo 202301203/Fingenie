@@ -24,7 +24,8 @@ import api from '../api/index';
 
 // Use centralized backend base from api module (falls back to render URL)
 const API_BASE_URL = api.DJANGO_API_BASE || 'https://fingenie-siu7.onrender.com';
-
+const Default_photo =
+  "https://i.pinimg.com/1200x/45/d4/87/45d487585543758244ed9774b7c83d1e.jpg";
 const NewsPage = () => {
   // UI state
   const [search, setSearch] = useState("");
