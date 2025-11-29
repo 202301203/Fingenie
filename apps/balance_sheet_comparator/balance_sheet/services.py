@@ -1,39 +1,64 @@
 import os
 import json
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.documents import Document
-import pdfplumber
-import pytesseract
+if TYPE_CHECKING:
+    from langchain_core.documents import Document
+
 from pydantic import BaseModel, Field
 
+import logging
 
-# --- PDF Loading Functions (Following dataprocessor pattern) ---
+logger = logging.getLogger(__name__)
 
-def load_pdf_robust(pdf_path: str) -> List[Document]:
+# --- PDF Loading Functions ---
+
+def load_pdf(pdf_path: str) -> List["Document"]:
     """Load PDF with multiple fallback methods."""
-    print("Loading PDF...")
+    # Import optional dependencies lazily and handle missing packages gracefully
+    try:
+        from langchain_community.document_loaders import PyPDFLoader
+    except Exception:
+        PyPDFLoader = None
+
+    try:
+        from langchain_core.documents import Document
+    except Exception:
+        # Minimal fallback Document-like object used when langchain isn't available
+        class Document:  # type: ignore
+            def __init__(self, page_content: str, metadata: dict):
+                self.page_content = page_content
+                self.metadata = metadata
+
+    # Defer optional heavy imports until needed (pdfplumber/pytesseract)
+    # so tests that mock PyPDFLoader can run without these packages installed.
+
+    logger.info("Loading PDF...")
     documents = []
 
-    # Method 1: Try PyPDFLoader first (fastest)
-    try:
-        loader = PyPDFLoader(pdf_path)
-        docs = loader.load()
-        total_chars = sum(len(d.page_content.strip()) for d in docs)
+    # Method 1: Try PyPDFLoader first (fastest) if available
+    if PyPDFLoader is not None:
+        try:
+            loader = PyPDFLoader(pdf_path)
+            docs = loader.load()
+            total_chars = sum(len(d.page_content.strip()) for d in docs)
 
-        if total_chars > 2000:
-            print(f"Standard extraction successful: {len(docs)} pages, {total_chars} chars")
-            return docs
-        else:
-            print(f"Standard extraction poor quality: {total_chars} chars - trying OCR")
-    except Exception as e:
-        print(f"Standard extraction failed: {e} - trying OCR")
+            if total_chars > 2000:
+                logger.info(f"Standard extraction successful: {len(docs)} pages, {total_chars} chars")
+                return docs
+            else:
+                logger.warning(f"Standard extraction poor quality: {total_chars} chars - trying OCR")
+        except Exception as e:
+            logger.warning(f"Standard extraction failed: {e} - trying OCR")
+    else:
+        logger.info("PyPDFLoader not available; skipping that extraction method.")
 
-    # Method 2: pdfplumber with OCR fallback
+    # Method 2: pdfplumber with OCR fallback (import lazily)
     try:
+        import pdfplumber  # type: ignore
+        import pytesseract  # type: ignore
+
         with pdfplumber.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, 1):
                 # Try text extraction first
@@ -47,7 +72,7 @@ def load_pdf_robust(pdf_path: str) -> List[Document]:
                         if len(ocr_text.strip()) > len(text.strip()):
                             text = ocr_text
                     except Exception as ocr_e:
-                        print(f"OCR failed on page {page_num}: {ocr_e}")
+                        logger.warning(f"OCR failed on page {page_num}: {ocr_e}")
 
                 if text.strip():
                     documents.append(Document(
@@ -55,15 +80,15 @@ def load_pdf_robust(pdf_path: str) -> List[Document]:
                         metadata={"page": page_num, "source": pdf_path}
                     ))
 
-        print(f"pdfplumber extraction: {len(documents)} pages")
+        logger.info(f"pdfplumber extraction: {len(documents)} pages")
         return documents
 
     except Exception as e:
-        print(f"pdfplumber failed entirely: {e}")
+        logger.error(f"pdfplumber failed entirely: {e}")
         return []
 
 
-def prepare_context_smart(documents: List[Document]) -> str:
+def prepare_context(documents: List["Document"]) -> str:
     """Prepare context with financial focus."""
     all_text = "\n".join([doc.page_content for doc in documents])
     
@@ -157,8 +182,10 @@ def create_gemini_llm(api_key: str, purpose: str = "extraction", model_name: Opt
     model_name can override the default. We default to gemini-1.5-flash but callers
     may pass alternate model names for compatibility with different API versions.
     """
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
     temperature = 0.1 if purpose == "extraction" else 0.2
-    model_to_use = model_name or os.environ.get('GENIE_MODEL') or 'gemini-1.5-flash'
+    model_to_use = model_name or os.environ.get('GENIE_MODEL') or 'gemini-2.5-flash'
 
     llm = ChatGoogleGenerativeAI(
         model=model_to_use,
@@ -176,33 +203,51 @@ def _simple_text_number(s: str) -> Optional[float]:
     if not s or not s.strip():
         return None
     s = s.strip()
-    # Handle parentheses for negatives
+    # Handle parentheses for negatives and leading minus
     negative = False
     if s.startswith('(') and s.endswith(')'):
         negative = True
         s = s[1:-1]
-    # Units handling
-    unit_multiplier = 1
-    if re.search(r'\blakhs?\b', s, re.IGNORECASE):
-        unit_multiplier = 100000
-        s = re.sub(r'\blakhs?\b', '', s, flags=re.IGNORECASE)
-    elif re.search(r'\bthousand(s)?\b', s, re.IGNORECASE):
-        unit_multiplier = 1000
-        s = re.sub(r'\bthousand(s)?\b', '', s, flags=re.IGNORECASE)
-    elif re.search(r'\bmillion(s)?\b', s, re.IGNORECASE):
-        unit_multiplier = 1000000
-        s = re.sub(r'\bmillion(s)?\b', '', s, flags=re.IGNORECASE)
+    s = s.strip()
+    if s.startswith('-'):
+        negative = True
+        s = s[1:]
 
-    # Remove commas and non-numeric characters
-    num_text = re.sub(r'[^0-9\.\-]', '', s)
+    # Normalize common currency symbols and spaces
+    s = re.sub(r'[₹$€,\s]+', ' ', s).strip()
+
+    # Units handling (support plural/synonym forms)
+    multipliers = {
+        'lakh': 100_000,
+        'lakhs': 100_000,
+        'lacs': 100_000,
+        'thousand': 1_000,
+        'thousands': 1_000,
+        'million': 1_000_000,
+        'millions': 1_000_000,
+        'mn': 1_000_000,
+        'crore': 10_000_000,
+        'crores': 10_000_000,
+        'cr': 10_000_000
+    }
+
+    unit_multiplier = 1
+    s_lower = s.lower()
+    for unit, mult in multipliers.items():
+        if re.search(rf'\b{re.escape(unit)}\b', s_lower):
+            unit_multiplier = mult
+            s = re.sub(rf'\b{re.escape(unit)}\b', '', s, flags=re.IGNORECASE).strip()
+            break
+
+    # Remove any remaining non-numeric characters except dot
+    num_text = re.sub(r'[^0-9\.]', '', s)
     if not num_text:
         return None
+
     try:
         val = float(num_text) * unit_multiplier
-        if negative:
-            val = -val
-        return val
-    except Exception:
+        return -val if negative else val
+    except ValueError:
         return None
 
 
@@ -217,7 +262,8 @@ def _deterministic_fallback_extraction(context_text: str) -> Dict[str, Any]:
                 'share capital', 'reserves', 'inventory', 'accounts receivable', 'trade receivables',
                 'short-term borrowings', 'long-term borrowings', 'deferred tax', 'property', 'plant', 'equipment',
                 'goodwill', 'intangible', 'equity', 'total equity', 'net worth']
-    num_pattern = re.compile(r'\(?[\d,]+(?:\.\d+)?\)?(?:\s*(?:lakhs|thousand|thousands|million|crores))?', re.IGNORECASE)
+    # Match numbers like (1,234.56), 1,234, 5.5 million, ₹ 1,000,000, -500
+    num_pattern = re.compile(r"\(?[-₹$€]?\s*[\d,]+(?:\.\d+)?\)?(?:\s*(?:lakhs?|lacs?|thousands?|millions?|mn|crores?|cr)\b)?", re.IGNORECASE)
 
     for line in lines:
         lower = line.lower()
@@ -268,31 +314,45 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
     parser so we can still provide a best-effort comparison to the user.
     """
     try:
-        # Try several model candidates until one works (some deployments may not have
-        # gemini-1.5-flash available or exposed via v1beta). We attempt fallbacks.
+        # Validate API key
+        if not api_key or api_key.strip() == '':
+            logger.error("API key is empty or None")
+            logger.warning("Running deterministic fallback extractor due to missing API key...")
+            deterministic = _deterministic_fallback_extraction(context_text)
+            return deterministic
+        
+        logger.info(f"API Key provided: {api_key[:20]}...")
+        
+        # Try several model candidates until one works
         model_candidates = [
             os.environ.get('GENIE_MODEL'),
+            'gemini-2.0-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash-latest',
             'gemini-1.5-flash',
-            'gemini-1.5',
-            'text-bison-001',
-            'chat-bison',
-            'models/text-bison-001'
+            'gemini-1.5-pro-latest',
+            'gemini-1.5-pro',
+            'gemini-pro',
         ]
         # Filter Nones and duplicates
-        seen = set()
-        model_candidates = [m for m in model_candidates if m and not (m in seen or seen.add(m))]
+        model_candidates = list(dict.fromkeys(filter(None, model_candidates)))
+        
+        logger.info(f"Model candidates to try: {model_candidates}")
 
         formatted_prompt = BALANCE_SHEET_EXTRACTION_PROMPT.format(context=context_text)
 
         for model_name in model_candidates:
             try:
-                print(f"Attempting extraction using model: {model_name}")
+                logger.info(f"Attempting extraction using model: {model_name}")
                 llm = create_gemini_llm(api_key, "extraction", model_name=model_name)
+                logger.info(f"LLM created successfully for {model_name}")
+                
                 structured_llm = llm.with_structured_output(BalanceSheetExtractionResult)
+                logger.info(f"Invoking structured LLM for {model_name}...")
                 result = structured_llm.invoke(formatted_prompt)
 
                 # If we get here, extraction succeeded
-                print(f"Successfully extracted {len(result.balance_sheet_items)} items using {model_name}")
+                logger.info(f"Successfully extracted {len(result.balance_sheet_items)} items using {model_name}")
                 return {
                     "company_name": result.company_name,
                     "financial_items": [
@@ -308,24 +368,29 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
                 }
             except Exception as e:
                 msg = str(e)
-                print(f"Model {model_name} failed: {msg}")
+                logger.warning(f"Model {model_name} failed: {msg}")
                 # If it's a model-not-found / 404 type error, try next candidate
-                if 'not found' in msg.lower() or '404' in msg.lower() or 'not supported' in msg.lower():
+                if any(x in msg.lower() for x in ['not found', '404', 'not supported']):
+                    logger.info(f"Model {model_name} not available, trying next...")
                     continue
                 # For other errors (parsing, prompt), attempt a non-structured fallback below
+                logger.error(f"Non-404 error for {model_name}, attempting manual extraction...")
                 break
 
         # If structured output attempts failed, try a plain invoke and parse JSON manually
         try:
-            fallback_model = model_candidates[-1] if model_candidates else 'text-bison-001'
-            print(f"Structured outputs failed, trying manual extraction with {fallback_model}...")
+            fallback_model = model_candidates[-1] if model_candidates else 'gemini-1.5-flash'
+            logger.info(f"Structured outputs failed, trying manual extraction with {fallback_model}...")
             llm_basic = create_gemini_llm(api_key, "extraction", model_name=fallback_model)
+            logger.info(f"Invoking basic LLM for manual extraction...")
             response = llm_basic.invoke(formatted_prompt)
             # Try to parse JSON from response content
             text = getattr(response, 'content', str(response))
+            logger.info(f"Response received, parsing JSON...")
             json_match = re.search(r'\{.*\}', text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
+                logger.info(f"Manual extraction successful: {len(data.get('balance_sheet_items', []))} items")
                 return {
                     "company_name": data.get("company_name"),
                     "financial_items": [
@@ -339,19 +404,25 @@ def extract_raw_financial_data(context_text: str, api_key: str) -> Dict[str, Any
                     "success": True,
                     "model_used": fallback_model
                 }
+            else:
+                logger.warning(f"No JSON found in response for manual extraction")
         except Exception as e:
-            print(f"Manual extraction failed: {e}")
+            logger.error(f"Manual extraction failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
         # As a last resort, use deterministic fallback extraction so the user gets a result
-        print("AI extraction failed for all models; running deterministic fallback extractor...")
+        logger.warning("AI extraction failed for all models; running deterministic fallback extractor...")
         deterministic = _deterministic_fallback_extraction(context_text)
         if deterministic.get('success'):
-            print(f"Deterministic extractor found {len(deterministic.get('financial_items', []))} items")
+            logger.info(f"Deterministic extractor found {len(deterministic.get('financial_items', []))} items")
             return deterministic
 
         return {"success": False, "error": "Failed to extract financial data"}
 
     except Exception as e:
-        print(f"Balance sheet extraction failed: {e}")
+        logger.error(f"Balance sheet extraction failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {"success": False, "error": str(e), "financial_items": []}
 

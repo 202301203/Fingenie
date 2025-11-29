@@ -53,12 +53,7 @@ class FullComparisonSchema(BaseModel):
     company2: CompanyModel
 
 
-def validate_comparison_schema(data: Dict[str, Any]) -> Optional[FullComparisonSchema]:
-    """Validate a comparison dict against the expected schema using Pydantic.
 
-    Returns the parsed model on success or raises `ValidationError` on failure.
-    """
-    return FullComparisonSchema.parse_obj(data)
 
 
 METRIC_PREFERENCES = {
@@ -95,11 +90,8 @@ def evaluate_comparison(company1: Dict[str, Any], company2: Dict[str, Any]) -> D
     if not company1 or not company2:
         return {}
 
-    raw_name1 = company1.get("company_name")
-    raw_name2 = company2.get("company_name")
-
-    name1 = raw_name1 or "Company 1"
-    name2 = raw_name2 or "Company 2"
+    name1 = company1.get("company_name") or "Company 1"
+    name2 = company2.get("company_name") or "Company 2"
 
     display_name1 = name1
     display_name2 = name2
@@ -117,58 +109,48 @@ def evaluate_comparison(company1: Dict[str, Any], company2: Dict[str, Any]) -> D
     comparisons: List[Dict[str, Any]] = []
 
     for metric, preference in METRIC_PREFERENCES.items():
-        value1 = ratios1.get(metric)
-        value2 = ratios2.get(metric)
-
-        if value1 is None and value2 is None:
-            # try balance sheet values
-            value1 = balance1.get(metric)
-            value2 = balance2.get(metric)
+        # Try ratios first, then balance sheet
+        value1 = ratios1.get(metric) if ratios1.get(metric) is not None else balance1.get(metric)
+        value2 = ratios2.get(metric) if ratios2.get(metric) is not None else balance2.get(metric)
 
         result = _compare_metric(value1, value2, preference)
-        if result is None:
-            comparisons.append({
-                "metric": metric,
-                "result": "not_available",
-                "preference": preference,
-                "company1_value": value1,
-                "company2_value": value2,
-            })
-            continue
-
+        
+        outcome = "not_available"
         if result == 1:
             score1 += 1
             outcome = display_name1
         elif result == -1:
             score2 += 1
             outcome = display_name2
-        else:
+        elif result == 0:
             outcome = "tie"
 
         comparisons.append({
             "metric": metric,
-            "winner": outcome,
+            "winner": outcome if result is not None else "not_available",
+            "result": "available" if result is not None else "not_available",
             "preference": preference,
             "company1_value": value1,
             "company2_value": value2,
         })
 
-    contested = len([c for c in comparisons if c.get('winner') in {display_name1, display_name2}])
-    ties = len([c for c in comparisons if c.get('winner') == 'tie'])
-    available_metrics = contested + ties
+    # Calculate summary stats
+    valid_comparisons = [c for c in comparisons if c["winner"] != "not_available"]
+    available_metrics = len(valid_comparisons)
+    ties = len([c for c in valid_comparisons if c["winner"] == "tie"])
 
-    if score1 == score2:
+    if score1 > score2:
+        verdict = display_name1
+        summary = f"{display_name1} outperformed {display_name2} on {score1} of {available_metrics} comparable metrics (ties: {ties})."
+    elif score2 > score1:
+        verdict = display_name2
+        summary = f"{display_name2} outperformed {display_name1} on {score2} of {available_metrics} comparable metrics (ties: {ties})."
+    else:
         verdict = "tie"
         if available_metrics == 0:
             summary = "Insufficient comparable metrics to determine a winner."
         else:
             summary = f"Both companies performed similarly across {available_metrics} comparable metrics ({ties} ties)."
-    elif score1 > score2:
-        verdict = display_name1
-        summary = f"{display_name1} outperformed {display_name2} on {score1} of {available_metrics} comparable metrics (ties: {ties})."
-    else:
-        verdict = display_name2
-        summary = f"{display_name2} outperformed {display_name1} on {score2} of {available_metrics} comparable metrics (ties: {ties})."
 
     return {
         "verdict": verdict,

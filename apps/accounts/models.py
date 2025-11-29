@@ -1,7 +1,4 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -48,79 +45,3 @@ def save_user_profile(sender, instance, **kwargs):
     """Save the UserProfile whenever the User is saved"""
     if hasattr(instance, 'profile'):
         instance.profile.save()
-
-
-# ============================================
-# Updated views.py to use UserProfile
-# ============================================
-
-# Add this to your register_api function to save phone number:
-def register_api_with_profile(request):
-    """Updated registration with phone number support"""
-    data = parse_json(request)
-    
-    if data is None:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
-
-    username = data.get("username", "").strip()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-    phone_number = data.get("phone_number", "").strip()  # New field
-    country_code = data.get("country_code", "+91")  # New field
-
-    # ... (rest of validation code same as before)
-
-    try:
-        # Create user
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
-        
-        # Update profile with phone number
-        if phone_number:
-            user.profile.phone_number = phone_number
-            user.profile.country_code = country_code
-            user.profile.save()
-        
-        # Log the user in
-        login(request, user)
-        
-        logger.info(f"New user registered: {username}")
-        
-        return JsonResponse({
-            "success": True,
-            "username": user.username,
-            "email": user.email,
-            "message": "User created successfully"
-        }, status=201)
-        
-    except Exception as e:
-        logger.error(f"Registration error: {str(e)}")
-        return JsonResponse({"error": "Registration failed. Please try again."}, status=500)
-
-
-# Add this to your google_login_api to mark OAuth users:
-def google_login_api_with_profile(request):
-    """Updated Google login with profile support"""
-    # ... (same validation code)
-    
-    try:
-        user = User.objects.get(email=email)
-    except User.DoesNotExist:
-        # Create new user
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            first_name=given_name[:30] if given_name else "",
-            last_name=family_name[:30] if family_name else ""
-        )
-        user.set_unusable_password()
-        user.save()
-        
-        # Update profile for Google user
-        user.profile.is_google_user = True
-        user.profile.google_id = idinfo.get('sub')  # Google's unique ID
-        user.profile.email_verified = True  # Google emails are pre-verified
-        user.profile.save()
