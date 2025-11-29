@@ -1,0 +1,123 @@
+{
+  "id": "7e10bd45-af40-4e64-a835-4d0462cd45bd",
+  "version": "2.0",
+  "name": "FinGenie GUI-testing",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "758df429-0ce7-4af5-8a18-f60c227e6ca7",
+    "name": "mainPageBeforerLogin",
+    "commands": [{
+      "id": "34806658-95d0-4da6-abc7-51ef6860a543",
+      "comment": "",
+      "command": "open",
+      "target": "/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "0147fe86-1f19-48d0-bc27-6dc809b705e8",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1552x832",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "f7f07255-6d74-4dc3-89e4-395f7b241bda",
+      "comment": "",
+      "command": "click",
+      "target": "linkText=Explore all tools →",
+      "targets": [
+        ["linkText=Explore all tools →", "linkText"],
+        ["css=a", "css:finder"],
+        ["xpath=//a[contains(text(),'Explore all tools →')]", "xpath:link"],
+        ["xpath=//div[@id='root']/div/main/div/a", "xpath:idRelative"],
+        ["xpath=//a", "xpath:position"],
+        ["xpath=//a[contains(.,'Explore all tools →')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "17f9b7dd-dcbb-4c50-ac62-2dc32de99c8c",
+      "comment": "",
+      "command": "click",
+      "target": "css=span:nth-child(1)",
+      "targets": [
+        ["css=span:nth-child(1)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span", "xpath:idRelative"],
+        ["xpath=//span", "xpath:position"],
+        ["xpath=//span[contains(.,'News')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "49710b36-a16a-4cfe-9f96-b0a8379131b6",
+      "comment": "",
+      "command": "runScript",
+      "target": "window.scrollTo(0,1139.199951171875)",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "939d4058-8439-42ed-8b36-bf1ca0470cbf",
+      "comment": "",
+      "command": "click",
+      "target": "css=span:nth-child(2)",
+      "targets": [
+        ["css=span:nth-child(2)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/span[2]", "xpath:idRelative"],
+        ["xpath=//span[2]", "xpath:position"],
+        ["xpath=//span[contains(.,'About us')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "188f82c2-7fff-4df0-a01e-785705f33ac8",
+      "comment": "",
+      "command": "click",
+      "target": "css=button:nth-child(3)",
+      "targets": [
+        ["css=button:nth-child(3)", "css:finder"],
+        ["xpath=//div[@id='root']/div/header/nav/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Sign up')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "940732ae-15ad-480c-b461-9ad299b3cbd2",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(4)",
+      "targets": [
+        ["css=input:nth-child(4)", "css:finder"],
+        ["xpath=//input[@value='BHdhdehes']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "BHdhdehes"
+    }, {
+      "id": "f8afd88e-4b81-4fd0-9c27-ffc89455c8a2",
+      "comment": "",
+      "command": "type",
+      "target": "css=input:nth-child(6)",
+      "targets": [
+        ["css=input:nth-child(6)", "css:finder"],
+        ["xpath=//input[@value='ASssddd33343@@']", "xpath:attributes"],
+        ["xpath=//div[@id='root']/div/div/div[2]/input[3]", "xpath:idRelative"],
+        ["xpath=//input[3]", "xpath:position"]
+      ],
+      "value": "ASssddd33343@@"
+    }, {
+      "id": "4798f85d-71df-4029-a1ea-d6f956a38cda",
+      "comment": "",
+      "command": "close",
+      "target": "",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "ca967ece-14f5-4d00-8c0b-bc554f8ea9a6",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["758df429-0ce7-4af5-8a18-f60c227e6ca7"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}
