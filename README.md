@@ -16,9 +16,7 @@ Understanding financial statements can be challenging, especially for non-financ
 - Python
 - Django
 - Django REST Framework
-- PostgreSQL / SQLite
 - File Processing Libraries (PyPDF2, openpyxl, pandas)
-- AI/ML Integration
 
 ### Frontend
 - HTML/CSS/JavaScript
@@ -63,27 +61,6 @@ python manage.py migrate
 ### 2. Create Superuser (Optional)
 ```bash
 python manage.py createsuperuser
-```
-
-## Project Structure
-
-```
-Fingenie/
-├── fingenie/              # Project settings
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── analysis/              # Main app
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── forms.py
-│   └── templates/
-├── static/                # CSS, JS, images
-├── media/                 # Uploaded files
-├── requirements.txt
-├── manage.py
-└── .env
 ```
 
 ---
