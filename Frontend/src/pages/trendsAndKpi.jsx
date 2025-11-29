@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, LogOut, History, Settings, Wrench, BarChart, TrendingUp, Search, Activity, BookOpen, Cpu, GitCompare, CheckCircle, XCircle, UploadCloud, FileText, X } from "lucide-react";
 import fglogo_Wbg from '../images/fglogo_Wbg.png';
-import api from '../api';
+// import api from '../api';
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
@@ -209,7 +209,7 @@ const FileUploadPage = ({ onUploadSuccess }) => {
     const [isUploading, setIsUploading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const [apiKey, setApiKey] = useState('');
+    // const [apiKey, setApiKey] = useState('');
 
 
     const MIN_FILES = 3;
@@ -422,20 +422,20 @@ const FileUploadPage = ({ onUploadSuccess }) => {
 
                 <button
                     onClick={handleSubmit}
-                    disabled={!isReadyToSubmit || isUploading || !apiKey.trim()}
+                    disabled={!isReadyToSubmit || isUploading }
                     style={{
                         width: '100%',
                         padding: '12px',
                         fontSize: '1.1em',
                         backgroundColor:
-                            (!isReadyToSubmit || isUploading || !apiKey.trim())
+                            (!isReadyToSubmit || isUploading )
                                 ? styles.colorTextStable
                                 : '#414355ff',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         cursor:
-                            (!isReadyToSubmit || isUploading || !apiKey.trim())
+                            (!isReadyToSubmit || isUploading )
                                 ? 'not-allowed'
                                 : 'pointer',
                         transition: 'background-color 0.3s',
