@@ -200,7 +200,7 @@ const FinanceBlog = () => {
       //   return;
       // }
 
-      console.log('Creating blog post as user:', authCheck.user);
+      // console.log('Creating blog post as user:', authCheck.user);
       
       // Create FormData for proper file upload
       const formData = new FormData();
@@ -1265,3 +1265,4 @@ if (typeof document !== 'undefined') {
 
 
 export default FinanceBlog;
+
